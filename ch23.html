@@ -110,6 +110,7 @@ h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
 .site a.home{font-weight:600;color:var(--ink)}
 .site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
 p.src{white-space:normal}
+.mi .zh{display:block;font-size:.78rem;color:var(--muted);margin-top:2px;font-weight:400}
 </style>
 </head>
 <body>
@@ -557,23 +558,23 @@ const QUIZ=[
 ["It changes gut–brain communication and the secretion of GLP-1 and PYY3–36, which signal satiety.","正確。胃縮成小囊直接接空腸,繞過大部分胃與十二指腸。"]]}
 ];
 const MATCH=[
-{t:"荷爾蒙 → 誰分泌",p:[["Insulin","胰島 β 細胞","p.40"],["Glucagon","胰島 α 細胞","p.40"],["Somatostatin","胰島 δ 細胞","p.40"],["Cortisol","腎上腺皮質","p.11, 48"],["Epinephrine","腎上腺髓質","p.47"],["ACTH","腦下垂體","p.11"]]},
-{t:"食慾與代謝訊號 → 來源",p:[["Leptin","脂肪細胞","p.13, 51"],["Ghrelin","胃","p.61"],["PYY3–36","小腸與結腸","p.61"],["Irisin","運動中的肌肉","p.25"],["GLP-1","腸道(incretin)","p.13"],["CRH","下視丘","p.11"]]},
+{t:"荷爾蒙 → 誰分泌",p:[["Insulin\n胰島素","胰島 β 細胞","p.40"],["Glucagon\n升糖素","胰島 α 細胞","p.40"],["Somatostatin\n生長抑素","胰島 δ 細胞","p.40"],["Cortisol\n皮質醇","腎上腺皮質","p.11, 48"],["Epinephrine\n腎上腺素","腎上腺髓質","p.47"],["ACTH\n促腎上腺皮質素","腦下垂體","p.11"]]},
+{t:"食慾與代謝訊號 → 來源",p:[["Leptin\n瘦素","脂肪細胞","p.13, 51"],["Ghrelin\n飢餓肽","胃","p.61"],["PYY3–36\n胜肽 YY3–36","小腸與結腸","p.61"],["Irisin\n鳶尾素","運動中的肌肉","p.25"],["GLP-1\n類升糖素胜肽-1","腸道(incretin)","p.13"],["CRH\n促腎上腺皮質素釋放激素","下視丘","p.11"]]},
 {t:"組織 → 燃料特徵",p:[["腦","glucose;長期禁食最多 60% 用 β-hydroxybutyrate","p.33"],["心肌","完全有氧,主要用游離脂肪酸","p.32"],["靜止骨骼肌","主要用游離脂肪酸","p.27"],["全力收縮的快縮肌","glycogen → lactate,每單位 3 ATP","p.27"],["紅血球","只靠糖解,lactate 回肝","p.34"],["肝","主要燃料是脂肪酸;做酮體但不用","p.21"]]},
-{t:"疾病、基因 → 原因",p:[["ob/ob 小鼠","缺 leptin,打 leptin 有效","p.51"],["db/db 小鼠","缺 leptin receptor,打 leptin 無效","p.52"],["Cushing disease","腦下垂體腫瘤,cortisol 過多","p.48"],["Addison disease","cortisol 不足","p.48"],["Prader-Willi syndrome","ghrelin 很高,食慾失控","p.61"],["Neonatal diabetes","Kir6.2 突變,K+ 通道一直開","p.42"]]},
-{t:"藥物、處置 → 機轉",p:[["Sulfonylurea","結合 SUR1,關 K+ 通道","p.42"],["Thiazolidinedione","活化 PPARγ","p.59"],["Metformin","經 AMPK 作用","p.56"],["Roux-en-Y gastric bypass","改變 GLP-1、PYY3–36 分泌","p.71"],["Hydrocortisone","治療 Addison disease","p.48"],["部分胰臟切除","治療 K+ 通道永遠關閉的低血糖","p.42"]]},
-{t:"分子 → 角色",p:[["NPY","促食慾,饑餓時升高","p.53"],["α-MSH","抑食慾(來自 POMC)","p.53"],["AMPK","能量低時開分解、關合成","p.56"],["mTORC1","營養充足時促進合成與生長","p.57"],["UCP1","讓 H+ 繞過 ATP synthase 產熱","p.24"],["Adiponectin","經 AMPK 提高 insulin 敏感性","p.55"]]},
-{t:"PPAR 與通道 → 角色",p:[["PPARα","禁食時 β 氧化與酮體生成","p.59"],["PPARγ","脂肪細胞分化、TZD 標靶","p.59"],["PPARδ","β 氧化與粒線體 uncoupling","p.59"],["RXR","與 PPAR 形成 heterodimer","p.58"],["Kir6.2","K+ 通道的孔與 ATP gate","p.42"],["SUR1","sulfonylurea 結合處","p.42"]]},
-{t:"檢查、指標 → 意義",p:[["血中 creatinine 升高","腎功能變差","p.30"],["血中出現 CK-MB","心肌受損","p.30"],["HbA1c","一段時間的平均血糖","p.65"],["Glucose tolerance test","喝 100 g 葡萄糖後追蹤血糖","p.65"],["Ketonuria","尿中出現酮體","p.66"],["C-reactive protein 升高","metabolic syndrome 的發炎指標","p.67"]]},
-{t:"名詞:荷爾蒙基礎",p:[["Endocrine","經血液送到遠處組織","p.7"],["Paracrine","作用在鄰近細胞(如 eicosanoid)","p.7"],["Autocrine","作用在分泌它的細胞本身","p.7"],["Metabotropic receptor","活化或抑制酵素的膜受體","p.5"],["Ionotropic receptor","開關離子通道的膜受體","p.5"],["Prohormone","無活性前驅物,切割後才活化","p.8"]]},
-{t:"名詞:胜肽荷爾蒙與前驅物",p:[["Preproinsulin","帶 signal sequence 的 insulin 前驅物","p.9"],["Proinsulin","存在 β 細胞顆粒中、尚未切割","p.9"],["C peptide","從 proinsulin 切下,與 insulin 一起分泌","p.9"],["POMC","一個前驅蛋白含 ≥ 9 個活性胜肽","p.10"],["TRH","很小的胜肽荷爾蒙","p.8"],["Human chorionic gonadotropin","很大的蛋白質荷爾蒙","p.8"]]},
+{t:"疾病、基因 → 原因",p:[["ob/ob 小鼠","缺 leptin,打 leptin 有效","p.51"],["db/db 小鼠","缺 leptin receptor,打 leptin 無效","p.52"],["Cushing disease\n庫欣氏病","腦下垂體腫瘤,cortisol 過多","p.48"],["Addison disease\n艾迪生氏病","cortisol 不足","p.48"],["Prader-Willi syndrome\n普瑞德－威利症候群","ghrelin 很高,食慾失控","p.61"],["Neonatal diabetes\n新生兒糖尿病","Kir6.2 突變,K+ 通道一直開","p.42"]]},
+{t:"藥物、處置 → 機轉",p:[["Sulfonylurea\n磺醯脲類","結合 SUR1,關 K+ 通道","p.42"],["Thiazolidinedione\n噻唑烷二酮","活化 PPARγ","p.59"],["Metformin\n二甲雙胍","經 AMPK 作用","p.56"],["Roux-en-Y gastric bypass\nRoux-en-Y 胃繞道手術","改變 GLP-1、PYY3–36 分泌","p.71"],["Hydrocortisone\n氫化可體松","治療 Addison disease","p.48"],["部分胰臟切除","治療 K+ 通道永遠關閉的低血糖","p.42"]]},
+{t:"分子 → 角色",p:[["NPY\n神經胜肽 Y","促食慾,饑餓時升高","p.53"],["α-MSH\nα-黑色素細胞刺激素","抑食慾(來自 POMC)","p.53"],["AMPK\nAMP 活化蛋白激酶","能量低時開分解、關合成","p.56"],["mTORC1\nmTOR 複合體 1","營養充足時促進合成與生長","p.57"],["UCP1\n解偶聯蛋白 1","讓 H+ 繞過 ATP synthase 產熱","p.24"],["Adiponectin\n脂聯素","經 AMPK 提高 insulin 敏感性","p.55"]]},
+{t:"PPAR 與通道 → 角色",p:[["PPARα\n過氧化體增殖物活化受體 α","禁食時 β 氧化與酮體生成","p.59"],["PPARγ\n過氧化體增殖物活化受體 γ","脂肪細胞分化、TZD 標靶","p.59"],["PPARδ\n過氧化體增殖物活化受體 δ","β 氧化與粒線體 uncoupling","p.59"],["RXR\n類視黃醇 X 受體","與 PPAR 形成 heterodimer","p.58"],["Kir6.2","K+ 通道的孔與 ATP gate","p.42"],["SUR1","sulfonylurea 結合處","p.42"]]},
+{t:"檢查、指標 → 意義",p:[["血中 creatinine 升高","腎功能變差","p.30"],["血中出現 CK-MB","心肌受損","p.30"],["HbA1c\n糖化血色素","一段時間的平均血糖","p.65"],["Glucose tolerance test\n葡萄糖耐受試驗","喝 100 g 葡萄糖後追蹤血糖","p.65"],["Ketonuria\n酮尿","尿中出現酮體","p.66"],["C-reactive protein 升高","metabolic syndrome 的發炎指標","p.67"]]},
+{t:"名詞:荷爾蒙基礎",p:[["Endocrine\n內分泌","經血液送到遠處組織","p.7"],["Paracrine\n旁分泌","作用在鄰近細胞(如 eicosanoid)","p.7"],["Autocrine\n自分泌","作用在分泌它的細胞本身","p.7"],["Metabotropic receptor\n代謝型受體","活化或抑制酵素的膜受體","p.5"],["Ionotropic receptor\n離子型受體","開關離子通道的膜受體","p.5"],["Prohormone\n前荷爾蒙","無活性前驅物,切割後才活化","p.8"]]},
+{t:"名詞:胜肽荷爾蒙與前驅物",p:[["Preproinsulin\n前胰島素原","帶 signal sequence 的 insulin 前驅物","p.9"],["Proinsulin\n胰島素原","存在 β 細胞顆粒中、尚未切割","p.9"],["C peptide\nC 胜肽","從 proinsulin 切下,與 insulin 一起分泌","p.9"],["POMC\n前阿黑皮素原","一個前驅蛋白含 ≥ 9 個活性胜肽","p.10"],["TRH\n促甲狀腺素釋放激素","很小的胜肽荷爾蒙","p.8"],["Human chorionic gonadotropin\n人類絨毛膜促性腺激素","很大的蛋白質荷爾蒙","p.8"]]},
 {t:"中英對照:荷爾蒙",p:[["Somatostatin","生長抑素","p.8"],["Calcitonin","降血鈣素","p.8"],["Ghrelin","饑餓肽","p.13"],["Adiponectin","脂聯素","p.13"],["Leptin","瘦素","p.13"],["Irisin","鳶尾素","p.25"]]},
 {t:"中英對照:腦與食慾",p:[["Hypothalamus","下視丘","p.11"],["Pituitary","腦下垂體","p.11"],["Arcuate nucleus","弓狀核","p.53"],["Orexigenic","促食慾","p.53"],["Anorexigenic","抑食慾","p.53"],["Endocannabinoid","內源性大麻素","p.62"]]},
-{t:"名詞:代謝循環與酵素",p:[["Cori cycle","肌肉 lactate → 肝做 glucose → 回肌肉","p.31"],["Glucose–alanine cycle","肌肉以 alanine 把胺基與碳送到肝","p.20"],["Shivering thermogenesis","肌肉快速收縮產熱","p.31"],["Glucokinase(hexokinase IV)","Km 高、不被 G6P 抑制","p.16"],["Glucose 6-phosphatase","肝把 G6P 變成 glucose 輸出","p.17"],["Phosphocreatine","肌肉的 ATP 緩衝,經 creatine kinase 再生 ATP","p.28"]]},
-{t:"名詞:組織類型",p:[["White adipose tissue","單一大油滴,儲存 TAG","p.23"],["Brown adipose tissue","多個小油滴、大量粒線體、UCP1","p.24"],["Beige adipocyte","irisin 誘導,運動後持續燃脂","p.25"],["Slow-twitch(red)muscle","耐疲勞,靠氧化磷酸化","p.26"],["Fast-twitch(white)muscle","力量大、容易疲勞","p.26"],["Portal vein","吸收的養分先經此到肝","p.15"]]},
-{t:"名詞:臨床狀態",p:[["Hypoglycemia","約 70 mg/100 mL 以下,混亂到昏迷","p.35"],["Ketosis","血與尿中酮體高(ketonemia、ketonuria)","p.66"],["Ketoacidosis","酮體使血液 pH 下降、超過緩衝","p.66"],["Metabolic syndrome","第二型糖尿病之前的中間階段","p.67"],["Insulin resistance","要更多 insulin 才有相同效果","p.67"],["BMI > 30","肥胖","p.49"]]},
-{t:"名詞:第二型糖尿病機制",p:[["Lipid toxicity hypothesis","異位堆積的脂質造成 insulin resistance","p.68"],["MCP-1","招募巨噬細胞進入脂肪組織","p.68"],["TNFα","損害脂肪細胞儲存 TAG 的能力","p.68"],["Ectopic fat","堆在肝與肌肉的脂滴","p.68"],["Diabetogenes","第二型糖尿病的易感基因","p.69"],["Adiposity negative-feedback","超過 set point 就抑食並增加消耗","p.50"]]},
-{t:"名詞:調控分子",p:[["LKB1","磷酸化並放大 AMPK","p.56"],["Raptor","與 mTOR 組成 mTORC1","p.57"],["Rag G proteins","感應胺基酸,把 mTORC1 招到 lysosome","p.57"],["Rheb-GTP","活化 mTORC1","p.57"],["Incretin","腸道分泌、促進 insulin 分泌的荷爾蒙","p.13"],["GIP","抑制 glucagon 分泌(講義 p.13)","p.13"]]}
+{t:"名詞:代謝循環與酵素",p:[["Cori cycle\n科里循環","肌肉 lactate → 肝做 glucose → 回肌肉","p.31"],["Glucose–alanine cycle\n葡萄糖－丙胺酸循環","肌肉以 alanine 把胺基與碳送到肝","p.20"],["Shivering thermogenesis\n顫抖產熱","肌肉快速收縮產熱","p.31"],["Glucokinase(hexokinase IV)\n葡萄糖激酶","Km 高、不被 G6P 抑制","p.16"],["Glucose 6-phosphatase\n葡萄糖-6-磷酸酶","肝把 G6P 變成 glucose 輸出","p.17"],["Phosphocreatine\n磷酸肌酸","肌肉的 ATP 緩衝,經 creatine kinase 再生 ATP","p.28"]]},
+{t:"名詞:組織類型",p:[["White adipose tissue\n白色脂肪組織","單一大油滴,儲存 TAG","p.23"],["Brown adipose tissue\n棕色脂肪組織","多個小油滴、大量粒線體、UCP1","p.24"],["Beige adipocyte\n米色脂肪細胞","irisin 誘導,運動後持續燃脂","p.25"],["Slow-twitch(red)muscle\n慢縮（紅）肌","耐疲勞,靠氧化磷酸化","p.26"],["Fast-twitch(white)muscle\n快縮（白）肌","力量大、容易疲勞","p.26"],["Portal vein\n門靜脈","吸收的養分先經此到肝","p.15"]]},
+{t:"名詞:臨床狀態",p:[["Hypoglycemia\n低血糖","約 70 mg/100 mL 以下,混亂到昏迷","p.35"],["Ketosis\n酮症","血與尿中酮體高(ketonemia、ketonuria)","p.66"],["Ketoacidosis\n酮酸中毒","酮體使血液 pH 下降、超過緩衝","p.66"],["Metabolic syndrome\n代謝症候群","第二型糖尿病之前的中間階段","p.67"],["Insulin resistance\n胰島素阻抗","要更多 insulin 才有相同效果","p.67"],["BMI > 30","肥胖","p.49"]]},
+{t:"名詞:第二型糖尿病機制",p:[["Lipid toxicity hypothesis\n脂毒性假說","異位堆積的脂質造成 insulin resistance","p.68"],["MCP-1\n單核球趨化蛋白-1","招募巨噬細胞進入脂肪組織","p.68"],["TNFα\n腫瘤壞死因子 α","損害脂肪細胞儲存 TAG 的能力","p.68"],["Ectopic fat\n異位脂肪","堆在肝與肌肉的脂滴","p.68"],["Diabetogenes","第二型糖尿病的易感基因","p.69"],["Adiposity negative-feedback\n脂肪量負回饋","超過 set point 就抑食並增加消耗","p.50"]]},
+{t:"名詞:調控分子",p:[["LKB1\n激酶 LKB1","磷酸化並放大 AMPK","p.56"],["Raptor","與 mTOR 組成 mTORC1","p.57"],["Rag G proteins\nRag G 蛋白","感應胺基酸,把 mTORC1 招到 lysosome","p.57"],["Rheb-GTP","活化 mTORC1","p.57"],["Incretin","腸道分泌、促進 insulin 分泌的荷爾蒙","p.13"],["GIP\n葡萄糖依賴性促胰島素胜肽","抑制 glucagon 分泌(講義 p.13)","p.13"]]}
 ];
 const KEY="biochem-ch23-quiz-v1";
 let picks={}; let filter="";
@@ -644,7 +645,7 @@ function mRender(){
   const old=document.querySelector(".done-msg"); if(old) old.remove();
   R.p.forEach((p,i)=>{
     const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
-    b.append(el("span","",p[0]));
+    const _s=String(p[0]).split("\n");b.append(el("span","",_s[0]));if(_s[1])b.append(el("span","zh",_s[1]));
     if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]];b.append(el("span","pg","講義 "+p[2]));}
     b.addEventListener("click",()=>mPick(b)); L.append(b);
   });

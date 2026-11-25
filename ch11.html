@@ -116,6 +116,7 @@ h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
 .site a.home{font-weight:600;color:var(--ink)}
 .site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
 p.src{white-space:normal}
+.mi .zh{display:block;font-size:.78rem;color:var(--muted);margin-top:2px;font-weight:400}
 </style>
 </head>
 <body>
@@ -497,14 +498,14 @@ const QUIZ=[
 ["Positive residues repel Na+.","入口的負電殘基濃縮陽離子。"]]}
 ];
 const MATCH=[
-{t:"膜蛋白類型 → 特徵",p:[["Integral protein","疏水作用,只能用去污劑移除","p.17","國考:內嵌蛋白用含介面活性劑的溶液萃取。"],["Peripheral protein","離子鍵、氫鍵,改 pH 或鹽就脫落","p.17","沒有穿膜結構;國考陷阱。"],["Amphitropic protein","在膜與細胞質之間來回","p.17","常靠受調控的脂質錨。"],["Monotopic","小疏水區只插入一層","p.20","沒有跨膜。"],["Bitopic","跨膜一次,如 glycophorin","p.16, 20","Glycophorin 殘基 75–93 是唯一的跨膜螺旋。"],["Polytopic","跨膜多次,如 bacteriorhodopsin","p.20","Bacteriorhodopsin 有 7 個 α 螺旋。"]]},
-{t:"脂質錨與定位規則",p:[["Palmitoyl","內面 Cys 的 thioester,可逆","p.27","國考:膜蛋白最常以共價鍵結合 palmitoyl。"],["N-Myristoyl","N 端 Gly 的 amide,內面","p.27","14 碳。"],["Farnesyl / geranylgeranyl","C 端 Cys 的 isoprenoid,內面","p.27","C15 / C20 isoprenoid。"],["GPI anchor","一律在外面","p.27","PI + 寡醣 + phosphoethanolamine 接 C 端;富集在 raft。"],["Tyr、Trp","脂核與水相的交界","p.24","國考:Trp 最常位於交界處。"],["Lys、Arg 環","朝向細胞質","p.24","Positive-inside rule。"]]},
-{t:"膜動態 → 角色",p:[["Flippase","PE、PS 外 → 內,P-type,耗 ATP","p.32","維持 PS 在內葉。"],["Floppase","內 → 外,ABC transporter,耗 ATP","p.32","與 flippase 方向相反。"],["Scramblase","雙向順梯度,不耗 ATP,Ca2+ 活化","p.32","PS 翻到外面 = 凋亡訊號,巨噬細胞來吞。"],["FRAP","測側向擴散速率","p.33","漂白一點,看螢光恢復多快。"],["Caveolin","讓膜往內凹成 caveolae","p.38","髮夾狀疏水區插在內葉,帶三個 palmitoyl。"],["BAR domain","新月形二聚體,貼在 PIP2/PIP3 上彎膜","p.41","另外還有錐形脂質、兩性螺旋等彎膜方式。"]]},
-{t:"膜融合與黏附 → 角色",p:[["v-SNARE","囊泡上的 synaptobrevin","p.45","與 t-SNARE 拉鍊式捲成四螺旋束。"],["t-SNARE","目標膜上的 syntaxin + SNAP25","p.45","Ca2+ 局部升高觸發釋放。"],["NSF","事後拆開 SNARE 複合物","p.45","讓 SNARE 能再用。"],["Botulinum toxin","切斷 SNARE 的蛋白酶","p.45","造成癱瘓;Botox 用於眼、頸部疾病。"],["Integrin","αβ 異二聚體,經 RGD 結合 collagen","p.46","雙向訊號。"],["Cadherin","同型結合,依賴 Ca2+","p.46","Selectin 則結合另一細胞的多醣。"]]},
-{t:"運輸蛋白 → 特徵",p:[["GLUT1","紅血球、血腦障壁的基礎攝取","p.57","Kt 約 3 mM(表 11-1);缺陷 → De Vivo disease。"],["GLUT2","肝、胰島;Kt 17 mM","p.57","國考:高 Km 的 GLUT2 在肝;胰臟 β 細胞用它。"],["GLUT3","神經元;Kt 1.4 mM","p.57","高周轉數。"],["GLUT4","肌肉、脂肪;insulin 調控","p.57, 61","約 90% 平常在細胞內囊泡。"],["SGLT2","腎臟;gliflozin 的標靶","p.84","抑制後葡萄糖從尿排掉。"],["Cl−–HCO3− exchanger","電中性反向運輸","p.62","沒有 Cl− 就不能運 HCO3−。"]]},
-{t:"ATPase → 特徵",p:[["P-type ATPase","每次循環 Asp 被磷酸化;vanadate 抑制","p.69","SERCA、Na+K+、胃 H+K+ 都是。"],["SERCA","每個 ATP 送 2 個 Ca2+ 進 ER","p.70","細胞質 Ca2+ 維持在 1 µM 以下。"],["Na+K+ ATPase","3 Na+ 出、2 K+ 入,electrogenic","p.73","約用掉靜息能量 25%;digitalis 抑制。"],["V-type ATPase","酸化液胞、溶小體","p.76","把 H+ 打進腔內。"],["F-type ATPase","可逆;H+ 順流合成 ATP","p.76","就是 ATP synthase。"],["ABC transporter","兩個 NBD + 兩個 TMD","p.77","受質從胺基酸到藥物都有。"]]},
-{t:"ABC 家族與疾病",p:[["ABCA1","reverse cholesterol transport;缺陷 → Tangier","p.78","HDL 極低。"],["ABCA4","視覺受器回收 all-trans-retinal","p.78","只在感光細胞。"],["ABCB1(MDR1)","多重抗藥性","p.78, 81","把藥物打出細胞;也在血腦障壁。"],["CFTR(ABCC7)","Cl− 通道,不是幫浦","p.79","PKA 磷酸化 R domain + ATP 結合才開。"],["F508del","CFTR 摺疊錯誤,被蛋白酶體分解","p.80","佔病例最多 90%;corrector 改善摺疊。"],["Ivacaftor","CFTR potentiator,把通道打開","p.80","用於 G551D 這類能插膜但不能開的突變。"]]},
-{t:"通道與離子載體 → 特徵",p:[["Valinomycin","環狀胜肽,攜帶 K+","p.89","瓦解離子梯度而殺菌。"],["Monensin","Na+ 離子載體","p.89","抗真菌、抗寄生蟲。"],["AQP1","每秒約 10^9 個水分子","p.93","紅血球、腎、肺都有。"],["AQP2","集尿管;受 vasopressin 調控","p.93","抗利尿激素讓它插到膜上。"],["Patch clamp","量測單一通道的 pA 級電流","p.95","微吸管隔出一個通道。"],["K+ selectivity filter","骨架羰基氧取代水合殼","p.99","Na+ 太小,碰不到所有氧。"]]}
+{t:"膜蛋白類型 → 特徵",p:[["Integral protein\n嵌入型膜蛋白","疏水作用,只能用去污劑移除","p.17","國考:內嵌蛋白用含介面活性劑的溶液萃取。"],["Peripheral protein\n周邊膜蛋白","離子鍵、氫鍵,改 pH 或鹽就脫落","p.17","沒有穿膜結構;國考陷阱。"],["Amphitropic protein\n兩親性膜蛋白","在膜與細胞質之間來回","p.17","常靠受調控的脂質錨。"],["Monotopic\n單面型","小疏水區只插入一層","p.20","沒有跨膜。"],["Bitopic\n單次跨膜型","跨膜一次,如 glycophorin","p.16, 20","Glycophorin 殘基 75–93 是唯一的跨膜螺旋。"],["Polytopic\n多次跨膜型","跨膜多次,如 bacteriorhodopsin","p.20","Bacteriorhodopsin 有 7 個 α 螺旋。"]]},
+{t:"脂質錨與定位規則",p:[["Palmitoyl\n棕櫚醯基","內面 Cys 的 thioester,可逆","p.27","國考:膜蛋白最常以共價鍵結合 palmitoyl。"],["N-Myristoyl\nN-肉豆蔻醯基","N 端 Gly 的 amide,內面","p.27","14 碳。"],["Farnesyl / geranylgeranyl\n法尼基／香葉基香葉基","C 端 Cys 的 isoprenoid,內面","p.27","C15 / C20 isoprenoid。"],["GPI anchor\nGPI 錨","一律在外面","p.27","PI + 寡醣 + phosphoethanolamine 接 C 端;富集在 raft。"],["Tyr、Trp\n酪胺酸、色胺酸","脂核與水相的交界","p.24","國考:Trp 最常位於交界處。"],["Lys、Arg 環","朝向細胞質","p.24","Positive-inside rule。"]]},
+{t:"膜動態 → 角色",p:[["Flippase\n翻轉酶","PE、PS 外 → 內,P-type,耗 ATP","p.32","維持 PS 在內葉。"],["Floppase\n外翻酶","內 → 外,ABC transporter,耗 ATP","p.32","與 flippase 方向相反。"],["Scramblase\n混旋酶","雙向順梯度,不耗 ATP,Ca2+ 活化","p.32","PS 翻到外面 = 凋亡訊號,巨噬細胞來吞。"],["FRAP\n光漂白後螢光回復","測側向擴散速率","p.33","漂白一點,看螢光恢復多快。"],["Caveolin\n小窩蛋白","讓膜往內凹成 caveolae","p.38","髮夾狀疏水區插在內葉,帶三個 palmitoyl。"],["BAR domain\nBAR 結構域","新月形二聚體,貼在 PIP2/PIP3 上彎膜","p.41","另外還有錐形脂質、兩性螺旋等彎膜方式。"]]},
+{t:"膜融合與黏附 → 角色",p:[["v-SNARE","囊泡上的 synaptobrevin","p.45","與 t-SNARE 拉鍊式捲成四螺旋束。"],["t-SNARE","目標膜上的 syntaxin + SNAP25","p.45","Ca2+ 局部升高觸發釋放。"],["NSF\nN-乙基馬來醯亞胺敏感因子","事後拆開 SNARE 複合物","p.45","讓 SNARE 能再用。"],["Botulinum toxin\n肉毒桿菌毒素","切斷 SNARE 的蛋白酶","p.45","造成癱瘓;Botox 用於眼、頸部疾病。"],["Integrin\n整合素","αβ 異二聚體,經 RGD 結合 collagen","p.46","雙向訊號。"],["Cadherin","同型結合,依賴 Ca2+","p.46","Selectin 則結合另一細胞的多醣。"]]},
+{t:"運輸蛋白 → 特徵",p:[["GLUT1\n葡萄糖轉運蛋白 1","紅血球、血腦障壁的基礎攝取","p.57","Kt 約 3 mM(表 11-1);缺陷 → De Vivo disease。"],["GLUT2\n葡萄糖轉運蛋白 2","肝、胰島;Kt 17 mM","p.57","國考:高 Km 的 GLUT2 在肝;胰臟 β 細胞用它。"],["GLUT3\n葡萄糖轉運蛋白 3","神經元;Kt 1.4 mM","p.57","高周轉數。"],["GLUT4\n葡萄糖轉運蛋白 4","肌肉、脂肪;insulin 調控","p.57, 61","約 90% 平常在細胞內囊泡。"],["SGLT2\n鈉–葡萄糖共同轉運蛋白 2","腎臟;gliflozin 的標靶","p.84","抑制後葡萄糖從尿排掉。"],["Cl−–HCO3− exchanger\n氯－碳酸氫根交換蛋白","電中性反向運輸","p.62","沒有 Cl− 就不能運 HCO3−。"]]},
+{t:"ATPase → 特徵",p:[["P-type ATPase\nP 型 ATP 酶","每次循環 Asp 被磷酸化;vanadate 抑制","p.69","SERCA、Na+K+、胃 H+K+ 都是。"],["SERCA","每個 ATP 送 2 個 Ca2+ 進 ER","p.70","細胞質 Ca2+ 維持在 1 µM 以下。"],["Na+K+ ATPase\n鈉鉀幫浦","3 Na+ 出、2 K+ 入,electrogenic","p.73","約用掉靜息能量 25%;digitalis 抑制。"],["V-type ATPase\nV 型 ATP 酶","酸化液胞、溶小體","p.76","把 H+ 打進腔內。"],["F-type ATPase\nF 型 ATP 酶","可逆;H+ 順流合成 ATP","p.76","就是 ATP synthase。"],["ABC transporter\nABC 轉運蛋白","兩個 NBD + 兩個 TMD","p.77","受質從胺基酸到藥物都有。"]]},
+{t:"ABC 家族與疾病",p:[["ABCA1","reverse cholesterol transport;缺陷 → Tangier","p.78","HDL 極低。"],["ABCA4","視覺受器回收 all-trans-retinal","p.78","只在感光細胞。"],["ABCB1(MDR1)","多重抗藥性","p.78, 81","把藥物打出細胞;也在血腦障壁。"],["CFTR(ABCC7)\n囊性纖維化跨膜傳導調節子","Cl− 通道,不是幫浦","p.79","PKA 磷酸化 R domain + ATP 結合才開。"],["F508del","CFTR 摺疊錯誤,被蛋白酶體分解","p.80","佔病例最多 90%;corrector 改善摺疊。"],["Ivacaftor\n伊伐卡托","CFTR potentiator,把通道打開","p.80","用於 G551D 這類能插膜但不能開的突變。"]]},
+{t:"通道與離子載體 → 特徵",p:[["Valinomycin\n纈胺黴素","環狀胜肽,攜帶 K+","p.89","瓦解離子梯度而殺菌。"],["Monensin\n莫能菌素","Na+ 離子載體","p.89","抗真菌、抗寄生蟲。"],["AQP1\n水通道蛋白 1","每秒約 10^9 個水分子","p.93","紅血球、腎、肺都有。"],["AQP2\n水通道蛋白 2","集尿管;受 vasopressin 調控","p.93","抗利尿激素讓它插到膜上。"],["Patch clamp\n膜片鉗","量測單一通道的 pA 級電流","p.95","微吸管隔出一個通道。"],["K+ selectivity filter\n鉀離子選擇性濾器","骨架羰基氧取代水合殼","p.99","Na+ 太小,碰不到所有氧。"]]}
 ];
 const KEY="biochem-ch11-quiz-v1";
 let picks={}; let filter="";
@@ -575,7 +576,7 @@ function mRender(){
   const old=document.querySelector(".done-msg"); if(old) old.remove();
   R.p.forEach((p,i)=>{
     const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
-    b.append(el("span","",p[0]));
+    const _s=String(p[0]).split("\n");b.append(el("span","",_s[0]));if(_s[1])b.append(el("span","zh",_s[1]));
     if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
     b.addEventListener("click",()=>mPick(b)); L.append(b);
   });
