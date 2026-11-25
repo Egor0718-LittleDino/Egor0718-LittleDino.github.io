@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch21 考點、連連看與題庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 0 0;font-size:.85rem}
+.site a{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--surface)}
+.site a:hover{border-color:var(--accent);color:var(--ink)}
+.site a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.site a.home{font-weight:600;color:var(--ink)}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+p.src{white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html" aria-current="page">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch21 考點、連連看與題庫</h1>
+  <p class="lede">Lipid Biosynthesis。考點速記 → 連連看 48 對(配對成功會出現解釋)→ 60 題英文單選(先前兩份 Ch21 題庫合併);每題與每組配對都標講義頁碼。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(60 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<p class="hint">一行一考點,灰色是講義 PDF 頁碼。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+<h2>21.1 脂肪酸合成</h2>
+<div class="tbl"><table>
+<thead><tr><th>項目</th><th>β 氧化(Ch17)</th><th>合成(Ch21)</th></tr></thead>
+<tbody>
+<tr><td>位置</td><td>粒線體基質</td><td><b>細胞質</b></td></tr>
+<tr><td>醯基載體</td><td>CoA</td><td><b>ACP</b>(phosphopantetheine)</td></tr>
+<tr><td>電子載體</td><td>FAD、NAD+</td><td><b>NADPH</b></td></tr>
+<tr><td>二碳單位</td><td>acetyl-CoA</td><td><b>malonyl-CoA</b>(縮合時放 CO2)</td></tr>
+<tr><td>β-hydroxy 中間物</td><td>L 型</td><td><b>D 型</b></td></tr>
+<tr><td>調控酵素</td><td>CPT1</td><td><b>acetyl-CoA carboxylase</b></td></tr>
+</tbody></table></div>
+<p class="src">p.5, 9–10</p>
+<ul class="pts">
+<li><b>ACC</b>:acetyl-CoA + HCO3− + ATP → malonyl-CoA;<b>biotin</b>;速率決定 <i>p.6</i></li>
+<li>ACC 活化:<b>citrate</b>、insulin(去磷酸);抑制:<b>palmitoyl-CoA</b>、glucagon 與 epinephrine(磷酸化)、<b>AMPK</b> <i>p.21</i></li>
+<li><b>Malonyl-CoA 抑制 CPT1</b> → 合成與氧化不同時進行 <i>p.26</i></li>
+<li>FAS I 四步重複:縮合 → 還原(NADPH)→ 脫水 → 還原(NADPH);產物 <b>palmitate 16:0</b>;多功能同二聚體 <i>p.11, 13</i></li>
+<li class="mem">算:<b>8 acetyl-CoA + 7 ATP + 14 NADPH → palmitate</b>(1 個引子 + 7 個 malonyl;7 輪 × 2 NADPH) <i>p.14</i></li>
+<li>標記:引子 acetyl → <b>C-15、C-16</b>(甲基端);HCO3− 的碳<b>不會</b>出現在產物 <i>p.6, 14</i></li>
+<li>Acetyl 基以 <b>citrate</b> 出粒線體 → <b>citrate lyase</b>(耗 ATP)切回;NADPH 來自 <b>PPP 與 malic enzyme</b> <i>p.18</i></li>
+<li>延長:smooth ER 與粒線體(用 CoA);去飽和:<b>mixed-function oxidase</b>,O2 → 2 H2O,電子經 cytochrome b5 <i>p.29–31</i></li>
+<li><b>哺乳類無法在 Δ9 之後加雙鍵</b> → linoleate(ω-6)、α-linolenate(ω-3)必需;兩家族不能互換 <i>p.29</i></li>
+<li>Eicosanoid:PLA2 釋 arachidonate → <b>COX</b> → PG、TX;lipoxygenase → LT;<b>aspirin 不可逆乙醯化 COX 的 Ser</b>(血小板無核補不回),ibuprofen 競爭;COX-2 選擇性保護胃 <i>p.32</i></li>
+</ul>
+
+<h2>21.2 TAG 合成</h2>
+<ul class="pts">
+<li>Glycerol 3-P + 2 acyl-CoA → <b>phosphatidic acid</b>(分歧點)→ DAG → TAG <i>p.39</i></li>
+<li>Glycerol 3-P 來源:DHAP 還原;或 <b>glycerol kinase</b>(肝、腎有,<b>脂肪沒有</b>) <i>p.39, 42</i></li>
+<li>Triacylglycerol cycle:脂解出的脂肪酸約 <b>75%</b> 被再酯化,飢餓時也是 <i>p.42</i></li>
+<li><b>Glyceroneogenesis</b>:脂肪用 <b>PEPCK</b> 從 pyruvate 做 glycerol 3-P;<b>TZD → PPARγ → PEPCK ↑</b> → 血中 FFA ↓;cortisol 則肝 ↑ 脂肪 ↓ <i>p.45–46</i></li>
+<li>未治療糖尿病:脂肪酸合成 ↓,acetyl-CoA 轉成酮體 <i>p.41</i></li>
+</ul>
+
+<h2>21.3 磷脂合成</h2>
+<div class="tbl"><table>
+<thead><tr><th>策略</th><th>被 CDP 活化的是</th><th>產物</th></tr></thead>
+<tbody>
+<tr><td>一</td><td>diacylglycerol(<b>CDP-DAG</b>)</td><td>PI、PG、<b>cardiolipin</b></td></tr>
+<tr><td>二(Kennedy)</td><td>頭基(<b>CDP-choline</b>、CDP-ethanolamine)</td><td>PC、PE</td></tr>
+</tbody></table></div>
+<p class="src">p.49(離去的是 CMP)</p>
+<ul class="pts">
+<li>哺乳類 <b>PS 由 head-group exchange</b>;PS 脫羧 → PE;<b>PE 用 adoMet 甲基化三次 → PC</b>(肝) <i>p.54</i></li>
+<li><b>Lands cycle</b> 重塑 C-2 脂肪酸;<b>plasmalogen 的醚鍵在 peroxisome</b> 形成 <i>p.58–59</i></li>
+<li>Sphingolipid 起點:<b>palmitoyl-CoA + serine</b>;sphingomyelin 的頭基由 PC 提供 <i>p.60</i></li>
+</ul>
+
+<h2>21.4 膽固醇、脂蛋白與類固醇</h2>
+<ul class="pts">
+<li>四階段:3 acetyl-CoA → HMG-CoA → <b>mevalonate</b>(<b>HMG-CoA reductase</b>,2 NADPH,速率決定)→ activated isoprene(3 ATP)→ 6 個 isoprene → <b>squalene(C30)</b> → lanosterol → <b>cholesterol(C27)</b> <i>p.65–70</i></li>
+<li class="mem">算:mevalonate → squalene = 3 ATP × 6 = <b>18 ATP</b>;squalene 由兩個 farnesyl <b>頭對頭</b>縮合(NADPH) <i>p.68–69</i></li>
+<li>細胞質 HMG-CoA synthase 做<b>膽固醇</b>;粒線體的做<b>酮體</b> <i>p.65</i></li>
+<li>可溶性纖維結合膽酸 → 肝用更多膽固醇做膽酸 <i>p.73</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>脂蛋白</th><th>來源</th><th>運送</th><th>apolipoprotein</th></tr></thead>
+<tbody>
+<tr><td>Chylomicron</td><td>小腸</td><td>飲食 TAG</td><td><b>B-48</b>、C-II、E</td></tr>
+<tr><td>VLDL</td><td>肝</td><td>內生 TAG</td><td>B-100、C-II、E</td></tr>
+<tr><td>LDL</td><td>VLDL 殘餘</td><td>cholesterol 到周邊(CE 最多)</td><td><b>B-100</b></td></tr>
+<tr><td>HDL</td><td>肝、小腸</td><td>reverse cholesterol transport</td><td><b>A-I</b>(活化 LCAT)</td></tr>
+</tbody></table></div>
+<p class="src">p.79–83(密度:chylomicron &lt; VLDL &lt; LDL &lt; HDL)</p>
+<ul class="pts">
+<li><b>ApoC-II 活化 lipoprotein lipase</b>;缺乏 → TAG 極高 <i>p.81, 84</i></li>
+<li>LDL receptor 認 <b>apoB-100</b>;VLDL 變 LDL 時結合區才露出;缺陷 → <b>familial hypercholesterolemia</b> <i>p.91</i></li>
+<li><b>LCAT</b>(HDL,用 lecithin)vs <b>ACAT</b>(細胞內,用 acyl-CoA) <i>p.73, 90</i></li>
+<li>調控時間:分鐘 = <b>AMPK 磷酸化</b> HMG-CoA reductase(insulin 去磷酸活化);小時 = <b>SREBP</b> 改變酵素量 <i>p.98</i></li>
+<li><b>SREBP</b>:固醇低 → SCAP 送到 Golgi 切割 → 進核開 HMG-CoA reductase、LDL receptor;固醇高 → <b>Insig</b> 留在 ER <i>p.101</i></li>
+<li><b>LXR</b>:oxysterol 活化(固醇高),促進膽酸合成與外排 <i>p.104</i></li>
+<li><b>Tangier</b> = ABCA1 缺陷,HDL 幾乎沒有 <i>p.106</i></li>
+<li><b>Statin</b> 競爭抑制 HMG-CoA reductase → 細胞內固醇 ↓ → <b>LDL receptor ↑</b> → 血 LDL ↓;LDL receptor 同型缺失者反應差 <i>p.107</i></li>
+<li>類固醇荷爾蒙:粒線體切側鏈(P-450、NADPH、O2)→ <b>pregnenolone</b> → progesterone → cortisol、aldosterone、testosterone → estradiol <i>p.111</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">8 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 60 題</button>
+    <button class="tab" id="tab-1" data-f="21.1" aria-pressed="false">21.1 脂肪酸</button>
+    <button class="tab" id="tab-2" data-f="21.2" aria-pressed="false">21.2 TAG</button>
+    <button class="tab" id="tab-3" data-f="21.3" aria-pressed="false">21.3 磷脂</button>
+    <button class="tab" id="tab-4" data-f="21.4" aria-pressed="false">21.4 膽固醇</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">60</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[{c:"21.1",s:"p.6 · Fig. 21-1",q:"Acetyl-CoA carboxylase catalyzes the committed step of fatty acid synthesis. Which cofactor carries the activated CO2 in this reaction?",a:1,o:[["Thiamine pyrophosphate","TPP 用在 α-keto acid 的去羧(如 pyruvate dehydrogenase),不攜帶 CO2 做羧化。"],["Biotin","正確。ACC 的 biotin 先被 ATP 與 HCO3− 羧化,再把 CO2 轉給 acetyl-CoA 形成 malonyl-CoA。"],["Pyridoxal phosphate","PLP 用在胺基酸的 transamination 與 decarboxylation。"],["Coenzyme B12","Coenzyme B12 用在 methylmalonyl-CoA mutase 的重排與 methionine synthase。"]]},
+{c:"21.1",s:"p.5, 9–10 · Fig. 21-2",q:"Which statement correctly contrasts fatty acid synthesis with β oxidation in animal cells?",a:2,o:[["Synthesis occurs in the mitochondrial matrix and uses NADH as the reductant.","粒線體基質與 NAD+/FAD 是 β 氧化的特徵;合成在細胞質,用 NADPH。"],["Synthesis uses CoA-bound intermediates and FADH2 as the reductant.","CoA 攜帶中間物、產生 FADH2 是 β 氧化;合成的中間物接在 ACP 上。"],["Synthesis occurs in the cytosol, uses ACP-bound intermediates, and uses NADPH as the reductant.","正確。合成:細胞質、ACP、NADPH、D-β-hydroxy 中間物。"],["Synthesis occurs in peroxisomes and adds three-carbon units without loss of CO2.","Peroxisome 做的是極長鏈脂肪酸的 β 氧化;合成時加入的 malonyl 會脫去 CO2,每輪淨增加二碳。"]]},
+{c:"21.1",s:"p.14 · Fig. 21-4",q:"Starting from acetyl-CoA, what is required to synthesize one molecule of palmitate (16:0)?",a:3,o:[["7 acetyl-CoA, 7 ATP, 7 NADPH","需要 8 個 acetyl-CoA(1 個引子 + 7 個轉成 malonyl-CoA),且每輪用 2 NADPH,共 14。"],["8 acetyl-CoA, 8 ATP, 16 NADPH","只有 7 個 acetyl-CoA 要羧化成 malonyl-CoA,所以是 7 ATP;7 輪 × 2 = 14 NADPH。"],["8 acetyl-CoA, 7 ATP, 14 NADH","數字對,但還原劑是 NADPH,不是 NADH。"],["8 acetyl-CoA, 7 ATP, 14 NADPH","正確。8 acetyl-CoA + 7 ATP + 14 NADPH → palmitate。"]]},
+{c:"21.1",s:"p.9 · Fig. 21-2",q:"Fatty acid synthase uses malonyl-ACP rather than acetyl-ACP as the donor of two-carbon units. What is the main advantage?",a:0,o:[["Decarboxylation of the malonyl group makes the condensation thermodynamically favorable.","正確。先花 ATP 把 CO2 接上,縮合時脫羧放能,使 C–C 鍵的形成變得有利。"],["The extra carboxyl group is retained in the growing chain as a branch point.","該羧基在縮合時以 CO2 離開,不會留在鏈上;HCO3− 的碳不會出現在 palmitate 中。"],["Malonyl groups can be reduced by NADH instead of NADPH.","兩次還原都用 NADPH,與供體是不是 malonyl 無關。"],["Malonyl-CoA crosses the inner mitochondrial membrane more readily than acetyl-CoA.","Malonyl-CoA 在細胞質生成,不需跨膜;acetyl 基是以 citrate 的形式離開粒線體。"]]},
+{c:"21.1",s:"p.18 · Fig. 21-10",q:"Acetyl groups leave the mitochondrion as citrate. Which cytosolic enzyme regenerates acetyl-CoA from citrate, and what does it consume?",a:1,o:[["Citrate synthase; NADPH","Citrate synthase 在粒線體把 acetyl-CoA 與 oxaloacetate 合成 citrate,方向相反。"],["Citrate lyase; ATP","正確。Citrate + ATP + CoA → acetyl-CoA + oxaloacetate。"],["Malic enzyme; NADP+","Malic enzyme 把 malate 變成 pyruvate 並產生 NADPH,是後續步驟,不切 citrate。"],["Aconitase; GTP","Aconitase 是 TCA cycle 中把 citrate 異構成 isocitrate 的酵素。"]]},
+{c:"21.1",s:"p.21, 26 · Fig. 21-11",q:"A hepatocyte is exposed to glucagon. Which set of changes is expected?",a:2,o:[["Acetyl-CoA carboxylase is dephosphorylated; malonyl-CoA rises; β oxidation falls.","這是 insulin(fed state)的情形。"],["Acetyl-CoA carboxylase is phosphorylated; malonyl-CoA rises; carnitine acyltransferase 1 is inhibited.","ACC 被磷酸化是失活,malonyl-CoA 應該下降而不是上升。"],["Acetyl-CoA carboxylase is phosphorylated; malonyl-CoA falls; carnitine acyltransferase 1 is released from inhibition.","正確。Glucagon → cAMP → PKA 磷酸化 ACC 使其失活;malonyl-CoA 下降,脂肪酸可進入粒線體氧化。"],["Acetyl-CoA carboxylase is unchanged; fatty acid synthase is inhibited directly by cAMP.","Glucagon 的主要作用點就是 ACC;cAMP 不直接抑制 fatty acid synthase。"]]},
+{c:"21.1",s:"p.21 · Fig. 21-11",q:"Which metabolite is an allosteric activator of acetyl-CoA carboxylase?",a:3,o:[["Palmitoyl-CoA","Palmitoyl-CoA 是終產物,回饋抑制 ACC。"],["AMP","AMP 升高會活化 AMPK,AMPK 磷酸化並抑制 ACC。"],["Malonyl-CoA","Malonyl-CoA 是 ACC 的產物;它抑制的是 carnitine acyltransferase 1。"],["Citrate","正確。Citrate 多代表 acetyl-CoA 與 ATP 充足,它活化 ACC。"]]},
+{c:"21.1",s:"p.29 · Fig. 21-12",q:"Why are linoleate and α-linolenate essential in the mammalian diet?",a:0,o:[["Mammals cannot introduce double bonds between C-10 and the methyl end of a fatty acid.","正確。哺乳類 desaturase 只能在 Δ9 及更靠近羧基端加雙鍵,做不出 Δ12、Δ15。"],["Mammalian fatty acid synthase cannot make chains longer than 14 carbons.","Fatty acid synthase 的產物是 16 碳的 palmitate。"],["Mammals lack the fatty acid elongation system of the smooth ER.","哺乳類在 smooth ER 與粒線體都有延長系統。"],["Mammalian desaturases need NADH, which is absent from the ER.","Desaturase 的電子來自 NADPH(經 cytochrome b5),ER 並不缺。"]]},
+{c:"21.1",s:"p.32 · Fig. 21-15",q:"Low-dose aspirin lowers thromboxane synthesis in a platelet for the entire lifetime of that platelet. Why?",a:1,o:[["Aspirin competes reversibly with arachidonate, and platelets concentrate the drug.","可逆競爭是 ibuprofen 的機制,效果會隨藥物代謝而消失。"],["Aspirin irreversibly acetylates a Ser residue of cyclooxygenase, and platelets cannot synthesize new enzyme.","正確。共價修飾不可逆;血小板沒有細胞核,做不出新的 COX,要等新血小板生成。"],["Aspirin inhibits phospholipase A2, so arachidonate is never released.","抑制 PLA2 釋放 arachidonate 的是類固醇(如 prednisone)。"],["Aspirin inhibits lipoxygenase, which is required for thromboxane synthesis.","Thromboxane 走 COX 路徑;lipoxygenase 產生 leukotriene,且不受 aspirin 抑制。"]]},
+{c:"21.1",s:"p.14 · Fig. 21-4",q:"Fatty acid synthase is given [14C]acetyl-CoA as the primer and unlabeled malonyl-CoA. Where is the label found in the palmitate produced?",a:2,o:[["C-1 and C-2 (the carboxyl end)","羧基端是最後加上的二碳,來自 malonyl-CoA。"],["Evenly in all 16 carbons","只有引子帶標記;其餘 14 個碳來自未標記的 malonyl-CoA。"],["C-15 and C-16 (the methyl end)","正確。鏈由甲基端往羧基端延長,引子 acetyl 成為 C-15、C-16。"],["Nowhere; the label is lost as CO2","被脫去的 CO2 來自 malonyl 的游離羧基,不是引子。"]]},
+{c:"21.1",s:"p.6, 9 · Fig. 21-1, 21-2",q:"Acetyl-CoA carboxylase is supplied with H14CO3−. After fatty acid synthase uses the labeled malonyl-CoA, where is the 14C in palmitate?",a:3,o:[["In every odd-numbered carbon","奇數碳來自 acetyl 單位的羰基碳,不是 HCO3−。"],["In every even-numbered carbon","偶數碳來自 acetyl 單位的甲基碳,不是 HCO3−。"],["Only in C-1","C-1 也來自 acetyl 單位;每一輪縮合都把 HCO3− 的碳脫掉。"],["Nowhere; the labeled carbon is released as CO2 in each condensation","正確。ACC 加上的 CO2 就是縮合時失去的 CO2,它只是用來推動反應。"]]},
+{c:"21.1",s:"p.13 · Fig. 21-6",q:"After the first round of the synthase cycle, the butyryl group must be moved before the next malonyl group can be loaded. Where does it go?",a:0,o:[["To the Cys –SH of β-ketoacyl-ACP synthase (KS)","正確。ACP 空出來後,MAT 才能載入下一個 malonyl。"],["To free coenzyme A in the cytosol","中間物在合成過程中不離開酵素;只有最後的 palmitate 被釋出。"],["To the active site of the thioesterase","Thioesterase 只在鏈長達 16 碳時水解釋出 palmitate。"],["To carnitine","Carnitine 用於把脂肪酸送進粒線體氧化。"]]},
+{c:"21.1",s:"p.12 · Fig. 21-5",q:"The 4′-phosphopantetheine arm of ACP is derived from which vitamin, and which other molecule contains the same group?",a:1,o:[["Biotin; acetyl-CoA carboxylase","Biotin 攜帶 CO2,是 ACC 的輔因子,不是 ACP 的長臂。"],["Pantothenic acid; coenzyme A","正確。末端 –SH 與 acyl 基形成 thioester,把中間物在各活性位之間擺動。"],["Niacin; NADPH","Niacin 是 NAD(P) 的前驅物。"],["Riboflavin; FAD","Riboflavin 是 FAD、FMN 的前驅物。"]]},
+{c:"21.1",s:"p.11 · Fig. 21-3",q:"Which statement about mammalian fatty acid synthase (FAS I) is correct?",a:3,o:[["It consists of separate enzymes, one for each step, and makes many different products.","這是 FAS II(植物、細菌、粒線體)的特徵。"],["It is located in the mitochondrial matrix and uses CoA as the acyl carrier.","FAS I 在細胞質,用 ACP;這句描述的是 β 氧化。"],["It releases its product by thiolysis with free CoA.","產物由 thioesterase 水解釋出;thiolysis 是 β 氧化的最後一步。"],["It is a homodimer of multifunctional polypeptides whose thioesterase domain releases palmitate.","正確。七個活性位在同一條多肽上,產物只有 palmitate。"]]},
+{c:"21.1",s:"p.10 · Fig. 21-2 + 17-8",q:"Fatty acid synthesis runs the chemistry of β oxidation in reverse. Which pairing of a synthesis step with its β-oxidation counterpart is correct?",a:1,o:[["Condensation (KS) ↔ oxidation by acyl-CoA dehydrogenase","縮合對應的是 thiolysis(thiolase)。"],["Dehydration (DH) ↔ hydration by enoyl-CoA hydratase","正確。一個脫水形成 trans 雙鍵,一個把水加回去。"],["First reduction (KR, NADPH) ↔ oxidation by acyl-CoA dehydrogenase (FAD)","KR 對應的是 β-hydroxyacyl-CoA dehydrogenase(NAD+)。"],["Second reduction (ER, NADPH) ↔ thiolysis by thiolase","ER 對應的是 acyl-CoA dehydrogenase(FAD)。"]]},
+{c:"21.1",s:"p.18 · Fig. 21-10",q:"In a hepatocyte that lacks malic enzyme, which pathway must supply nearly all of the NADPH for fatty acid synthesis?",a:2,o:[["The citric acid cycle","產生的是 NADH 與 FADH2,且在粒線體內。"],["β Oxidation","產生 NADH 與 FADH2,而且不與合成同時進行。"],["The pentose phosphate pathway","正確。Malic enzyme 平時約供應一半的 NADPH,其餘來自此途徑。"],["Glycolysis","產生的是 NADH。"]]},
+{c:"21.1",s:"p.18, 14 · Fig. 21-10, 21-4",q:"Why does exporting acetyl groups from mitochondria raise the ATP cost of fatty acid synthesis in eukaryotes?",a:0,o:[["Citrate lyase and pyruvate carboxylase each consume ATP, about 2 ATP per acetyl-CoA delivered.","正確。加上 ACC 的 1 ATP,每個二碳單位約需 3 ATP。"],["The citrate transporter is a P-type ATPase.","它是交換型運輸蛋白,不直接水解 ATP。"],["Acetyl-CoA must first be converted to acetyl-carnitine at a cost of 2 ATP.","Acetyl 基是以 citrate 的形式輸出。"],["Malic enzyme consumes ATP to make NADPH.","Malic enzyme 不耗 ATP。"]]},
+{c:"21.1",s:"p.21 · Fig. 21-11",q:"When [AMP] rises in a liver cell, what happens to acetyl-CoA carboxylase?",a:3,o:[["It is dephosphorylated and polymerizes into active filaments.","這是 insulin 或能量充足時的狀態。"],["It is activated allosterically by AMP.","AMP 是透過 AMPK 作用,結果是抑制。"],["It is degraded by the proteasome.","這裡是可逆的磷酸化調控,不是降解。"],["AMPK phosphorylates it, and it dissociates into inactive monomers.","正確。能量不足時先停掉耗能的合成。"]]},
+{c:"21.1",s:"p.26 · Fig. 21-11 + 17-13",q:"A liver cell expresses a mutant carnitine acyltransferase I that cannot bind malonyl-CoA. What happens in the fed state?",a:1,o:[["Fatty acid synthesis stops because acetyl-CoA carboxylase is inhibited.","ACC 的調控不受這個突變影響。"],["Newly made fatty acids enter mitochondria and are oxidized, creating a futile cycle.","正確。Malonyl-CoA 本來就是防止一邊合成一邊氧化的訊號。"],["Malonyl-CoA can no longer be made.","Malonyl-CoA 由 ACC 製造,與此突變無關。"],["Fatty acids cannot enter mitochondria at all.","失去的是抑制位,催化功能仍在。"]]},
+{c:"21.1",s:"p.21 · Fig. 21-11",q:"Citrate accumulates in the cytosol of a well-fed liver cell. Which pair of effects follows?",a:2,o:[["It activates PFK-1 and inhibits acetyl-CoA carboxylase.","兩者都相反。"],["It activates both PFK-1 and acetyl-CoA carboxylase.","Citrate 抑制 PFK-1。"],["It inhibits PFK-1 and activates acetyl-CoA carboxylase.","正確。碳流從糖解轉向儲存成脂肪。"],["It inhibits both PFK-1 and acetyl-CoA carboxylase.","Citrate 活化 ACC。"]]},
+{c:"21.1",s:"p.29 · Fig. 21-12",q:"How is stearate (18:0) made from palmitate (16:0) in animal cells?",a:0,o:[["An elongation system in the smooth ER adds two carbons from malonyl-CoA, with CoA rather than ACP as the carrier.","正確。粒線體也有延長系統。"],["Fatty acid synthase runs an eighth cycle before the thioesterase acts.","FAS I 的產物固定是 16 碳的 palmitate。"],["Two carbons are added from acetyl-CoA by reversal of thiolase in peroxisomes.","Peroxisome 負責的是 β 氧化。"],["Stearate cannot be made and must come from the diet.","可以合成;必需脂肪酸是 linoleate 與 α-linolenate。"]]},
+{c:"21.1",s:"p.30–31 · Fig. 21-13, Box 21-1",q:"Stearoyl-CoA desaturase is a mixed-function oxidase. What happens to the two atoms of O2?",a:3,o:[["Both are inserted into the fatty acid.","這是 dioxygenase 的定義。"],["One is inserted into the fatty acid as a hydroxyl group; the other forms H2O.","這是 monooxygenase(如 squalene monooxygenase)。"],["Both are released as H2O2.","產生 H2O2 的是 peroxisome 的 acyl-CoA oxidase。"],["Both are reduced to H2O, using two electrons from the fatty acyl-CoA and two from NADPH.","正確。產物只多一個雙鍵,不含氧;電子經 cytochrome b5 傳遞。"]]},
+{c:"21.1",s:"p.29 · Fig. 21-12",q:"An animal is fed a diet that contains α-linolenate but no linoleate. Which fatty acid can it no longer make?",a:1,o:[["Oleate, 18:1(Δ9)","可由 stearate 經 Δ9 desaturase 合成。"],["Arachidonate, 20:4 (ω-6)","正確。ω-6 與 ω-3 兩個家族不能互換;arachidonate 只能來自 linoleate。"],["EPA, 20:5 (ω-3)","可由 α-linolenate 合成。"],["Palmitoleate, 16:1(Δ9)","可由 palmitate 經 Δ9 desaturase 合成。"]]},
+{c:"21.1",s:"p.32 · Fig. 21-15",q:"What is the expected advantage of a drug that inhibits COX-2 but not COX-1?",a:2,o:[["It also blocks leukotriene synthesis.","Leukotriene 走 lipoxygenase 路徑,不受 COX 抑制劑影響。"],["It blocks the release of arachidonate from membranes.","那是 phospholipase A2 的步驟。"],["It reduces inflammation and pain while sparing the prostaglandins that maintain gastric mucin.","正確。COX-1 負責保護胃黏膜的 prostaglandin。"],["It acetylates COX irreversibly, so one dose lasts for days.","這是 aspirin 的特性,與選擇性無關。"]]},
+{c:"21.1",s:"p.32 · Fig. 21-15",q:"Which enzyme releases arachidonate for eicosanoid synthesis, and from where?",a:0,o:[["Phospholipase A2; from C-2 of membrane phospholipids","正確。"],["Phospholipase C; from PIP2","Phospholipase C 產生 IP3 與 diacylglycerol。"],["Hormone-sensitive lipase; from triacylglycerols in adipose tissue","這是脂肪動員的酵素。"],["Lipoprotein lipase; from chylomicrons","這是在微血管水解脂蛋白 TAG 的酵素。"]]},
+{c:"21.2",s:"p.46 · Fig. 21-22",q:"Thiazolidinediones lower the level of free fatty acids in the blood. What is the mechanism?",a:0,o:[["They activate PPARγ, inducing PEP carboxykinase in adipose tissue and increasing glyceroneogenesis and fatty acid re-esterification.","正確。Glyceroneogenesis 提供 glycerol 3-phosphate,把脂肪酸重新酯化成 TAG,釋入血中的脂肪酸因此減少。"],["They inhibit hormone-sensitive lipase directly by blocking PKA.","Thiazolidinedione 是核受體 PPARγ 的 ligand,不作用在 PKA 或 hormone-sensitive lipase。"],["They inhibit acetyl-CoA carboxylase in the liver.","抑制 ACC 會減少脂肪酸合成,但這不是 thiazolidinedione 的機制。"],["They block fatty acid uptake by muscle through inhibition of carnitine acyltransferase 1.","抑制 carnitine acyltransferase 1 的是 malonyl-CoA。"]]},
+{c:"21.2",s:"p.39, 42 · Fig. 21-17, 21-20",q:"Glycerol released by lipolysis in adipose tissue is not reused there for triacylglycerol synthesis. Why?",a:2,o:[["Adipose tissue lacks glycerol 3-phosphate dehydrogenase.","脂肪組織有這個酵素,用來把 DHAP 還原成 glycerol 3-phosphate。"],["Glycerol is fully oxidized to CO2 in adipocytes.","Glycerol 是被釋入血中送往肝。"],["Adipose tissue lacks glycerol kinase, which is found in liver and kidney.","正確。沒有 kinase 就無法把 glycerol 變成 glycerol 3-phosphate。"],["Triacylglycerol synthesis uses only free glycerol.","合成用的是 glycerol 3-phosphate。"]]},
+{c:"21.2",s:"p.45 · Fig. 21-21",q:"During fasting, how does adipose tissue obtain glycerol 3-phosphate for re-esterifying fatty acids?",a:3,o:[["From glucose through glycolysis","禁食時脂肪組織的糖解受抑制。"],["From glycerol through glycerol kinase","脂肪組織缺這個酵素。"],["From glycogen breakdown","這不是脂肪組織 glycerol 3-phosphate 的來源。"],["By glyceroneogenesis: pyruvate → oxaloacetate → PEP → DHAP → glycerol 3-phosphate","正確。是縮短版的 gluconeogenesis,關鍵酵素是 PEP carboxykinase。"]]},
+{c:"21.2",s:"p.46 · Fig. 21-22",q:"How do glucocorticoids such as cortisol change flux through the triacylglycerol cycle?",a:1,o:[["They raise PEP carboxykinase in both liver and adipose tissue, so fatty acid release falls.","在脂肪組織是降低,不是升高。"],["They raise PEP carboxykinase in liver but lower it in adipose tissue, so adipose releases more free fatty acids.","正確。脂肪組織再酯化減少,肝輸出的 TAG 增加。"],["They lower PEP carboxykinase in liver and raise it in adipose tissue.","方向顛倒;在脂肪組織升高 PEPCK 的是 thiazolidinedione。"],["They activate PPARγ in adipose tissue.","這是 thiazolidinedione 的機制。"]]},
+{c:"21.2",s:"p.41 · Fig. 21-19",q:"In untreated diabetes mellitus, what happens to acetyl-CoA derived from carbohydrate and protein catabolism?",a:0,o:[["Fatty acid synthesis falls, and the acetyl-CoA is diverted to ketone bodies.","正確。沒有 insulin 訊號,ACC 不被活化;嚴重時呼氣有 acetone 味。"],["It is converted to glucose.","動物無法把 acetyl-CoA 淨轉為 glucose。"],["Fatty acid synthesis rises, because glucagon activates acetyl-CoA carboxylase.","Glucagon 使 ACC 磷酸化而失活。"],["It is stored as glycogen.","Acetyl-CoA 不能合成 glycogen。"]]},
+{c:"21.2",s:"p.42 · Fig. 21-20",q:"Which statement about the triacylglycerol cycle is correct?",a:2,o:[["It operates only in the fed state.","它在所有代謝狀態下都進行。"],["It takes place entirely within the liver.","有兩個迴路:脂肪組織內部,以及脂肪 → 血 → 肝 → 血 → 脂肪。"],["About 75% of the fatty acids released by lipolysis are re-esterified, even during starvation.","正確。"],["It depends on glycerol kinase in adipose tissue.","脂肪組織沒有 glycerol kinase,靠 glyceroneogenesis。"]]},
+{c:"21.3",s:"p.49, 54 · Fig. 21-24, 21-26",q:"In the main mammalian (Kennedy) pathway for phosphatidylcholine synthesis, which molecule is the activated intermediate that reacts with diacylglycerol?",a:2,o:[["CDP-diacylglycerol","CDP-diacylglycerol 是策略一,用來合成 PI、PG、cardiolipin。"],["UDP-choline","磷脂合成用的是 CDP(來自 CTP);UDP 用於醣類活化,如 UDP-glucose。"],["CDP-choline","正確。Choline → phosphocholine → CDP-choline,再與 diacylglycerol 反應。"],["Phosphatidylserine","Phosphatidylserine 脫羧得到 phosphatidylethanolamine;PE 再甲基化三次才成為 PC,那是肝的另一條路。"]]},
+{c:"21.3",s:"p.60 · Fig. 21-31",q:"Sphingolipid biosynthesis begins with the condensation of which two molecules?",a:1,o:[["Stearoyl-CoA and glycine","起始的脂肪醯基是 16 碳的 palmitoyl-CoA,胺基酸是 serine。"],["Palmitoyl-CoA and serine","正確。縮合後經還原、接上脂肪酸(amide 鍵)、去飽和,得到 ceramide。"],["Palmitoyl-CoA and ethanolamine","Ethanolamine 是 glycerophospholipid 的 head group。"],["Acetyl-CoA and sphingosine","Sphingosine 骨架是這條路徑做出來的,不是起始物。"]]},
+{c:"21.3",s:"p.49 · Fig. 21-24",q:"In both CDP-based strategies of phospholipid synthesis, what is the fate of the cytidine nucleotide?",a:3,o:[["CDP remains in the product as part of the head group.","產物不含 cytidine。"],["CTP is released and can be reused without any energy cost.","離去的是 CMP,要再磷酸化才能變回 CTP。"],["CDP is released, and inorganic phosphate from the medium forms the bond.","磷酸二酯鍵上的磷酸來自 CDP 活化的那一方。"],["CMP is released, and the phosphate left behind forms the phosphodiester bond.","正確。兩種策略差別只在被活化的是 diacylglycerol 還是 head group。"]]},
+{c:"21.3",s:"p.52 · Fig. 21-25",q:"Which phospholipid is made from CDP-diacylglycerol and phosphatidylglycerol and is found almost only in the inner mitochondrial membrane?",a:1,o:[["Phosphatidylinositol","由 CDP-diacylglycerol 與 inositol 合成。"],["Cardiolipin","正確。被視為粒線體源自細菌的痕跡。"],["Phosphatidylcholine","走 Kennedy pathway(CDP-choline)。"],["Sphingomyelin","屬於 sphingolipid,骨架不是 glycerol。"]]},
+{c:"21.3",s:"p.54 · Fig. 21-26",q:"How do mammalian cells make phosphatidylserine?",a:0,o:[["By head-group exchange: serine replaces choline on PC or ethanolamine on PE.","正確。需要 Ca2+。"],["From CDP-diacylglycerol and serine","這是細菌與酵母的做法;哺乳類不這樣做。"],["From CDP-serine and diacylglycerol","沒有這條路徑。"],["By carboxylation of phosphatidylethanolamine","方向相反:是 PS 脫羧變成 PE。"]]},
+{c:"21.3",s:"p.54, 52 · Fig. 21-26, 21-25",q:"In liver, phosphatidylethanolamine can be converted to phosphatidylcholine. What does this require?",a:2,o:[["One decarboxylation","脫羧是 PS → PE 的反應。"],["CDP-choline","那是 Kennedy pathway,是另一條合成 PC 的路。"],["Three methyl groups from S-adenosylmethionine","正確。Ethanolamine 的氮被甲基化三次成為 choline。"],["Three methyl groups from N5-methyltetrahydrofolate","這裡的甲基供體是 adoMet。"]]},
+{c:"21.3",s:"p.58 · Fig. 21-29",q:"What does the Lands cycle accomplish?",a:3,o:[["It exchanges one head group for another.","這是 head-group exchange。"],["It moves phospholipids from one leaflet to the other.","這是 flippase、floppase 的工作。"],["It converts phosphatidylcholine into triacylglycerol.","Lands cycle 的產物仍是磷脂。"],["It replaces the fatty acid at C-2: phospholipase A2 removes it, and an acyltransferase adds a different acyl-CoA.","正確。用來重塑膜脂的脂肪酸組成。"]]},
+{c:"21.3",s:"p.59 · Fig. 21-30",q:"A patient lacks functional peroxisomes. Synthesis of which membrane lipids is most directly impaired?",a:1,o:[["Cardiolipin","在粒線體內膜合成。"],["Plasmalogens (ether lipids)","正確。Ether 鍵的形成在 peroxisome,起始物是 DHAP。"],["Sphingomyelin","在 ER 與 Golgi 合成。"],["Phosphatidylinositol","由 CDP-diacylglycerol 在 ER 合成。"]]},
+{c:"21.3",s:"p.60 · Fig. 21-31",q:"In the last stage of sphingomyelin synthesis, what donates the phosphocholine head group to ceramide?",a:0,o:[["Phosphatidylcholine, leaving diacylglycerol","正確。"],["CDP-choline, leaving CMP","這是合成 PC 的反應。"],["UDP-glucose","這是合成 cerebroside 的醣供體。"],["S-Adenosylmethionine","這是甲基供體。"]]},
+{c:"21.4",s:"p.65 · Fig. 21-34",q:"Which reaction is the committed, rate-limiting step of cholesterol synthesis?",a:3,o:[["Acetoacetyl-CoA + acetyl-CoA → HMG-CoA, catalyzed by HMG-CoA synthase","這是前一步;同樣的反應在粒線體是酮體合成的一步,不是調控點。"],["Squalene → squalene 2,3-epoxide, catalyzed by squalene monooxygenase","這是環化前的一步,需 O2 與 NADPH,但不是速率決定步驟。"],["HMG-CoA → acetoacetate + acetyl-CoA, catalyzed by HMG-CoA lyase","HMG-CoA lyase 屬於粒線體的酮體合成。"],["HMG-CoA → mevalonate, catalyzed by HMG-CoA reductase with 2 NADPH","正確。HMG-CoA reductase 位於 ER 膜,是 statin 的標靶,受 SREBP、Insig、AMPK 調控。"]]},
+{c:"21.4",s:"p.64, 69–70 · Fig. 21-32, 21-36, 21-37",q:"Which sequence of intermediates in cholesterol synthesis is correct?",a:0,o:[["Mevalonate → isopentenyl pyrophosphate → farnesyl pyrophosphate → squalene → lanosterol → cholesterol","正確。Mevalonate(C6)→ isoprene(C5)→ geranyl(C10)→ farnesyl(C15)→ squalene(C30)→ lanosterol → cholesterol(C27)。"],["Mevalonate → squalene → isopentenyl pyrophosphate → lanosterol → farnesyl pyrophosphate → cholesterol","Squalene 是 6 個 isoprene 單位縮合的產物,必須排在 farnesyl pyrophosphate 之後。"],["Isopentenyl pyrophosphate → mevalonate → farnesyl pyrophosphate → lanosterol → squalene → cholesterol","Mevalonate 在 isopentenyl pyrophosphate 之前;squalene 先環化才成為 lanosterol。"],["Mevalonate → farnesyl pyrophosphate → isopentenyl pyrophosphate → squalene → lanosterol → cholesterol","Isopentenyl pyrophosphate(C5)是組成 farnesyl pyrophosphate(C15)的單位,順序顛倒了。"]]},
+{c:"21.4",s:"p.81, 83 · Table 21-2, Fig. 21-40",q:"Which lipoprotein carries dietary triacylglycerols from the intestine, and which apolipoprotein is characteristic of it?",a:2,o:[["VLDL; apoB-100","VLDL 由肝製造,運送內生性 TAG。"],["LDL; apoB-100","LDL 是 VLDL 失去 TAG 後的殘餘,主要運送 cholesterol。"],["Chylomicron; apoB-48","正確。Chylomicron 在小腸細胞組裝,經淋巴入血;其上的 apoC-II 活化 lipoprotein lipase。"],["HDL; apoA-I","HDL 負責 reverse cholesterol transport。"]]},
+{c:"21.4",s:"p.91 · Fig. 21-42",q:"A person with familial hypercholesterolemia lacks functional LDL receptors. Which finding is expected?",a:1,o:[["Low plasma LDL, because VLDL can no longer be converted to LDL","VLDL 仍會被 lipoprotein lipase 轉成 LDL;問題在 LDL 無法被清除。"],["High plasma LDL, with cellular cholesterol synthesis that is not suppressed by the LDL in the blood","正確。細胞收不到外來的 cholesterol,SREBP 持續活化,HMG-CoA reductase 維持高活性。"],["High plasma chylomicrons, because apoC-II cannot activate lipoprotein lipase","這是 apoC-II 或 lipoprotein lipase 缺陷的表現。"],["Low plasma HDL, because apoA-I cannot activate LCAT","HDL 與 LCAT 不經由 LDL receptor。"]]},
+{c:"21.4",s:"p.101 · Fig. 21-44",q:"When the sterol level in a cell falls, what happens to SREBP?",a:3,o:[["Insig binds the SCAP–SREBP complex and retains it in the ER.","這是固醇濃度高的時候,SREBP 被留在 ER,不活化。"],["SREBP is phosphorylated by AMPK and degraded by the proteasome.","AMPK 磷酸化的是 HMG-CoA reductase 本身。"],["SREBP binds oxysterols and forms a heterodimer with RXR.","這是在描述 LXR(感應 oxysterol 的核受體)。"],["SCAP escorts SREBP to the Golgi, where proteolysis releases a domain that enters the nucleus and activates genes such as those for HMG-CoA reductase and the LDL receptor.","正確。釋出的片段是轉錄因子,提高膽固醇的合成與攝取。"]]},
+{c:"21.4",s:"p.107 · Box 21-2",q:"Statins lower plasma LDL cholesterol. Which description is best?",a:2,o:[["They bind bile acids in the intestine and prevent their reabsorption.","這是 bile acid–binding resin 的機制。"],["They irreversibly inactivate the LDL receptor on hepatocytes.","Statin 的效果是讓 LDL receptor 變多。"],["They competitively inhibit HMG-CoA reductase; the fall in hepatic cholesterol increases synthesis of LDL receptors.","正確。Statin 結構類似 mevalonate;細胞內固醇下降 → SREBP 活化 → LDL receptor 增加 → 血中 LDL 被清除。"],["They activate ACAT, so more cholesterol is stored as cholesteryl esters.","ACAT 在細胞內固醇高時才被活化,不是 statin 的作用。"]]},
+{c:"21.4",s:"p.90, 81 · Fig. 21-41, Table 21-2",q:"Which statement about HDL is correct?",a:1,o:[["ApoB-48 on HDL activates lipoprotein lipase in capillaries.","ApoB-48 在 chylomicron 上;活化 lipoprotein lipase 的是 apoC-II。"],["ApoA-I activates LCAT, which esterifies cholesterol on HDL during reverse cholesterol transport to the liver.","正確。LCAT 把 cholesterol 酯化後收進 HDL 核心,再送回肝。"],["ApoC-II on HDL activates ACAT inside peripheral cells.","ACAT 是細胞內的酵素,不由脂蛋白上的 apolipoprotein 活化。"],["HDL delivers triacylglycerols made in the liver to adipose tissue.","這是 VLDL 的功能。"]]},
+{c:"21.4",s:"p.111 · Fig. 21-48, 21-49",q:"All steroid hormones are derived from cholesterol through which first intermediate, and where is it formed?",a:3,o:[["Progesterone; cytosol","Progesterone 是由 pregnenolone 再轉變而來。"],["Lanosterol; endoplasmic reticulum","Lanosterol 是 cholesterol 合成的中間物,在 cholesterol 之前。"],["Cortisol; nucleus","Cortisol 是下游產物。"],["Pregnenolone; mitochondria, by side-chain cleavage","正確。粒線體內的 cytochrome P-450 系統(需 NADPH 與 O2)切掉 cholesterol 的側鏈。"]]},
+{c:"21.4",s:"p.65 · Fig. 21-34",q:"A compound inhibits only the mitochondrial isozyme of HMG-CoA synthase. Which process is blocked?",a:2,o:[["Cholesterol synthesis","膽固醇合成用的是細胞質型 HMG-CoA synthase。"],["Fatty acid synthesis","脂肪酸合成不經過 HMG-CoA。"],["Ketone body formation","正確。兩個 HMG-CoA pool 分屬不同隔間與不同用途。"],["β Oxidation","β 氧化不需要 HMG-CoA synthase。"]]},
+{c:"21.4",s:"p.68–69 · Fig. 21-35, 21-36",q:"How many ATP are consumed in converting mevalonate to one molecule of squalene?",a:3,o:[["3","這只是做出一個 activated isoprene 的量。"],["6","Squalene 由 6 個 isoprene 組成,每個需 3 ATP。"],["12","Squalene 由 6 個 isoprene 組成,每個需 3 ATP。"],["18","正確。3 ATP × 6;縮合步驟靠釋出 PPi 推動,不另耗 ATP。"]]},
+{c:"21.4",s:"p.69 · Fig. 21-36",q:"Which condensation on the way to squalene joins two units head to head and requires NADPH?",a:1,o:[["Dimethylallyl pyrophosphate + isopentenyl pyrophosphate → geranyl pyrophosphate","這是 head to tail。"],["Two farnesyl pyrophosphates → squalene","正確。C15 + C15 → C30。"],["Geranyl pyrophosphate + isopentenyl pyrophosphate → farnesyl pyrophosphate","這是 head to tail。"],["Isopentenyl pyrophosphate → dimethylallyl pyrophosphate","這是異構化,不是縮合。"]]},
+{c:"21.4",s:"p.73 · Fig. 21-38",q:"Soluble dietary fiber, for example from oats, can lower blood cholesterol. What is the explanation?",a:0,o:[["It binds bile acids in the intestine, so the liver converts more cholesterol into new bile acids.","正確。"],["It competitively inhibits HMG-CoA reductase.","這是 statin 的機制。"],["It activates LCAT on HDL.","LCAT 由 apoA-I 活化。"],["It blocks synthesis of apoB-48.","纖維不影響 apolipoprotein 的合成。"]]},
+{c:"21.4",s:"p.79–80 · Table 21-1",q:"As lipoprotein density increases from chylomicrons to HDL, how does composition change, and which class is richest in cholesteryl esters?",a:2,o:[["Protein falls and triacylglycerol rises; HDL","變化方向相反。"],["Protein rises and triacylglycerol falls; chylomicrons","Chylomicron 約 85% 是 triacylglycerol。"],["Protein rises and triacylglycerol falls; LDL","正確。LDL 的 cholesteryl ester 約佔 37%,是主要的膽固醇載體。"],["Protein rises and triacylglycerol falls; VLDL","VLDL 仍以 triacylglycerol 為主(約 50%)。"]]},
+{c:"21.4",s:"p.81, 83–84 · Table 21-2, Fig. 21-40",q:"A patient has no functional apoC-II. Which finding is expected?",a:3,o:[["Very high LDL, because LDL cannot bind its receptor","與 LDL receptor 結合的是 apoB-100。"],["Almost no HDL","這與 apoA-I 或 ABCA1 有關。"],["Cholesterol trapped in lysosomes","這是 Niemann-Pick type C(NPC1、NPC2)。"],["Very high plasma triacylglycerols, because lipoprotein lipase is not activated on chylomicrons and VLDL","正確。"]]},
+{c:"21.4",s:"p.91 · Fig. 21-42",q:"VLDL and LDL both carry apoB-100, yet the LDL receptor takes up LDL far more effectively. Why?",a:1,o:[["VLDL is too dense to bind the receptor.","VLDL 的密度比 LDL 低,而且密度不是原因。"],["The receptor-binding domain of apoB-100 is hidden in VLDL and becomes exposed when VLDL is converted to LDL.","正確。"],["VLDL carries apoB-48 instead of apoB-100.","ApoB-48 在 chylomicron 上。"],["The LDL receptor recognizes apoC-II, which VLDL lacks.","VLDL 有 apoC-II,且受體認的是 apoB-100。"]]},
+{c:"21.4",s:"p.90, 73 · Fig. 21-41, 21-38",q:"LCAT and ACAT both form cholesteryl esters. What is the source of the fatty acyl group in each reaction?",a:0,o:[["LCAT: phosphatidylcholine (lecithin) on HDL; ACAT: fatty acyl-CoA inside cells","正確。LCAT 反應另一產物是 lysolecithin。"],["LCAT: fatty acyl-CoA; ACAT: phosphatidylcholine","兩者對調了。"],["Both use fatty acyl-CoA.","血漿中沒有 acyl-CoA,LCAT 用的是 lecithin。"],["LCAT: triacylglycerol; ACAT: free fatty acid","名稱已說明:Lecithin–Cholesterol 與 Acyl-CoA–Cholesterol AcylTransferase。"]]},
+{c:"21.4",s:"p.98 · Fig. 21-43",q:"Which pair correctly matches a time scale with a mechanism that regulates HMG-CoA reductase?",a:2,o:[["Minutes: SREBP changes transcription; hours: AMPK phosphorylates the enzyme","兩者對調了。"],["Minutes: citrate activates it allosterically; hours: glucagon dephosphorylates it","Citrate 調控的是 ACC;glucagon 造成磷酸化。"],["Minutes: phosphorylation by AMPK inactivates it; hours: SREBP changes the amount of enzyme","正確。Insulin 使其去磷酸化而活化;固醇高時 Insig 促使酵素被降解。"],["Minutes: insulin phosphorylates and inactivates it; hours: statins degrade it","Insulin 是使其去磷酸化並活化。"]]},
+{c:"21.4",s:"p.104 · Fig. 21-45",q:"Which statement correctly contrasts LXR with SREBP?",a:3,o:[["Both are active when cellular cholesterol is low.","LXR 在膽固醇高時才活化。"],["LXR is an ER membrane protein that is cleaved in the Golgi.","這是在描述 SREBP。"],["LXR lowers expression of ABCA1.","LXR 提高 ABCA1,促進膽固醇外排。"],["LXR is a nuclear receptor activated by oxysterols when cholesterol is high; it promotes bile acid synthesis and reverse cholesterol transport, whereas SREBP is active when cholesterol is low.","正確。LXR 與 RXR 形成 heterodimer。"]]},
+{c:"21.4",s:"p.106 · Fig. 21-47",q:"In Tangier disease, HDL is almost absent. Which protein is defective, and what is its normal role?",a:1,o:[["LDL receptor; endocytosis of LDL","這是 familial hypercholesterolemia。"],["ABCA1; it moves cholesterol to the cell surface, where lipid-poor apoA-I picks it up","正確。"],["SR-BI; it unloads HDL cholesterol in the liver","SR-BI 是肝端選擇性攝取的受體,不是 Tangier disease 的缺陷。"],["NPC1; it exports cholesterol from lysosomes","這是 Niemann-Pick type C。"]]},
+{c:"21.4",s:"p.107 · Box 21-2",q:"A person homozygous for complete loss of LDL receptors responds poorly to statins, whereas a heterozygote responds well. Why?",a:0,o:[["Statins lower blood LDL mainly by inducing LDL receptors, which requires at least one functional receptor gene.","正確。抑制合成 → 細胞內固醇下降 → SREBP 增加 LDL receptor 的表現。"],["Statins cannot inhibit HMG-CoA reductase in homozygotes.","酵素仍會被抑制,只是清不掉血中的 LDL。"],["Homozygotes lack HMG-CoA reductase.","缺的是 LDL receptor。"],["Statins act by binding bile acids, which homozygotes do not make.","那是 bile acid–binding resin 的機制。"]]}];
+const MATCH=[
+{t:"脂肪酸合成的元件 → 角色",p:[["Acetyl-CoA carboxylase","biotin 羧化,做出 malonyl-CoA;速率決定","p.6","Committed step,調控的主要對象。"],["ACP","以 phosphopantetheine 長臂攜帶醯基","p.12","長臂和 CoA 一樣來自 pantothenic acid。"],["Malonyl-CoA","二碳供體;同時抑制 CPT1","p.9, 26","縮合時脫掉 CO2,推動反應。"],["Fatty acid synthase(FAS I)","多功能同二聚體,產物 palmitate","p.11","Thioesterase 在 16 碳時切下。"],["Citrate lyase","在細胞質把 citrate 切回 acetyl-CoA,耗 ATP","p.18","Acetyl 基以 citrate 形式出粒線體。"],["Malic enzyme","提供合成所需約一半的 NADPH","p.18","另一半來自 pentose phosphate pathway。"]]},
+{t:"Acetyl-CoA carboxylase 的調控",p:[["Citrate","別構活化 ACC","p.21","代表 acetyl-CoA、ATP 充足;同時抑制 PFK-1。"],["Palmitoyl-CoA","回饋抑制 ACC","p.21","終產物抑制。"],["Glucagon、epinephrine","經 PKA 磷酸化 ACC,使其失活","p.21","Malonyl-CoA 下降 → CPT1 解除抑制 → β 氧化。"],["Insulin","使 ACC 去磷酸而活化","p.21","Fed state,脂肪酸合成 ↑。"],["AMPK","能量低時磷酸化 ACC","p.21","ACC 解聚成無活性單體。"],["Malonyl-CoA 對 CPT1","防止合成與氧化同時進行","p.26","避免 futile cycle。"]]},
+{t:"去飽和與 eicosanoid",p:[["Stearoyl-CoA desaturase","mixed-function oxidase,O2 → 2 H2O","p.30–31","電子經 cytochrome b5;加 Δ9 雙鍵。"],["Linoleate","ω-6 必需脂肪酸,arachidonate 的前驅物","p.29","哺乳類無法在 Δ9 之後加雙鍵。"],["α-Linolenate","ω-3 必需脂肪酸,EPA 的前驅物","p.29","ω-6 與 ω-3 兩家族不能互換。"],["Phospholipase A2","從磷脂 C-2 釋出 arachidonate","p.32","Eicosanoid 合成的起點。"],["Cyclooxygenase(COX)","做 prostaglandin、thromboxane;aspirin 乙醯化其 Ser","p.32","COX-2 選擇性抑制劑保留胃黏膜保護。"],["Lipoxygenase","做 leukotriene","p.32","不受 aspirin 抑制。"]]},
+{t:"TAG 與磷脂合成",p:[["Phosphatidic acid","TAG 與磷脂的分歧點","p.39","Glycerol 3-P + 2 acyl-CoA。"],["Glycerol kinase","肝、腎有;脂肪組織沒有","p.39, 42","所以脂肪組織靠 glyceroneogenesis。"],["Glyceroneogenesis","脂肪用 PEPCK 從 pyruvate 做 glycerol 3-P","p.45","Thiazolidinedione 經 PPARγ 增加它。"],["CDP-diacylglycerol","做 PI、PG、cardiolipin(策略一)","p.49","被 CDP 活化的是 DAG。"],["CDP-choline","Kennedy pathway 做 PC(策略二)","p.49","被 CDP 活化的是頭基。"],["S-Adenosylmethionine ×3","肝把 PE 甲基化成 PC","p.54","Ethanolamine 的氮被甲基化三次。"]]},
+{t:"磷脂與 sphingolipid 細節",p:[["Phosphatidylserine(哺乳類)","head-group exchange,需 Ca2+","p.54","Serine 換掉 PC 或 PE 的頭基。"],["Lands cycle","PLA2 移除 C-2 脂肪酸,再換上另一個","p.58","重塑膜脂的脂肪酸組成。"],["Plasmalogen","醚鍵在 peroxisome 形成","p.59","缺 peroxisome 就做不出。"],["Palmitoyl-CoA + serine","sphingolipid 合成的起點","p.60","之後還原、接脂肪酸成 ceramide。"],["Cardiolipin","CDP-DAG + PG,幾乎只在粒線體內膜","p.52","粒線體源自細菌的痕跡。"],["Sphingomyelin","ceramide 從 PC 接到 phosphocholine","p.60","另一產物是 DAG。"]]},
+{t:"膽固醇合成 → 步驟",p:[["HMG-CoA reductase","速率決定,2 NADPH;statin 標靶","p.65","在 ER 膜上。"],["Mevalonate","HMG-CoA reductase 的產物(C6)","p.65","之後花 3 ATP 變成 activated isoprene。"],["Isopentenyl pyrophosphate","activated isoprene(C5)","p.68","Mevalonate → squalene 共花 18 ATP。"],["Squalene","兩個 farnesyl 頭對頭縮合(C30),需 NADPH","p.69","6 個 isoprene 單位。"],["Lanosterol","squalene 環化的產物","p.70","再經多步變成 cholesterol(C27)。"],["Pregnenolone","粒線體切側鏈,類固醇荷爾蒙的起點","p.111","需 cytochrome P-450、NADPH、O2。"]]},
+{t:"脂蛋白 → 特徵",p:[["Chylomicron","小腸;飲食 TAG;apoB-48","p.81, 83","約 85% 是 TAG,密度最低。"],["VLDL","肝;內生 TAG;apoB-100","p.81","失去 TAG 後變成 LDL。"],["LDL","把 cholesterol 送到周邊;apoB-100","p.81, 91","VLDL 變 LDL 時,apoB-100 的受體結合區才露出。"],["HDL","reverse cholesterol transport;apoA-I","p.81, 90","把周邊膽固醇送回肝。"],["ApoC-II","活化 lipoprotein lipase","p.81","缺乏 → 血中 TAG 極高。"],["LCAT","在 HDL 上用 lecithin 酯化 cholesterol","p.90","由 apoA-I 活化;ACAT 則在細胞內用 acyl-CoA。"]]},
+{t:"膽固醇調控與疾病",p:[["SREBP","固醇低時被送到 Golgi 切割,進核開基因","p.101","開 HMG-CoA reductase、LDL receptor。"],["Insig","固醇高時把 SCAP–SREBP 留在 ER","p.101","也促使 HMG-CoA reductase 降解。"],["LXR","被 oxysterol 活化,促進外排與膽酸合成","p.104","核受體,與 RXR 配對。"],["Statin","競爭抑制 HMG-CoA reductase","p.107","細胞內固醇降 → LDL receptor 增加 → 血 LDL 降。"],["Familial hypercholesterolemia","LDL receptor 缺陷","p.91, 107","同型合子對 statin 反應差。"],["Tangier disease","ABCA1 缺陷,HDL 幾乎沒有","p.106","膽固醇無法交給 apoA-I。"]]}
+];
+const KEY="biochem-ch21-all-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

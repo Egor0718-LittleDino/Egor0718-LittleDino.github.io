@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch17 + Ch18 考點、連連看與題庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 0 0;font-size:.85rem}
+.site a{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--surface)}
+.site a:hover{border-color:var(--accent);color:var(--ink)}
+.site a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.site a.home{font-weight:600;color:var(--ink)}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+p.src{white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html" aria-current="page">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch17 + Ch18 考點、連連看與題庫</h1>
+  <p class="lede">Fatty Acid Catabolism 與 Amino Acid Catabolism。考點速記 → 連連看 54 組 → 62 題英文單選;每題與每組配對都標講義頁碼。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(62 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<p class="hint">一行一考點,灰色是講義頁碼(標明 Ch17 或 Ch18)。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+<h2>Ch17 · 17.1 脂肪的消化、動員與運送</h2>
+<ul class="pts">
+<li>脂肪酸四個來源:飲食、儲存脂肪、肝合成、autophagy;人類 ≥ 40% 能量來自飲食 TAG <i>Ch17 p.2</i></li>
+<li><b>Bile salt</b>(兩性分子)乳化 → mixed micelle → lipase 切成 DAG、MAG、FFA → 進小腸上皮 <i>p.10</i></li>
+<li>上皮細胞重組 TAG → 包成 <b>chylomicron</b>:<b>apoB-48</b> 主要蛋白;<b>apoC-II 活化</b> lipoprotein lipase;<b>apoC-III 抑制</b>;殘餘物把膳食膽固醇送到肝 → 包進 VLDL <i>p.11</i></li>
+<li><b>脂解</b>:glucagon / epinephrine → adenylyl cyclase → cAMP → PKA → <b>perilipin 磷酸化</b> → CGI-58 離開去找 <b>ATGL(TAG → DAG)</b> → <b>p-HSL(DAG → MAG)</b> → <b>MGL(MAG → FFA)</b> <i>p.13</i></li>
+<li>Glycerol → 肝 <b>glycerol kinase</b> → glycerol 3-P → DHAP → 糖解 <i>p.14</i></li>
+<li><b>Serum albumin</b>:約佔血清蛋白一半,非共價結合最多 7 個脂肪酸,送到骨骼肌、心、腎皮質 <i>p.15</i></li>
+<li>活化:fatty acyl-CoA synthetase,ATP → AMP + PPi = <b>2 ATP</b> <i>p.16</i></li>
+<li><b>≤ 12 C 直接進粒線體</b>;長鏈(≥ 14 C)走 <b>carnitine shuttle</b>:CPT1 → acyl-carnitine/carnitine 反向交換 → CPT2 <i>p.17–18</i></li>
+</ul>
+
+<h2>Ch17 · 17.2 脂肪酸氧化</h2>
+<div class="tbl"><table>
+<thead><tr><th>步驟</th><th>酵素</th><th>產物</th><th>類比 TCA</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>1 氧化</td><td>acyl-CoA dehydrogenase</td><td>trans-Δ2-enoyl-CoA + <b>FADH2</b>(→ ETF)</td><td>succinate DH</td><td><i>p.21–22</i></td></tr>
+<tr><td>2 水合</td><td>enoyl-CoA hydratase</td><td><b>L</b>-β-hydroxyacyl-CoA</td><td>fumarase</td><td><i>p.24</i></td></tr>
+<tr><td>3 氧化</td><td>β-hydroxyacyl-CoA DH</td><td>β-ketoacyl-CoA + <b>NADH</b>(→ Complex I)</td><td>malate DH</td><td><i>p.25</i></td></tr>
+<tr><td>4 硫解</td><td>thiolase</td><td>acetyl-CoA + 少 2 碳的 acyl-CoA</td><td>—</td><td><i>p.26</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li>第 1 步三種 isozyme:<b>VLCAD ≥ 12 C,在內膜</b>;MCAD 約 4–14 C;SCAD 約 4–8 C(後兩者在基質) <i>p.22</i></li>
+<li><b>MCAD 缺乏</b>:最常見;6–12 C 無法氧化 → 肝堆中鏈脂肪、血中 octanoic acid 高、低血糖 → 嗜睡、嘔吐、昏迷;治療:低脂高醣、不要空腹太久 <i>p.23</i></li>
+<li><b>Trifunctional protein</b>(≥ 12 C):α4β4 在內膜;α = hydratase + HAD,β = thiolase;&lt; 12 C 用四個可溶性酵素 <i>p.27</i></li>
+<li class="mem">算 ATP:n 碳偶數 → (n/2 − 1) 輪、n/2 個 acetyl-CoA。每輪 4 ATP(1.5 + 2.5),每 acetyl-CoA 10 ATP,最後減 2。<b>Palmitate = 28 + 80 − 2 = 106</b>;stearate = 32 + 90 − 2 = 120 <i>p.28–29</i></li>
+<li>單元不飽和(oleate):3 輪後得 cis-Δ3 → <b>Δ3,Δ2-enoyl-CoA isomerase</b>(hydratase 只認 trans) <i>p.31</i></li>
+<li>多元不飽和(linoleate):再加 <b>2,4-dienoyl-CoA reductase</b>(trans-Δ2,cis-Δ4 → trans-Δ3) <i>p.32</i></li>
+<li><b>奇數碳</b>:剩 propionyl-CoA →(propionyl-CoA carboxylase,<b>biotin</b>、ATP)D-methylmalonyl-CoA →(epimerase)L 型 →(mutase,<b>coenzyme B12</b>)<b>succinyl-CoA</b> <i>p.33</i></li>
+<li><b>Propionic acidemia</b>:carboxylase 缺乏 → propionyl-carnitine 出粒線體 → 血中 propionate 酸化;約 10 萬分之一 <i>p.34</i></li>
+<li>B12 只有微生物能做,每天約 3 μg;<b>pernicious anemia</b> = 缺 intrinsic factor 吸收不良 → 紅血球少 + 中樞神經損傷 <i>p.35</i></li>
+<li><b>Peroxisome β 氧化</b>:第 1 步 <b>acyl-CoA oxidase 直接給 O2 → H2O2</b>(catalase 分解);處理極長鏈(26:0)與分支脂肪酸 <i>p.36</i></li>
+<li><b>Zellweger</b> = 做不出 peroxisome;<b>XALD</b> = VLCFA 進 peroxisome 的運輸蛋白壞掉;<b>Lorenzo's oil</b> 抑制製造 VLCFA 的酵素 <i>p.36</i></li>
+<li><b>Phytanic acid</b> 有甲基分支 → 不能 β 氧化 → peroxisome <b>α 氧化</b>(一次去 1 碳);<b>Refsum</b> = phytanoyl-CoA hydroxylase 缺陷 → 失明、失聰 <i>p.37</i></li>
+<li><b>PPARα</b>(脂肪酸活化)開:脂肪酸運輸蛋白、CPT1/2、各長度 acyl-CoA DH;glucagon 經 cAMP/CREB;耐力訓練提高肌肉 PPARα <i>p.38</i></li>
+</ul>
+
+<h2>Ch17 · 17.3 酮體</h2>
+<ul class="pts">
+<li>缺 glucose 的情境:飢餓、糖尿病、生酮飲食;腦每天約 120 g glucose <i>p.39–41</i></li>
+<li>肝以脂肪酸為主燃料,多的 acetyl-CoA → 酮體輸出 <i>p.41</i></li>
+<li><b>肝粒線體合成</b>:2 acetyl-CoA →(thiolase)acetoacetyl-CoA →(+ acetyl-CoA,<b>HMG-CoA synthase</b>)HMG-CoA →(<b>HMG-CoA lyase</b>)<b>acetoacetate</b> →(D-β-hydroxybutyrate DH)<b>D-β-hydroxybutyrate</b>;或脫羧成 acetone <i>p.42</i></li>
+<li><b>肝外利用</b>:β-hydroxybutyrate → acetoacetate →(<b>thiophorase</b>,用 succinyl-CoA 的 CoA)acetoacetyl-CoA → 2 acetyl-CoA <i>p.43</i></li>
+<li class="mem">肝沒有 thiophorase → 只生產、不消耗酮體</li>
+<li>飢餓時腦用的酮體 = <b>β-hydroxybutyrate</b> <i>p.44</i></li>
+<li>糖尿病:糖質新生耗光 oxaloacetate → TCA 卡住 → acetyl-CoA 變酮體;血中可達 90 mg/100 mL(正常 &lt; 3),尿 5,000 mg/天 → <b>ketoacidosis</b> <i>p.45</i></li>
+</ul>
+
+<h2>Ch18 · 18.1 胺基的去向</h2>
+<ul class="pts">
+<li>胃:<b>gastrin</b> → parietal cell 分泌 HCl(殺菌、變性)+ chief cell 分泌 pepsinogen(自我活化成 pepsin) <i>Ch18 p.5</i></li>
+<li>小腸:<b>secretin</b> → 胰臟分泌 bicarbonate(pH 升到約 7);<b>cholecystokinin</b> → 胰蛋白酶原 <i>p.6</i></li>
+<li><b>Enteropeptidase</b>:trypsinogen → trypsin;trypsin 再活化其他。<b>Trypsin 切 K/R</b>、<b>chymotrypsin 切 F/W/Y</b> <i>p.6</i></li>
+<li><b>Acute pancreatitis</b> = 酵素原在胰臟內提早活化,消化自己;pancreatic trypsin inhibitor 防止 <i>p.6</i></li>
+<li>收集胺基的四個:Glu、Gln、Ala、Asp;肌肉送 Gln 與 Ala 到肝 <i>p.9</i></li>
+<li><b>Transamination</b>:胺基給 α-KG → Glu + α-keto acid;<b>PLP</b>(B6)以 Schiff base 接 Lys,在 PLP / pyridoxamine phosphate 之間切換;<b>Ping-Pong</b> <i>p.10–13</i></li>
+<li>PLP 在 α 碳:transamination、racemization、decarboxylation <i>p.12</i></li>
+<li><b>Glutamate dehydrogenase</b>(肝粒線體):Glu → α-KG + NH4+;NAD+ 或 NADP+;<b>GTP 抑制、ADP 活化</b>;GTP 位突變 → hyperinsulinism–hyperammonemia <i>p.14</i></li>
+<li><b>Glutamine</b> 運氨(腦等);腎 glutaminase 在代謝性酸中毒時加速 → NH4+ 帶酸排出 <i>p.15</i></li>
+<li><b>Glucose–alanine cycle</b>:肌肉 → alanine → 肝;把糖質新生的能量負擔交給肝 <i>p.16</i></li>
+<li>氨毒性:NH3 過血腦障壁 → 困成 NH4+;星狀細胞 glutamine synthetase;NH4+ 與 K+ 競爭 → 神經功能異常、腦水腫 <i>p.17</i></li>
+</ul>
+
+<h2>Ch18 · 18.2 Urea cycle</h2>
+<div class="tbl"><table>
+<thead><tr><th>步驟</th><th>酵素</th><th>位置</th><th>反應</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><b>CPS I</b></td><td>粒線體</td><td>NH4+ + HCO3− + <b>2 ATP</b> → carbamoyl-P</td></tr>
+<tr><td>2</td><td>Ornithine transcarbamoylase</td><td>粒線體</td><td>carbamoyl-P + ornithine → citrulline</td></tr>
+<tr><td>3</td><td>Argininosuccinate synthetase</td><td>細胞質</td><td>citrulline + <b>Asp</b> + ATP → argininosuccinate + AMP + PPi</td></tr>
+<tr><td>4</td><td>Argininosuccinase</td><td>細胞質</td><td>→ arginine + <b>fumarate</b></td></tr>
+<tr><td>5</td><td>Arginase</td><td>細胞質</td><td>→ <b>urea</b> + ornithine</td></tr>
+</tbody></table></div>
+<p class="src">Ch18 p.20–23</p>
+<ul class="pts">
+<li>Urea 兩個 N:<b>NH4+</b>(經 carbamoyl-P)+ <b>Asp</b>;C 來自 HCO3− <i>p.21, 23</i></li>
+<li><b>ORNT1</b>:細胞質 ornithine 進、粒線體 citrulline + H+ 出(電中性) <i>p.22</i></li>
+<li>Ornithine 角色像 TCA 的 oxaloacetate;酵素組成 metabolon <i>p.22–23</i></li>
+<li><b>Aspartate–argininosuccinate shunt</b>:fumarate → malate → TCA;粒線體做的 Asp 到細胞質給 N <i>p.25</i></li>
+<li>調控:長期 = 高蛋白、飢餓時增加 4 個酵素 + CPS I;短期 = <b>N-acetylglutamate(Glu + acetyl-CoA)活化 CPS I</b>,<b>Arg 活化 NAG synthase</b> <i>p.26</i></li>
+<li class="mem">能量:4 個高能磷酸鍵,fumarate 帶回 1 NADH(2.5),<b>淨 1.5 ATP</b> <i>p.27–28</i></li>
+<li>缺陷 → hyperammonemia(腦水腫、昏睡、過度換氣);不能完全不吃蛋白(要必需胺基酸) <i>p.29</i></li>
+<li><b>Benzoate</b> + Gly → hippurate;<b>phenylbutyrate</b> → phenylacetate + Gln → phenylacetylglutamine;都從尿排 <i>p.30</i></li>
+<li>NAGS 缺乏 → <b>carbamoyl glutamate</b>;OTC、ASS、ASL 缺乏 → <b>補 Arg</b>;<b>arginase 缺乏 → 禁 Arg</b> <i>p.31</i></li>
+</ul>
+
+<h2>Ch18 · 18.3 胺基酸分解</h2>
+<div class="tbl"><table>
+<thead><tr><th>終產物</th><th>胺基酸</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>Pyruvate</td><td>Ala、Trp、Ser、Gly、Thr、Cys</td><td><i>p.39–40</i></td></tr>
+<tr><td>Acetyl-CoA / acetoacetyl-CoA</td><td>Trp、Lys、Phe、Tyr、Leu、Ile、Thr</td><td><i>p.39, 46</i></td></tr>
+<tr><td>α-Ketoglutarate</td><td>Arg、Pro、His、Gln、Glu</td><td><i>p.39, 53</i></td></tr>
+<tr><td>Succinyl-CoA</td><td>Met、Ile、Val、Thr</td><td><i>p.39, 54</i></td></tr>
+<tr><td>Fumarate</td><td>Phe、Tyr</td><td><i>p.46, 48</i></td></tr>
+<tr><td>Oxaloacetate</td><td>Asn、Asp</td><td><i>p.39, 56</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li><b>純生酮:Leu、Lys</b>;生酮 + 生糖:Trp、Phe、Tyr、Thr、Ile <i>p.33</i></li>
+<li>一碳載體:<b>biotin = CO2</b>(最氧化);<b>THF = 中間氧化態</b>;<b>adoMet = CH3</b>(最還原) <i>p.34</i></li>
+<li>THF 一碳主要來源:Ser → Gly 產生 N5,N10-methylene-THF <i>p.35</i></li>
+<li><b>adoMet</b>:Met + ATP(放出三磷酸);sulfonium → 甲基比 N5-methyl-THF 活潑約 <b>1,000 倍</b> <i>p.36</i></li>
+<li>B12 兩反應:methylmalonyl-CoA mutase、methionine synthase(homocysteine → Met) <i>p.37</i></li>
+<li><b>Folate trap</b>:沒 B12 → folate 卡在 N5-methyl(methylene → methyl 不可逆)→ 巨母紅血球貧血、homocysteine ↑;<b>只補 folate 會讓神經症狀繼續惡化</b> <i>p.37–38</i></li>
+<li>Ser → pyruvate:<b>serine dehydratase(PLP)</b> <i>p.41</i></li>
+<li>Gly 三條路:<b>glycine cleavage enzyme(主要)</b> → CO2 + NH4+ + N5,N10-methylene-THF(缺陷 → nonketotic hyperglycinemia);SHMT → Ser → pyruvate;<b>D-amino acid oxidase → glyoxylate → oxalate → 腎結石(最多 75%)</b> <i>p.42–45</i></li>
+<li>Trp → nicotinate(NAD、NADP)、serotonin、indoleacetate <i>p.47</i></li>
+<li>Phe、Tyr 9 個碳:4 → acetoacetate、4 → fumarate、1 → CO2;Tyr → dopamine、NE、Epi、melanin;<b>tyrosinase 突變 → albinism</b> <i>p.48</i></li>
+<li><b>Phe hydroxylase</b>:mixed-function oxygenase + <b>tetrahydrobiopterin</b>;dihydrobiopterin reductase(NADPH)再生 <i>p.49</i></li>
+<li><b>PKU</b>:Phe 轉胺成 phenylpyruvate;phenylacetate → <b>尿有蜂蜜味</b>;傷腦部發育;治療:限 Phe、aspartame 警語、PEG-phenylalanine ammonia lyase;新生兒篩檢 <i>p.50–51</i></li>
+<li><b>Alkaptonuria</b>:homogentisate 1,2-dioxygenase → <b>尿變黑</b>、關節炎 <i>p.52</i></li>
+<li>His → Glu(THF 接 formimino);Pro 開環 → glutamate γ-semialdehyde;Arg → ornithine → glutamate γ-semialdehyde <i>p.53</i></li>
+<li>Met、Ile、Val、Thr → propionyl-CoA → succinyl-CoA <i>p.54</i></li>
+<li><b>BCAA(Leu、Ile、Val)不在肝分解</b>:肝缺 branched-chain aminotransferase;在肌肉、脂肪、腎、腦氧化;BCKDH 去磷酸化時活化;<b>MSUD</b> = BCKDH 缺陷(尿有楓糖味) <i>p.55</i></li>
+<li>Asn →(asparaginase)Asp →(AST,PLP)oxaloacetate <i>p.56</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">9 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 62 題</button>
+    <button class="tab" id="tab-1" data-f="17.1" aria-pressed="false">17.1 動員</button>
+    <button class="tab" id="tab-2" data-f="17.2" aria-pressed="false">17.2 β 氧化</button>
+    <button class="tab" id="tab-3" data-f="17.3" aria-pressed="false">17.3 酮體</button>
+    <button class="tab" id="tab-4" data-f="18.1" aria-pressed="false">18.1 胺基</button>
+    <button class="tab" id="tab-5" data-f="18.2" aria-pressed="false">18.2 Urea</button>
+    <button class="tab" id="tab-6" data-f="18.3" aria-pressed="false">18.3 分解</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">40</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"17.1",s:"Ch17 p.10 · Fat absorption",q:"What is the role of bile salts in the digestion of dietary triacylglycerols?",a:1,o:[
+["They hydrolyze triacylglycerols to free fatty acids.","水解是 lipase 的工作。"],
+["As amphipathic detergents, they emulsify fat into mixed micelles, giving lipases access to the triacylglycerols.","正確。之後 DAG、MAG、FFA 擴散進小腸上皮細胞。"],
+["They carry free fatty acids in the blood.","血中運送脂肪酸的是 serum albumin。"],
+["They activate lipoprotein lipase.","活化 LPL 的是 apoC-II。"]]},
+{c:"17.1",s:"Ch17 p.11 · Chylomicrons",q:"Which statement about chylomicrons is correct?",a:3,o:[
+["They are assembled in the liver and carry endogenous triacylglycerols.","那是 VLDL;chylomicron 由小腸細胞組裝。"],
+["ApoC-III on chylomicrons activates lipoprotein lipase.","ApoC-III 抑制 LPL。"],
+["Their main protein is apoB-100.","Chylomicron 的主要蛋白是 apoB-48。"],
+["Their main protein is apoB-48; apoC-II activates lipoprotein lipase, and the remnants deliver dietary cholesterol to the liver.","正確。肝再把膽固醇包進 VLDL 分泌出去。"]]},
+{c:"17.1",s:"Ch17 p.13 · Mobilization",q:"In an adipocyte stimulated by glucagon or epinephrine, which order of events is correct?",a:0,o:[
+["Adenylyl cyclase → cAMP → PKA phosphorylates perilipin → CGI-58 dissociates and recruits ATGL (TAG → DAG) → phosphorylated HSL (DAG → MAG) → MGL (MAG → FFA)","正確。FFA 離開脂肪細胞後與 albumin 結合。"],
+["PKA → HSL cuts TAG → ATGL cuts DAG → MGL cuts MAG","ATGL 切 TAG,HSL 切 DAG,兩者對調了。"],
+["Insulin → PKA → perilipin dephosphorylation → lipolysis","Insulin 抑制脂解。"],
+["Lipoprotein lipase inside the adipocyte releases FFA directly from lipid droplets.","LPL 在微血管壁,作用在脂蛋白上的 TAG。"]]},
+{c:"17.1",s:"Ch17 p.14 · Glycerol",q:"What happens to the glycerol released by lipolysis?",a:2,o:[
+["It is reused by adipocytes through their glycerol kinase.","脂肪組織沒有 glycerol kinase。"],
+["It is oxidized by β oxidation.","β 氧化作用在脂肪酸。"],
+["It goes to the liver, where glycerol kinase phosphorylates it to glycerol 3-phosphate, which becomes DHAP and enters glycolysis or gluconeogenesis.","正確。"],
+["It is excreted unchanged in urine.","會被肝利用。"]]},
+{c:"17.1",s:"Ch17 p.15 · Serum albumin",q:"Which statement about serum albumin is correct?",a:1,o:[
+["It carries triacylglycerols in a phospholipid shell.","那是脂蛋白。"],
+["It makes up about half of serum protein and binds up to seven fatty acids noncovalently, carrying them to muscle, heart and renal cortex.","正確。"],
+["It binds fatty acids covalently through thioester bonds.","是非共價結合。"],
+["It delivers fatty acids mainly to the brain.","腦不能用脂肪酸。"]]},
+{c:"17.1",s:"Ch17 p.16 · Activation",q:"Fatty acyl-CoA synthetase activates a fatty acid. Why is this counted as costing 2 ATP?",a:3,o:[
+["Two molecules of ATP are hydrolyzed to ADP.","只用一個 ATP,但切成 AMP。"],
+["The acyl-CoA must be carried across two membranes.","與跨膜無關。"],
+["One ATP is used and one GTP is made.","沒有產生 GTP。"],
+["ATP is cleaved to AMP + PPi, breaking two phosphoanhydride bonds.","正確。所以 palmitate 淨 ATP 要從 108 減 2。"]]},
+{c:"17.1",s:"Ch17 p.17–18 · Carnitine shuttle",q:"Which statement about entry of fatty acyl groups into mitochondria is correct?",a:0,o:[
+["Long-chain acyl-CoAs (14 C and longer) are transferred to carnitine by CPT1, carried in by an acyl-carnitine/carnitine cotransporter, and returned to CoA by CPT2; acyl-CoAs of 12 C or fewer enter without transporters.","正確。"],
+["All fatty acyl-CoAs, regardless of length, need the carnitine shuttle.","短、中鏈不需要。"],
+["CoA itself crosses the inner membrane together with the acyl group.","粒線體內外的 CoA 池是分開的。"],
+["The cotransporter moves carnitine and acyl-carnitine in the same direction.","是反向交換:acyl-carnitine 進、carnitine 出。"]]},
+{c:"17.2",s:"Ch17 p.21 · Four steps",q:"Which sequence of one round of β oxidation is correct?",a:2,o:[
+["Hydration → oxidation (FAD) → thiolysis → oxidation (NAD+)","順序錯誤。"],
+["Oxidation (NAD+) → hydration → oxidation (FAD) → thiolysis","FAD 是第一步、NAD+ 是第三步。"],
+["Oxidation (FAD) → hydration → oxidation (NAD+) → thiolysis","正確。產物:少 2 碳的 acyl-CoA + acetyl-CoA + FADH2 + NADH。"],
+["Thiolysis → oxidation → hydration → oxidation","Thiolysis 是最後一步。"]]},
+{c:"17.2",s:"Ch17 p.22, 24–25 · TCA analogies",q:"Which pairing of a β-oxidation step with its citric acid cycle analog is correct?",a:1,o:[
+["Acyl-CoA dehydrogenase ↔ malate dehydrogenase","第一步類似 succinate dehydrogenase(都用 FAD)。"],
+["Enoyl-CoA hydratase ↔ fumarase; β-hydroxyacyl-CoA dehydrogenase ↔ malate dehydrogenase","正確。"],
+["Thiolase ↔ citrate synthase","講義沒有這樣配對。"],
+["β-Hydroxyacyl-CoA dehydrogenase ↔ succinate dehydrogenase","它用 NAD+,類似 malate dehydrogenase。"]]},
+{c:"17.2",s:"Ch17 p.22 · Acyl-CoA dehydrogenase",q:"Where do the electrons removed by acyl-CoA dehydrogenase go first?",a:3,o:[
+["Directly to NAD+","第一步用的是 FAD。"],
+["Directly to O2, forming H2O2","這是 peroxisome 的 acyl-CoA oxidase。"],
+["To NADP+ for biosynthesis","不是。"],
+["To its tightly bound FAD, then to the electron-transferring flavoprotein (ETF)","正確。形成 C-2 與 C-3 之間的 trans 雙鍵。"]]},
+{c:"17.2",s:"Ch17 p.22 · Isozymes",q:"Which pairing of acyl-CoA dehydrogenase isozyme with location and chain length is correct?",a:0,o:[
+["VLCAD — inner mitochondrial membrane, 12 C and longer","正確。MCAD 約 4–14 C、SCAD 約 4–8 C,都在基質中。"],
+["MCAD — inner membrane, 20 C and longer","MCAD 在基質,作用約 4–14 C。"],
+["SCAD — cytosol, 12–16 C","SCAD 在基質,作用約 4–8 C。"],
+["VLCAD — peroxisome, 4–8 C","VLCAD 在粒線體內膜。"]]},
+{c:"17.2",s:"Ch17 p.23 · MCAD deficiency",q:"A child becomes sleepy and vomits after a long fast. Blood glucose is low and octanoic acid is high. What is the likely defect and the treatment?",a:2,o:[
+["Carnitine deficiency; high-fat diet","辛酸堆積指向中鏈脫氫酶缺陷;治療是低脂。"],
+["Propionyl-CoA carboxylase deficiency; protein restriction","那是 propionic acidemia。"],
+["MCAD deficiency; a low-fat, high-carbohydrate diet and avoiding long intervals between meals","正確。最常見的脂肪酸分解遺傳缺陷,6–12 碳脂肪酸無法氧化。"],
+["Phenylalanine hydroxylase deficiency; low-Phe diet","那是 PKU。"]]},
+{c:"17.2",s:"Ch17 p.24 · Hydration",q:"Which stereoisomer of β-hydroxyacyl-CoA is formed in β oxidation, and how does this contrast with fatty acid synthesis?",a:1,o:[
+["D in β oxidation; L in synthesis","兩者對調了。"],
+["L in β oxidation; D in synthesis","正確。不同的立體異構物使兩條路徑分開。"],
+["L in both","合成用 D 型。"],
+["D in both","β 氧化用 L 型。"]]},
+{c:"17.2",s:"Ch17 p.27 · Trifunctional protein",q:"Which statement about the trifunctional protein (TFP) is correct?",a:3,o:[
+["It catalyzes all four steps for short-chain fatty acids in the matrix.","短鏈(< 12 C)由四個可溶性酵素處理。"],
+["It is located in peroxisomes.","在粒線體內膜。"],
+["It contains the acyl-CoA dehydrogenase activity.","TFP 負責的是後三步。"],
+["It is an α4β4 hetero-octamer on the inner mitochondrial membrane: α has hydratase and β-hydroxyacyl-CoA dehydrogenase activities, β has thiolase activity; it acts on chains of 12 C or longer.","正確。"]]},
+{c:"17.2",s:"Ch17 p.28–29 · ATP yield",q:"Using 1.5 ATP per FADH2, 2.5 ATP per NADH and 10 ATP per acetyl-CoA, what is the net ATP yield from complete oxidation of one palmitate (16:0)?",a:0,o:[
+["106","正確。7 輪 β 氧化:7 × (1.5 + 2.5) = 28;8 acetyl-CoA × 10 = 80;合計 108,減去活化的 2 = 106。"],
+["108","忘了扣除活化消耗的 2 ATP。"],
+["80","只算了 acetyl-CoA 的部分。"],
+["129","這是舊的 P/O 比(3 與 2)算法。"]]},
+{c:"17.2",s:"Ch17 p.28–29 · ATP yield",q:"Using the same values, what is the net ATP yield from complete oxidation of stearate (18:0)?",a:2,o:[
+["106","那是 palmitate。"],
+["122","忘了扣除活化的 2 ATP。"],
+["120","正確。8 輪 × 4 = 32;9 acetyl-CoA × 10 = 90;122 − 2 = 120。"],
+["128","輪數或 acetyl-CoA 數算錯:18 碳是 8 輪、9 個 acetyl-CoA。"]]},
+{c:"17.2",s:"Ch17 p.31 · Oleate",q:"After three rounds of β oxidation, oleoyl-CoA (18:1, cis-Δ9) yields cis-Δ3-dodecenoyl-CoA. Why is an extra enzyme needed, and which one?",a:1,o:[
+["Acyl-CoA dehydrogenase cannot act on 12-carbon chains; 2,4-dienoyl-CoA reductase","問題在雙鍵構型;單元不飽和只需要 isomerase。"],
+["Enoyl-CoA hydratase acts only on trans double bonds; Δ3,Δ2-enoyl-CoA isomerase converts cis-Δ3 to trans-Δ2","正確。之後繼續 β 氧化成 decanoyl-CoA 等。"],
+["Thiolase cannot cleave unsaturated chains; a desaturase","不是。"],
+["The double bond must be removed by hydrogenation with NADH","不是講義的機制。"]]},
+{c:"17.2",s:"Ch17 p.32 · Linoleate",q:"Oxidation of linoleate (18:2, cis-Δ9, cis-Δ12) needs which enzyme in addition to enoyl-CoA isomerase?",a:3,o:[
+["Methylmalonyl-CoA mutase","用於奇數碳脂肪酸。"],
+["Acyl-CoA oxidase","是 peroxisome 的第一步酵素。"],
+["Phytanoyl-CoA hydroxylase","用於 phytanic acid 的 α 氧化。"],
+["2,4-Dienoyl-CoA reductase, which converts trans-Δ2, cis-Δ4 to trans-Δ3","正確。trans-Δ3 再由 isomerase 轉成 trans-Δ2。"]]},
+{c:"17.2",s:"Ch17 p.33 · Odd-chain fatty acids",q:"Which sequence for metabolism of propionyl-CoA is correct?",a:0,o:[
+["Propionyl-CoA → (carboxylase, biotin, ATP) D-methylmalonyl-CoA → (epimerase) L-methylmalonyl-CoA → (mutase, coenzyme B12) succinyl-CoA","正確。三個額外反應:羧化、異構、重排。"],
+["Propionyl-CoA → (mutase, B12) succinyl-CoA directly","中間還要羧化與異構。"],
+["Propionyl-CoA → (thiolase) acetyl-CoA + formate","不是。"],
+["Propionyl-CoA → L-methylmalonyl-CoA → (epimerase) D-methylmalonyl-CoA → succinyl-CoA","羧化產生的是 D 型,epimerase 轉成 L 型。"]]},
+{c:"17.2",s:"Ch17 p.34 · Propionic acidemia",q:"Why does deficiency of propionyl-CoA carboxylase acidify blood and urine?",a:2,o:[
+["Succinyl-CoA accumulates and is released as succinic acid.","Succinyl-CoA 做不出來。"],
+["Lactate accumulates because pyruvate carboxylase is also missing.","不是講義的機制。"],
+["Propionyl-CoA is esterified to carnitine, leaves the mitochondria and is released into blood as propionate.","正確。約 10 萬分之一的新生兒。"],
+["Ketone bodies cannot be made.","與酮體無關。"]]},
+{c:"17.2",s:"Ch17 p.35 · Vitamin B12",q:"Which statement about vitamin B12 is correct?",a:1,o:[
+["It is synthesized by plants and animals.","只有少數微生物能合成。"],
+["Pernicious anemia usually results from failure to absorb B12 because of a lack of intrinsic factor; it impairs red cell production and the central nervous system.","正確。健康人每天只需約 3 μg。"],
+["Healthy people need about 3 mg per day.","是 3 μg。"],
+["B12 deficiency affects only red cells and never the nervous system.","會造成嚴重、進行性的中樞神經損傷。"]]},
+{c:"17.2",s:"Ch17 p.36 · Peroxisomal β oxidation",q:"How does peroxisomal β oxidation differ from mitochondrial β oxidation?",a:3,o:[
+["It uses NADPH instead of NAD+.","不是。"],
+["Its first step transfers electrons to ETF and the respiratory chain.","那是粒線體的情形。"],
+["It prefers short-chain fatty acids.","它主要處理極長鏈(如 26:0)與分支脂肪酸。"],
+["Its first enzyme, acyl-CoA oxidase, passes electrons directly to O2, forming H2O2, which catalase destroys.","正確。這一步的能量以熱散失。"]]},
+{c:"17.2",s:"Ch17 p.36 · Peroxisomal disorders",q:"Which pairing of a peroxisomal disorder with its defect is correct?",a:0,o:[
+["X-linked adrenoleukodystrophy — no functional transporter to carry very-long-chain fatty acids into peroxisomes","正確。Lorenzo's oil 競爭抑制製造 VLCFA 的酵素。"],
+["Zellweger syndrome — lacks catalase only","Zellweger 是無法製造 peroxisome。"],
+["Refsum disease — lacks acyl-CoA oxidase","Refsum 是 phytanoyl-CoA hydroxylase 缺陷。"],
+["X-linked adrenoleukodystrophy — lacks MCAD","MCAD 是粒線體酵素。"]]},
+{c:"17.2",s:"Ch17 p.37 · Phytanic acid",q:"Why must phytanic acid undergo α oxidation, and what disease results when this fails?",a:2,o:[
+["It has an odd number of carbons; propionic acidemia","奇數碳不需要 α 氧化。"],
+["It is too short for β oxidation; MCAD deficiency","它是長鏈脂肪酸。"],
+["Its methyl branch prevents formation of the β-keto intermediate; Refsum disease, from defective phytanoyl-CoA hydroxylase","正確。α 氧化在 peroxisome 從羧基端去掉一個碳;Refsum 造成失明、失聰等神經症狀。"],
+["It contains a trans double bond; Zellweger syndrome","不是。"]]},
+{c:"17.2",s:"Ch17 p.38 · PPARα",q:"Which statement about transcriptional control of fatty acid oxidation is correct?",a:1,o:[
+["PPARα is activated by glucose and represses carnitine acyltransferases.","它被脂肪酸活化,開啟這些基因。"],
+["PPARα, activated by fatty acids, turns on genes for the fatty acid transporter, carnitine acyltransferases 1 and 2 and the acyl-CoA dehydrogenases; endurance training increases PPARα in muscle.","正確。Glucagon 也可經 cAMP 與 CREB 開啟脂質分解基因。"],
+["Insulin acts through CREB to turn on lipid catabolism genes.","是 glucagon。"],
+["PPARα acts only in the brain.","作用在肌肉、脂肪、肝。"]]},
+{c:"17.3",s:"Ch17 p.41 · Ketone bodies",q:"Why does the liver export ketone bodies during fasting?",a:3,o:[
+["The liver cannot oxidize fatty acids.","肝以脂肪酸為主要燃料。"],
+["Ketone bodies are needed to make glycogen.","不是。"],
+["The brain can oxidize fatty acids but prefers ketone bodies.","腦不能用脂肪酸。"],
+["The liver uses fatty acids as its main fuel and converts the excess acetyl-CoA to ketone bodies, which the brain can use when glucose is short.","正確。70 kg 成人的腦每天需要約 120 g glucose。"]]},
+{c:"17.3",s:"Ch17 p.42 · Ketogenesis",q:"Which sequence of ketone body formation in liver mitochondria is correct?",a:0,o:[
+["2 Acetyl-CoA → (thiolase) acetoacetyl-CoA → (+ acetyl-CoA, HMG-CoA synthase) HMG-CoA → (HMG-CoA lyase) acetoacetate → D-β-hydroxybutyrate or acetone","正確。"],
+["Acetyl-CoA → malonyl-CoA → HMG-CoA → acetoacetate","Malonyl-CoA 屬於脂肪酸合成。"],
+["Acetoacetyl-CoA → (HMG-CoA reductase) mevalonate → acetoacetate","HMG-CoA reductase 屬於膽固醇合成。"],
+["HMG-CoA → (thiophorase) acetoacetate → acetoacetyl-CoA","Thiophorase 用在肝外組織利用酮體。"]]},
+{c:"17.3",s:"Ch17 p.43 · Liver as producer",q:"Why is the liver a producer but not a consumer of ketone bodies?",a:2,o:[
+["It lacks D-β-hydroxybutyrate dehydrogenase.","肝有這個酵素(用來做 β-hydroxybutyrate)。"],
+["It lacks HMG-CoA lyase.","這是合成酮體的酵素,肝有。"],
+["It lacks β-ketoacyl-CoA transferase (thiophorase), which uses succinyl-CoA to activate acetoacetate.","正確。肝外組織把 acetoacetate 轉成 acetoacetyl-CoA,再由 thiolase 切成 2 個 acetyl-CoA。"],
+["It lacks mitochondria.","肝細胞有粒線體。"]]},
+{c:"17.3",s:"Ch17 p.42–44 · β-Hydroxybutyrate",q:"Which statement about β-hydroxybutyrate is correct?",a:1,o:[
+["It is the L isomer, made by the same enzyme as in β oxidation.","酮體是 D 型,由 D-β-hydroxybutyrate dehydrogenase 製造。"],
+["It is the D isomer, made from acetoacetate by D-β-hydroxybutyrate dehydrogenase, and is the ketone body the brain uses during starvation.","正確。"],
+["It is formed by spontaneous decarboxylation of acetoacetate.","那會產生 acetone。"],
+["The brain converts it to glucose.","腦把它變回 acetoacetate 再氧化。"]]},
+{c:"17.3",s:"Ch17 p.45 · Diabetic ketoacidosis",q:"In untreated diabetes, why is acetyl-CoA diverted to ketone bodies, and what is the consequence?",a:3,o:[
+["Insulin excess activates HMG-CoA lyase.","是缺乏 insulin 作用。"],
+["Excess oxaloacetate speeds the citric acid cycle.","方向相反。"],
+["Ketone bodies are neutralized by ammonia.","不是講義所說。"],
+["Gluconeogenesis depletes oxaloacetate and slows the citric acid cycle; acetoacetate and D-β-hydroxybutyrate accumulate (blood up to 90 mg/100 mL vs normal <3) and lower blood pH.","正確。尿中排出可達每天 5,000 mg。"]]},
+{c:"18.1",s:"Ch18 p.5 · Stomach",q:"When dietary protein enters the stomach, what does gastrin stimulate?",a:0,o:[
+["HCl secretion by parietal cells and pepsinogen secretion by chief cells; pepsinogen activates itself to pepsin","正確。HCl 殺菌並使球蛋白變性。"],
+["Bicarbonate secretion by the pancreas","那是 secretin。"],
+["Release of trypsinogen from chief cells","Trypsinogen 來自胰臟。"],
+["Enteropeptidase release from the stomach","Enteropeptidase 在小腸。"]]},
+{c:"18.1",s:"Ch18 p.6 · Pancreatic proteases",q:"Which statement about activation of pancreatic proteases is correct?",a:2,o:[
+["Pepsin activates trypsinogen in the duodenum.","活化 trypsinogen 的是 enteropeptidase。"],
+["Cholecystokinin stimulates bicarbonate secretion.","那是 secretin;CCK 刺激胰蛋白酶原分泌。"],
+["Enteropeptidase converts trypsinogen to trypsin, and trypsin then activates more trypsinogen, chymotrypsinogen and procarboxypeptidases.","正確。Trypsin 切 K、R 之後;chymotrypsin 切 F、W、Y 之後。"],
+["Chymotrypsin activates trypsinogen.","是 trypsin 活化 chymotrypsinogen。"]]},
+{c:"18.1",s:"Ch18 p.6 · Acute pancreatitis",q:"What causes acute pancreatitis according to the slides?",a:1,o:[
+["Lack of enteropeptidase in the intestine","那會造成消化不良,不是胰臟發炎。"],
+["Zymogens are activated prematurely inside pancreatic cells and attack the pancreas itself.","正確。正常情況下 pancreatic trypsin inhibitor 防止這件事。"],
+["Excess secretin","不是。"],
+["Pepsin entering the pancreatic duct","不是。"]]},
+{c:"18.1",s:"Ch18 p.10–11 · Transamination",q:"Which statement about aminotransferases is correct?",a:3,o:[
+["They release the amino group directly as free NH4+.","釋出 NH4+ 是 glutamate dehydrogenase 的工作。"],
+["They use NAD+ as the electron acceptor.","Transamination 不是氧化還原。"],
+["They use thiamine pyrophosphate as cofactor.","用的是 PLP。"],
+["They transfer the α-amino group to α-ketoglutarate, forming glutamate; PLP, bound to a Lys by a Schiff base, alternates with pyridoxamine phosphate.","正確。"]]},
+{c:"18.1",s:"Ch18 p.13 · Ping-pong",q:"Aminotransferases follow which kinetic mechanism?",a:0,o:[
+["Ping-pong (double displacement): the first product leaves before the second substrate binds","正確。第一個受質把胺基交給 PLP,產物離開後 α-ketoglutarate 才進來。"],
+["Ordered sequential, with both substrates bound at once","不是。"],
+["Random sequential","不是。"],
+["Michaelis–Menten with one substrate","這是雙受質反應。"]]},
+{c:"18.1",s:"Ch18 p.14 · Glutamate dehydrogenase",q:"Which statement about glutamate dehydrogenase is correct?",a:2,o:[
+["It uses only NADP+ and is activated by GTP.","它可用 NAD+ 或 NADP+;GTP 是抑制劑。"],
+["It is found in the cytosol of muscle.","它在肝粒線體。"],
+["It releases NH4+ from glutamate in liver mitochondria, can use NAD+ or NADP+, is inhibited by GTP and activated by ADP; mutations at the GTP site cause hyperinsulinism–hyperammonemia syndrome.","正確。"],
+["It transfers the amino group to oxaloacetate.","那是 aspartate aminotransferase。"]]},
+{c:"18.1",s:"Ch18 p.15 · Glutamine and acidosis",q:"In metabolic acidosis, how does the kidney help?",a:1,o:[
+["It makes more urea from glutamine.","尿素由肝製造。"],
+["Kidney glutaminase processes more glutamine; the NH4+ released is excreted in urine with metabolic acids, and bicarbonate from α-ketoglutarate buffers the blood.","正確。"],
+["It converts glutamine into glucose without releasing NH4+.","會釋出 NH4+。"],
+["It stops glutaminase to save ammonia.","方向相反。"]]},
+{c:"18.1",s:"Ch18 p.16 · Glucose–alanine cycle",q:"What is the main advantage of the glucose–alanine cycle for muscle?",a:3,o:[
+["Muscle can make urea itself.","尿素只在肝製造。"],
+["Muscle gains ketone bodies.","不是。"],
+["Alanine is oxidized in muscle for ATP.","Alanine 被送到肝。"],
+["It carries amino groups to the liver and shifts the energy cost of gluconeogenesis to the liver, so muscle ATP is used for contraction.","正確。它與 Cori cycle 搭配運作。"]]},
+{c:"18.1",s:"Ch18 p.17 · Ammonia toxicity",q:"Why is ammonia especially toxic to the brain?",a:0,o:[
+["The small amount of NH3 crosses the blood–brain barrier and is trapped as NH4+; excess NH4+ competes with K+ for uptake into astrocytes, disturbing neuronal function.","正確。星狀細胞用 glutamine synthetase 處理氨;嚴重時腦水腫。"],
+["NH4+ crosses membranes freely, unlike NH3.","相反:NH3 可穿膜,NH4+ 不行。"],
+["The brain lacks glutamine synthetase.","星狀細胞有。"],
+["Ammonia is converted to urea in the brain, which is toxic.","腦不做尿素。"]]},
+{c:"18.2",s:"Ch18 p.20 · Urea cycle",q:"Which steps of the urea cycle occur in the mitochondrial matrix?",a:2,o:[
+["All five steps","後三步在細胞質。"],
+["Only the arginase step","Arginase 在細胞質。"],
+["Carbamoyl phosphate synthetase I and ornithine transcarbamoylase","正確。Argininosuccinate synthetase、argininosuccinase、arginase 在細胞質。"],
+["Argininosuccinate synthetase and argininosuccinase","這兩步在細胞質。"]]},
+{c:"18.2",s:"Ch18 p.21, 23 · Nitrogen sources",q:"Where do the two nitrogen atoms of urea come from?",a:1,o:[
+["Both from glutamine","不是。"],
+["One from NH4+ (through carbamoyl phosphate) and one from aspartate","正確。碳來自 HCO3−。"],
+["Both from aspartate","第一個來自 NH4+。"],
+["One from ornithine and one from arginine","Ornithine 是載體,每輪都會再生。"]]},
+{c:"18.2",s:"Ch18 p.22 · ORNT1",q:"What does the transporter ORNT1 do in the urea cycle?",a:3,o:[
+["Carries aspartate out of the mitochondrion in exchange for glutamate","那是 glutamate–aspartate antiporter。"],
+["Carries urea out of the hepatocyte","不是。"],
+["Carries carbamoyl phosphate into the cytosol","Carbamoyl phosphate 留在基質中使用。"],
+["Exchanges cytosolic ornithine for mitochondrial citrulline plus H+, an electroneutral antiport","正確。"]]},
+{c:"18.2",s:"Ch18 p.25 · Aspartate–argininosuccinate shunt",q:"How does the aspartate–argininosuccinate shunt link the urea cycle with the citric acid cycle?",a:0,o:[
+["Fumarate released by argininosuccinase becomes malate and enters the citric acid cycle; aspartate made in mitochondria donates nitrogen in the cytosol.","正確。"],
+["Urea is converted to succinate.","不是。"],
+["Ornithine becomes oxaloacetate.","不是。"],
+["Citrulline enters the citric acid cycle directly.","不是。"]]},
+{c:"18.2",s:"Ch18 p.26 · Regulation",q:"How is carbamoyl phosphate synthetase I regulated on a short time scale?",a:2,o:[
+["It is inhibited by arginine.","Arginine 活化 N-acetylglutamate synthase,間接促進。"],
+["It is phosphorylated by PKA.","不是講義所說。"],
+["It is allosterically activated by N-acetylglutamate, made from glutamate and acetyl-CoA; arginine activates N-acetylglutamate synthase.","正確。長期調控則是高蛋白飲食或飢餓時增加酵素合成。"],
+["It is activated by urea.","不是。"]]},
+{c:"18.2",s:"Ch18 p.27–28 · Energy cost",q:"What is the overall energy cost of making one urea, once the link to the citric acid cycle is counted?",a:1,o:[
+["4 ATP, with nothing recovered","Fumarate 會回收 1 個 NADH。"],
+["About 1.5 ATP: 4 high-energy phosphates are used, and fumarate yields one NADH (2.5 ATP) when converted back to oxaloacetate","正確。"],
+["3 ATP","CPS I 用 2 ATP,argininosuccinate synthetase 切 ATP → AMP 算 2,共 4。"],
+["No net cost","仍然淨消耗。"]]},
+{c:"18.2",s:"Ch18 p.29 · Urea cycle defects",q:"Why can't patients with urea cycle defects simply eat a protein-free diet?",a:3,o:[
+["Protein-free diets raise blood ammonia.","不是講義的理由。"],
+["Protein is needed to make urea.","不是。"],
+["Their livers cannot store glycogen.","與此無關。"],
+["Humans must obtain essential amino acids from the diet.","正確。嚴重缺陷的嬰兒會高血氨、腦水腫、昏睡、過度換氣。"]]},
+{c:"18.2",s:"Ch18 p.30 · Benzoate and phenylbutyrate",q:"How do benzoate and phenylbutyrate lower blood ammonia?",a:0,o:[
+["Benzoyl-CoA combines with glycine to form hippurate; phenylacetate combines with glutamine to form phenylacetylglutamine; both are excreted, and remaking glycine and glutamine consumes ammonia.","正確。"],
+["They activate carbamoyl phosphate synthetase I.","那是 carbamoyl glutamate。"],
+["They convert ammonia directly into urea.","不是。"],
+["They inhibit glutaminase in the kidney.","不是。"]]},
+{c:"18.2",s:"Ch18 p.31 · Specific therapies",q:"Which pairing of a urea cycle defect with its specific therapy is correct?",a:2,o:[
+["Arginase deficiency — arginine supplementation","Arginase 缺乏時要限制 arginine,因為它是被堆積的受質。"],
+["N-acetylglutamate synthase deficiency — protein-rich diet","用 carbamoyl glutamate。"],
+["Ornithine transcarbamoylase deficiency — arginine supplementation","正確。補 arginine 也適用於 argininosuccinate synthetase 與 argininosuccinase 缺乏。"],
+["Argininosuccinase deficiency — exclude arginine","應補充 arginine。"]]},
+{c:"18.3",s:"Ch18 p.33 · Ketogenic amino acids",q:"Which amino acids are exclusively ketogenic?",a:1,o:[
+["Phenylalanine and tyrosine","兩者既生酮也生糖。"],
+["Leucine and lysine","正確。"],
+["Isoleucine and threonine","兩者既生酮也生糖。"],
+["Alanine and serine","兩者是生糖胺基酸。"]]},
+{c:"18.3",s:"Ch18 p.34, 36 · One-carbon carriers",q:"Which statement about one-carbon carriers is correct?",a:3,o:[
+["Biotin carries methyl groups.","Biotin 攜帶最氧化的 CO2。"],
+["N5-Methyl-THF is the main methyl donor because its methyl group is most reactive.","它的甲基轉移能力不足。"],
+["S-Adenosylmethionine is made from methionine and GTP.","用的是 ATP,並釋出三磷酸。"],
+["S-Adenosylmethionine carries methyl groups in the most reduced state; its sulfonium ion makes the methyl about 1,000 times more reactive than that of N5-methyl-THF.","正確。"]]},
+{c:"18.3",s:"Ch18 p.37–38 · Folate trap",q:"Why is it dangerous to treat pernicious anemia with folate alone?",a:0,o:[
+["Folate corrects the anemia, but the neurological damage of B12 deficiency keeps progressing (propionyl-CoA accumulates).","正確。B12 缺乏時 folate 被困在 N5-methyl 型(folate trap),因為 methylene → methyl 不可逆。"],
+["Folate is toxic to red blood cells.","不是。"],
+["Folate blocks B12 absorption.","不是。"],
+["Folate raises homocysteine.","Folate trap 才會使 homocysteine 上升。"]]},
+{c:"18.3",s:"Ch18 p.39 · End products",q:"Which set of amino acids is converted to succinyl-CoA?",a:2,o:[
+["Ala, Ser, Gly, Cys","這些變成 pyruvate。"],
+["Arg, Pro, His, Gln, Glu","這些變成 α-ketoglutarate。"],
+["Met, Ile, Val, Thr","正確。經 propionyl-CoA → methylmalonyl-CoA → succinyl-CoA。"],
+["Asn, Asp","這些變成 oxaloacetate。"]]},
+{c:"18.3",s:"Ch18 p.41 · Serine dehydratase",q:"How is serine converted to pyruvate?",a:1,o:[
+["By transamination with α-ketoglutarate","講義寫的是 serine dehydratase。"],
+["By serine dehydratase, a PLP enzyme that removes both the β-hydroxyl and α-amino groups","正確。"],
+["By serine hydroxymethyltransferase","那是 Ser ⇌ Gly。"],
+["By oxidation with NAD+","不是。"]]},
+{c:"18.3",s:"Ch18 p.42–43 · Glycine cleavage",q:"Which statement about the major pathway of glycine degradation in animals is correct?",a:3,o:[
+["It converts glycine to pyruvate.","主要途徑不產生 pyruvate,碳不進入 TCA。"],
+["It forms oxalate.","那是 D-amino acid oxidase 途徑。"],
+["It needs S-adenosylmethionine.","需要的是 tetrahydrofolate。"],
+["The glycine cleavage enzyme gives CO2, NH4+ and N5,N10-methylene-THF; its defect causes nonketotic hyperglycinemia.","正確。高濃度 glycine 成為抑制性神經傳導物質。"]]},
+{c:"18.3",s:"Ch18 p.45 · Oxalate",q:"Why is the D-amino acid oxidase pathway of glycine degradation medically important?",a:0,o:[
+["Glycine → glyoxylate → oxalate, which forms calcium oxalate crystals, up to 75% of kidney stones.","正確。這個酵素在腎中濃度高,可能用來處理細菌細胞壁與燒烤食物中的 D-胺基酸。"],
+["It is the main source of THF one-carbon units.","那是 serine → glycine。"],
+["It produces ketone bodies.","不是。"],
+["It produces uric acid.","Uric acid 來自 purine。"]]},
+{c:"18.3",s:"Ch18 p.47 · Tryptophan",q:"Besides acetyl-CoA, which molecules derive from tryptophan catabolism?",a:2,o:[
+["Melanin and dopamine","這些來自 tyrosine。"],
+["Creatine and heme","這些來自 glycine 等。"],
+["Nicotinate (for NAD and NADP), serotonin, and indoleacetate (a plant growth factor)","正確。"],
+["GABA and histamine","分別來自 glutamate 與 histidine。"]]},
+{c:"18.3",s:"Ch18 p.48 · Phe and Tyr",q:"What happens to the nine carbons of phenylalanine and tyrosine during catabolism?",a:1,o:[
+["All nine become acetyl-CoA.","不是。"],
+["Four become acetoacetate, four become fumarate, and one is lost as CO2.","正確。所以它們既生酮也生糖;tyrosinase 突變則造成 albinism。"],
+["All nine become fumarate.","不是。"],
+["Five become α-ketoglutarate and four become succinyl-CoA.","不是。"]]},
+{c:"18.3",s:"Ch18 p.49 · Phenylalanine hydroxylase",q:"Which statement about phenylalanine hydroxylase is correct?",a:3,o:[
+["It is a dioxygenase that puts both oxygen atoms into tyrosine.","它是 mixed-function oxygenase。"],
+["It uses PLP as cofactor.","用的是 tetrahydrobiopterin。"],
+["It converts tyrosine to phenylalanine.","方向相反。"],
+["It is a mixed-function oxygenase that uses tetrahydrobiopterin; the dihydrobiopterin formed is reduced back by dihydrobiopterin reductase with NADPH.","正確。一個 O 進 tyrosine,另一個還原成 H2O。"]]},
+{c:"18.3",s:"Ch18 p.50–51 · Phenylketonuria",q:"Which statement about phenylketonuria (PKU) is correct?",a:0,o:[
+["Phenylalanine is transaminated to phenylpyruvate; phenylacetate gives urine a honeylike odor; foods with aspartame carry warnings; PEGylated phenylalanine ammonia lyase is an enzyme therapy.","正確。早期累積會傷害腦部發育;新生兒篩檢便宜又划算。"],
+["Urine turns black on standing.","那是 alkaptonuria。"],
+["Urine smells of maple syrup.","那是 MSUD。"],
+["Treatment is a high-phenylalanine diet.","要限制 phenylalanine。"]]},
+{c:"18.3",s:"Ch18 p.52 · Alkaptonuria",q:"Alkaptonuria results from a defect in which enzyme, with which signs?",a:2,o:[
+["Phenylalanine hydroxylase; honeylike urine","那是 PKU。"],
+["Tyrosinase; albinism","那是白化症。"],
+["Homogentisate 1,2-dioxygenase; urine that turns black and a form of arthritis","正確。"],
+["Branched-chain α-keto acid dehydrogenase; sweet-smelling urine","那是 MSUD。"]]},
+{c:"18.3",s:"Ch18 p.53 · Histidine",q:"How is histidine converted to α-ketoglutarate?",a:1,o:[
+["Through ornithine and glutamate γ-semialdehyde","那是 arginine。"],
+["Through glutamate, with tetrahydrofolate accepting a formimino group","正確。"],
+["By direct transamination","不是。"],
+["By ring opening and hydrolysis to glutamate γ-semialdehyde","那是 proline。"]]},
+{c:"18.3",s:"Ch18 p.55 · BCAA and MSUD",q:"Which statement about branched-chain amino acids is correct?",a:3,o:[
+["They are oxidized mainly in the liver.","肝沒有 branched-chain aminotransferase。"],
+["Their α-keto acid dehydrogenase complex is activated by phosphorylation.","是去磷酸化時活化。"],
+["Maple syrup urine disease results from a defect in branched-chain aminotransferase.","MSUD 是 α-keto acid dehydrogenase complex 缺陷。"],
+["They are oxidized mainly in muscle, adipose, kidney and brain, because the liver lacks branched-chain aminotransferase; MSUD results from a defective branched-chain α-keto acid dehydrogenase complex.","正確。尿的氣味來自堆積的 α-keto acid。"]]}
+];
+const MATCH=[
+{t:"脂肪動員與運送 → 酵素做什麼",p:[["ATGL","TAG → DAG","Ch17 p.13","PKA 磷酸化 perilipin 後,CGI-58 離開油滴去招募 ATGL,由它切下第一個脂肪酸。"],["Hormone-sensitive lipase","DAG → MAG(被 PKA 磷酸化)","Ch17 p.13","被 PKA 磷酸化後與 perilipin 結合,切下 DAG 的第二個脂肪酸;hormone-sensitive 指它受 glucagon、epinephrine 調控。"],["MGL","MAG → FFA","Ch17 p.13","位在油滴表面,切下最後一個脂肪酸;FFA 離開脂肪細胞後與 albumin 結合。"],["Lipoprotein lipase","水解 chylomicron 的 TAG(apoC-II 活化)","Ch17 p.11","在微血管壁上水解 chylomicron 的 TAG,讓組織吸收脂肪酸;apoC-II 活化它,apoC-III 抑制它。"],["Glycerol kinase","肝:glycerol → glycerol 3-P","Ch17 p.14","脂肪組織沒有這個酵素,所以 glycerol 送到肝,磷酸化後經 DHAP 進入糖解或糖質新生。"],["Fatty acyl-CoA synthetase","活化脂肪酸,算 2 ATP","Ch17 p.16","ATP 被切成 AMP + PPi,斷了兩個高能磷酸鍵,所以算 ATP 時要扣 2。"]]},
+{t:"β 氧化的酵素 → 作用",p:[["Acyl-CoA dehydrogenase","第 1 步,FAD,形成 trans-Δ2","Ch17 p.21–22","在 C-2、C-3 之間形成 trans 雙鍵,電子交給緊結合的 FAD 再傳到 ETF;類似 TCA 的 succinate dehydrogenase。"],["Enoyl-CoA hydratase","第 2 步,加水成 L-β-hydroxyacyl-CoA","Ch17 p.24","在 trans 雙鍵上加水,只產生 L 型;類似 fumarase。脂肪酸合成用的則是 D 型。"],["β-Hydroxyacyl-CoA dehydrogenase","第 3 步,NAD+ → NADH","Ch17 p.25","把羥基氧化成酮基,產生的 NADH 交給 Complex I;類似 malate dehydrogenase。"],["Thiolase","第 4 步,切出 acetyl-CoA","Ch17 p.26","游離 CoA 攻擊 β-keto 碳,切下羧基端兩個碳成為 acetyl-CoA,剩下少兩碳的鏈再進下一輪。"],["Δ3,Δ2-Enoyl-CoA isomerase","cis-Δ3 → trans-Δ2","Ch17 p.31","Hydratase 只認 trans 雙鍵;oleate 跑 3 輪後剩 cis-Δ3,要先轉成 trans-Δ2。單元不飽和脂肪酸只需要這一個。"],["2,4-Dienoyl-CoA reductase","多元不飽和:trans-Δ2,cis-Δ4 → trans-Δ3","Ch17 p.32","Linoleate 這類多元不飽和脂肪酸會出現 trans-Δ2、cis-Δ4 相鄰雙鍵,先還原成 trans-Δ3,再由 isomerase 轉成 trans-Δ2。"]]},
+{t:"奇數碳、酮體、粒線體入口",p:[["Propionyl-CoA carboxylase","biotin + ATP,做出 D-methylmalonyl-CoA","Ch17 p.33","奇數碳脂肪酸最後剩下三碳的 propionyl-CoA;用 biotin 攜帶 CO2 接上去,類似 pyruvate carboxylase。缺乏它會造成 propionic acidemia。"],["Methylmalonyl-CoA mutase","coenzyme B12,做出 succinyl-CoA","Ch17 p.33","把 L-methylmalonyl-CoA 重排成 succinyl-CoA 進入 TCA;需要 coenzyme B12,是哺乳類使用 B12 的兩個反應之一。"],["HMG-CoA synthase(粒線體)","acetoacetyl-CoA + acetyl-CoA → HMG-CoA","Ch17 p.42","肝粒線體的 HMG-CoA 用來做酮體;細胞質的那一型則走膽固醇合成。"],["HMG-CoA lyase","HMG-CoA → acetoacetate","Ch17 p.42","把 HMG-CoA 切成 acetoacetate 與 acetyl-CoA;acetoacetate 再還原成 β-hydroxybutyrate,或脫羧成 acetone。"],["Thiophorase","肝外活化 acetoacetate;肝沒有","Ch17 p.43","用 succinyl-CoA 的 CoA 把 acetoacetate 活化成 acetoacetyl-CoA。肝沒有它,所以肝只生產、不使用酮體。"],["Acyl-carnitine/carnitine cotransporter","acyl-carnitine 進、carnitine 出","Ch17 p.18","反向交換:acyl-carnitine 進基質、carnitine 回膜間腔;前後由 CPT1、CPT2 換接 carnitine 與 CoA,長鏈脂肪酸才能進粒線體。"]]},
+{t:"Ch17 疾病 → 缺陷",p:[["MCAD deficiency","6–12 碳脂肪酸無法氧化,辛酸高、低血糖","Ch17 p.23","最常見的脂肪酸分解遺傳缺陷;空腹時無法用中鏈脂肪產能,造成低血糖。治療:低脂高醣、不要空腹太久。"],["Propionic acidemia","propionyl-CoA carboxylase 缺乏","Ch17 p.34","Propionyl-CoA 接上 carnitine 被送出粒線體,以 propionate 釋入血中,使血液與尿酸化;約 10 萬分之一的新生兒。"],["Pernicious anemia","缺 intrinsic factor,B12 吸收不良","Ch17 p.35","B12 的吸收需要 intrinsic factor;缺 B12 會使紅血球與血紅素減少,中樞神經也會進行性受損。"],["Zellweger syndrome","做不出 peroxisome","Ch17 p.36","沒有 peroxisome,極長鏈與分支脂肪酸都無法在 peroxisome 進行 β 氧化。"],["X-linked adrenoleukodystrophy","VLCFA 進 peroxisome 的運輸蛋白缺陷","Ch17 p.36","極長鏈脂肪酸進不了 peroxisome 而堆積;Lorenzo's oil 抑制製造 VLCFA 的酵素。"],["Refsum disease","phytanoyl-CoA hydroxylase 缺陷","Ch17 p.37","Phytanic acid 的甲基分支擋住 β 氧化,要先在 peroxisome 做 α 氧化;此酵素缺陷使血中 phytanic acid 很高,造成失明、失聰等神經症狀。"]]},
+{t:"蛋白質消化 → 角色",p:[["Gastrin","刺激 HCl 與 pepsinogen 分泌","Ch18 p.5","蛋白質進胃時分泌;HCl 殺菌並讓蛋白質變性,pepsinogen 在酸中自我活化成 pepsin。"],["Secretin","刺激胰臟分泌 bicarbonate","Ch18 p.6","胃酸進入小腸、pH 下降時分泌,讓胰臟送出 bicarbonate,把 pH 拉到約 7。"],["Cholecystokinin","刺激胰臟分泌蛋白酶原","Ch18 p.6","胜肽到達十二指腸時分泌,讓胰臟送出 trypsinogen 等酵素原,最適 pH 7–8。"],["Enteropeptidase","trypsinogen → trypsin","Ch18 p.6","小腸的酵素,負責啟動第一個 trypsin;之後 trypsin 會自我活化並活化其他酵素原。"],["Trypsin","切 Lys、Arg 之後","Ch18 p.6","切在帶正電的 Lys、Arg 之後;也負責活化 chymotrypsinogen 與 procarboxypeptidase。"],["Chymotrypsin","切 Phe、Trp、Tyr 之後","Ch18 p.6","切在芳香族的 Phe、Trp、Tyr 之後;由 trypsin 活化。"]]},
+{t:"Urea cycle → 反應與位置",p:[["Carbamoyl phosphate synthetase I","粒線體;NH4+ + HCO3− + 2 ATP","Ch18 p.20–21","Urea cycle 的第一步與調控點,把第一個氮帶進來;需要 N-acetylglutamate 活化。細胞質的 CPS II 則用於 pyrimidine 合成。"],["Ornithine transcarbamoylase","粒線體;ornithine → citrulline","Ch18 p.20, 22","Carbamoyl phosphate 把 carbamoyl 基交給 ornithine;ornithine 的角色像 TCA 的 oxaloacetate,每輪接收材料。"],["Argininosuccinate synthetase","細胞質;citrulline + Asp + ATP","Ch18 p.20, 23","Aspartate 帶進第二個氮;ATP 切成 AMP + PPi,算 2 個高能鍵。"],["Argininosuccinase","細胞質;放出 arginine + fumarate","Ch18 p.20, 23","放出的 fumarate 變成 malate 進 TCA,就是 aspartate–argininosuccinate shunt。"],["Arginase","細胞質;arginine → urea + ornithine","Ch18 p.20, 23","放出 urea,ornithine 回粒線體跑下一輪;arginase 缺乏時要禁 arginine。"],["ORNT1","ornithine 進、citrulline 出","Ch18 p.22","粒線體內膜的反向運輸蛋白:citrulline 帶一個 H+ 出去、ornithine 進來,整體電中性。"]]},
+{t:"胺基酸 → 分解終產物",p:[["Leucine","acetyl-CoA + acetoacetate(純生酮)","Ch18 p.46","Leu 和 Lys 是僅有的兩個純生酮胺基酸,只能變成酮體,不能做 glucose。"],["Phenylalanine","fumarate + acetoacetate","Ch18 p.46, 48","9 個碳:4 個變 acetoacetate、4 個變 fumarate、1 個變 CO2,所以既生酮也生糖。"],["Valine","succinyl-CoA","Ch18 p.54","轉胺、脫羧後剩四個碳,經 propionyl-CoA → methylmalonyl-CoA → succinyl-CoA。"],["Histidine","α-ketoglutarate(formimino 給 THF)","Ch18 p.53","先變成 glutamate,過程中 formimino 基交給 tetrahydrofolate,再變成 α-ketoglutarate。"],["Alanine","pyruvate","Ch18 p.40","Alanine aminotransferase 一步轉胺就變成 pyruvate,這也是 glucose–alanine cycle 的基礎。"],["Aspartate","oxaloacetate","Ch18 p.56","Aspartate aminotransferase 轉胺成 oxaloacetate;asparagine 則先由 asparaginase 變成 aspartate。"]]},
+{t:"Ch18 疾病 → 缺陷",p:[["Phenylketonuria","phenylalanine hydroxylase","Ch18 p.49","Phe 無法變成 Tyr,改走轉胺成 phenylpyruvate;phenylacetate 使尿有蜂蜜味。治療:限制 Phe,並注意含 aspartame 的食物。"],["Alkaptonuria","homogentisate 1,2-dioxygenase,尿變黑","Ch18 p.52","Homogentisate 從尿排出,氧化後尿變黑;患者也容易得關節炎。"],["Maple syrup urine disease","branched-chain α-keto acid dehydrogenase","Ch18 p.55","Leu、Ile、Val 的 α-keto acid 無法脫羧而堆積,使尿有楓糖味。"],["Albinism","tyrosinase","Ch18 p.48","Tyrosinase 把 tyrosine 做成黑色素;突變造成白化症。"],["Nonketotic hyperglycinemia","glycine cleavage enzyme","Ch18 p.43","Glycine 的主要分解途徑壞掉,高濃度的 glycine 成為抑制性神經傳導物質。"],["Hyperinsulinism–hyperammonemia","glutamate dehydrogenase 的 GTP 結合位","Ch18 p.14","GTP 原本會抑制這個酵素;結合位突變後抑制失效,酵素過度活化,造成高血氨與高胰島素。"]]},
+{t:"治療 → 機轉",p:[["Benzoate","與 glycine 結合成 hippurate 排出","Ch18 p.30","Benzoyl-CoA 與 glycine 結合成 hippurate 從尿排出;身體再做 glycine 時會消耗氨。"],["Phenylbutyrate","與 glutamine 結合成 phenylacetylglutamine","Ch18 p.30","轉成 phenylacetate 後與 glutamine 結合排出;補做 glutamine 時用掉氨。"],["Carbamoyl glutamate","取代 N-acetylglutamate 活化 CPS I","Ch18 p.31","N-acetylglutamate synthase 缺乏時,用這個類似物直接活化 CPS I。"],["補充 arginine","OTC、ASS、ASL 缺乏","Ch18 p.31","補充 arginine,讓 arginase 持續再生 ornithine,cycle 不中斷。Arginase 缺乏時則相反,要禁 arginine。"],["PEG-phenylalanine ammonia lyase","把 Phe 分解成 trans-cinnamic acid","Ch18 p.51","皮下注射的酵素療法,把 Phe 分解成無害的 trans-cinnamic acid 與少量氨。"],["Lorenzo's oil","抑制製造 VLCFA 的酵素","Ch17 p.36","XALD 病人的 VLCFA 進不了 peroxisome;減少 VLCFA 的生成可降低堆積。"]]}
+];
+const KEY="biochem-ch1718-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch24 Genes and Chromosomes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html" aria-current="page">Ch24</a></nav>
+<h1>Ch24 Genes and Chromosomes</h1>
+  <p class="lede">染色體元件、DNA 超螺旋與 Lk 計算、topoisomerase 與藥物、nucleosome 與高階結構。附整章流程圖、大綱、講義國考題與考法分析。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(59 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<style>
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0}
+.flow .ft{font-weight:600;font-size:.95rem;margin-bottom:8px}
+.flow .ft i{margin-left:6px}
+.fl{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.nd{flex:1 1 130px;background:var(--accent-soft);border-radius:8px;padding:7px 9px;font-size:.86rem;line-height:1.45}
+.nd b{display:block;font-size:.9rem}
+.nd.key{background:var(--bad-soft)}
+.nd.ok{background:var(--good-soft)}
+.ar{align-self:center;color:var(--muted);font-weight:700;flex:0 0 auto}
+.br{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.br>div{border:1px dashed var(--line);border-radius:8px;padding:8px}
+.br .lab{font-size:.8rem;color:var(--muted);margin-bottom:4px}
+@media (max-width:640px){.fl{flex-direction:column}.nd{flex:0 0 auto}.ar{transform:rotate(90deg)}.br{grid-template-columns:1fr}}
+.exam td:first-child{white-space:nowrap;font-weight:600}
+p.src{white-space:normal}
+@media (max-width:640px){.exam td:first-child{white-space:normal}}
+</style>
+<p class="hint">一行一考點。灰色是講義 PDF 頁碼;<span class="hit">國考</span> 是講義附的醫師/牙醫師國考題考過的點。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+
+<div class="cmap"><style>
+.cmap{--acc:var(--accent);--acc-soft:var(--accent-soft);--key:var(--bad-soft);--keyline:var(--bad);--side:var(--good-soft);--link:#8a5cc2}
+.cmap .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin-top:10px;width:min(1260px,calc(100vw - 24px));position:relative;left:50%;transform:translateX(-50%)}
+.cmap svg{display:block;width:100%;height:auto;font-family:inherit}
+.cmap .rt{fill:#2f6f8f}.cmap .rtt{fill:#fff;font-weight:700;font-size:17px}.cmap .rt+text+text{fill:#fff}
+.cmap .hd{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.5}.cmap .ht{fill:var(--ink);font-weight:700;font-size:16px}
+.cmap .b{fill:var(--surface);stroke:var(--line);stroke-width:1.2}.cmap .b.k{fill:var(--key);stroke:var(--keyline);stroke-width:1.6}.cmap .b.s{fill:var(--side);stroke-dasharray:4 3}
+.cmap .t1{fill:var(--ink);font-weight:700;font-size:14.5px}.cmap .t2{fill:var(--ink);font-size:13px}.cmap svg .pg{fill:var(--muted);font-size:11.5px;font-family:var(--font-mono)}
+.cmap svg .ar{fill:none;stroke:var(--muted);stroke-width:1.4}.cmap .ah{fill:var(--muted)}
+.cmap .cx{fill:none;stroke:var(--link);stroke-width:1.6;stroke-dasharray:6 4}.cmap .ah2{fill:var(--link)}.cmap .bg{fill:var(--link)}.cmap .bt{fill:#fff;font-size:12px;font-weight:700}
+.cmap .note{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+.cmap .ol{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 38px;margin:10px 0 0}
+.cmap .ol>li{margin:6px 0 12px}.cmap .ol>li>b{font-size:1.02rem}
+.cmap .ol ol{padding-left:22px;list-style:lower-alpha}.cmap .ol ol li{margin:4px 0;font-size:.93rem}.cmap .ol ul{padding-left:20px;list-style:disc}
+.cmap .ol i{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.cmap .x{font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;white-space:nowrap}
+.cmap details>summary{cursor:pointer;color:var(--muted);font-size:.9rem;margin-top:8px}
+</style>
+<h2>整章流程圖</h2>
+<div class="card" style="--mw:760px"><div style="min-width:760px"><svg viewBox="0 0 1000 932" role="img" aria-label="Ch24 基因與染色體總流程圖" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+<marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah2"/></marker></defs>
+<rect class="rt" x="330" y="16" width="340" height="58" rx="12"/><text class="rtt" x="500" y="41" text-anchor="middle">問題:DNA 遠比容器長</text><text class="t2" x="500" y="62" text-anchor="middle">人類一個細胞約 2 m,核只有 5–10 µm</text><rect class="hd" x="16" y="114" width="284" height="40" rx="10"/><text class="ht" x="158.0" y="140" text-anchor="middle">24.1 染色體上有什麼</text><path class="ar" d="M500 74 C500 100,158.0 80,158.0 112" marker-end="url(#a)"/><line class="ar" x1="158.0" y1="154" x2="158.0" y2="185" marker-end="url(#a)"/><rect class="b n" x="16" y="188" width="284" height="78" rx="9"/><text class="t1" x="28" y="215">基因 = 編碼最終產物的全部 DNA</text><text class="t2" x="28" y="235">exon 只佔 1.5%,其餘多是 intron、重複</text><text class="pg" x="288" y="258" text-anchor="end">p.5, 14</text><line class="ar" x1="158.0" y1="266" x2="158.0" y2="297" marker-end="url(#a)"/><rect class="b n" x="16" y="300" width="284" height="78" rx="9"/><text class="t1" x="28" y="327">Satellite DNA:&lt;10 bp 重複,約 3%</text><text class="t2" x="28" y="347">集中在 centromere、telomere</text><text class="pg" x="288" y="370" text-anchor="end">p.15</text><line class="ar" x1="158.0" y1="378" x2="158.0" y2="409" marker-end="url(#a)"/><rect class="b k" x="16" y="412" width="284" height="98" rx="9"/><text class="t1" x="28" y="439">線性染色體三元件</text><text class="t2" x="28" y="459">centromere · telomere · origin</text><text class="t2" x="28" y="479">(primer 不是!)</text><text class="pg" x="288" y="502" text-anchor="end">p.16, 18</text><line class="ar" x1="158.0" y1="510" x2="158.0" y2="541" marker-end="url(#a)"/><rect class="b n" x="16" y="544" width="284" height="98" rx="9"/><text class="t1" x="28" y="571">末端複製不完 → telomerase</text><text class="t2" x="28" y="591">RNA 模板的 reverse transcriptase</text><text class="t2" x="28" y="611">人類 (TTAGGG)n</text><text class="pg" x="288" y="634" text-anchor="end">p.16–17</text><line class="ar" x1="158.0" y1="642" x2="158.0" y2="673" marker-end="url(#a)"/><rect class="b s" x="16" y="676" width="284" height="98" rx="9"/><text class="t1" x="28" y="703">原核與胞器:E. coli 環狀 4.6 Mbp</text><text class="t2" x="28" y="723">plasmid(β-lactamase 抗藥)</text><text class="t2" x="28" y="743">mtDNA 環狀 16,569 bp</text><text class="pg" x="288" y="766" text-anchor="end">p.9, 11</text><rect class="hd" x="358" y="114" width="284" height="40" rx="10"/><text class="ht" x="500.0" y="140" text-anchor="middle">24.2 怎麼扭</text><path class="ar" d="M500 74 C500 100,500.0 80,500.0 112" marker-end="url(#a)"/><line class="ar" x1="500.0" y1="154" x2="500.0" y2="185" marker-end="url(#a)"/><rect class="b n" x="358" y="188" width="284" height="78" rx="9"/><text class="t1" x="370" y="215">細胞 DNA 是 underwound</text><text class="t2" x="370" y="235">σ = −0.05 ~ −0.07</text><text class="pg" x="630" y="258" text-anchor="end">p.23, 26</text><line class="ar" x1="500.0" y1="266" x2="500.0" y2="297" marker-end="url(#a)"/><rect class="b n" x="358" y="300" width="284" height="98" rx="9"/><text class="t1" x="370" y="327">Lk₀ = bp ÷ 10.5</text><text class="t2" x="370" y="347">ΔLk = Lk − Lk₀ ;σ = ΔLk ÷ Lk₀</text><text class="t2" x="370" y="367">負超螺旋 ⇔ Lk &lt; Lk₀</text><text class="pg" x="630" y="390" text-anchor="end">p.26–29</text><line class="ar" x1="500.0" y1="398" x2="500.0" y2="429" marker-end="url(#a)"/><rect class="b k" x="358" y="432" width="284" height="98" rx="9"/><text class="t1" x="370" y="459">改 Lk 只能靠 topoisomerase</text><text class="t2" x="370" y="479">Type I:切 1 股,Lk ±1,不用 ATP</text><text class="t2" x="370" y="499">Type II:切 2 股,Lk ±2,用 ATP</text><text class="pg" x="630" y="522" text-anchor="end">p.33–36</text><line class="ar" x1="500.0" y1="530" x2="500.0" y2="561" marker-end="url(#a)"/><rect class="b n" x="358" y="564" width="284" height="78" rx="9"/><text class="t1" x="370" y="591">細菌 gyrase:ATP 引入負超螺旋</text><text class="t2" x="370" y="611">真核 topo:只會鬆弛</text><text class="pg" x="630" y="634" text-anchor="end">p.34</text><line class="ar" x1="500.0" y1="642" x2="500.0" y2="673" marker-end="url(#a)"/><rect class="b n" x="358" y="676" width="284" height="98" rx="9"/><text class="t1" x="370" y="703">藥:quinolone、coumarin(細菌)</text><text class="t2" x="370" y="723">-tecan → topo I</text><text class="t2" x="370" y="743">doxorubicin、etoposide → topo II</text><text class="pg" x="630" y="766" text-anchor="end">p.38–39</text><line class="ar" x1="500.0" y1="774" x2="500.0" y2="805" marker-end="url(#a)"/><rect class="b s" x="358" y="808" width="284" height="78" rx="9"/><text class="t1" x="370" y="835">Plectonemic:伸展右旋(溶液)</text><text class="t2" x="370" y="855">Solenoidal:緊密左旋(細胞壓縮)</text><text class="pg" x="630" y="878" text-anchor="end">p.42</text><rect class="hd" x="700" y="114" width="284" height="40" rx="10"/><text class="ht" x="842.0" y="140" text-anchor="middle">24.3 怎麼包</text><path class="ar" d="M500 74 C500 100,842.0 80,842.0 112" marker-end="url(#a)"/><line class="ar" x1="842.0" y1="154" x2="842.0" y2="185" marker-end="url(#a)"/><rect class="b k" x="700" y="188" width="284" height="98" rx="9"/><text class="t1" x="712" y="215">Nucleosome</text><text class="t2" x="712" y="235">(H2A·H2B·H3·H4)×2 + 146 bp,1.67 圈</text><text class="t2" x="712" y="255">H1 在 linker;只壓縮 ~7 倍</text><text class="pg" x="972" y="278" text-anchor="end">p.49</text><line class="ar" x1="842.0" y1="286" x2="842.0" y2="317" marker-end="url(#a)"/><rect class="b n" x="700" y="320" width="284" height="78" rx="9"/><text class="t1" x="712" y="347">DNA loops 掛在 scaffold</text><text class="t2" x="712" y="367">topo II 是主要 scaffold 蛋白</text><text class="pg" x="972" y="390" text-anchor="end">p.56</text><line class="ar" x1="842.0" y1="398" x2="842.0" y2="429" marker-end="url(#a)"/><rect class="b n" x="700" y="432" width="284" height="58" rx="9"/><text class="t1" x="712" y="459">TAD ~800 kb,邊界 CTCF</text><text class="pg" x="972" y="482" text-anchor="end">p.57</text><line class="ar" x1="842.0" y1="490" x2="842.0" y2="521" marker-end="url(#a)"/><rect class="b n" x="700" y="524" width="284" height="78" rx="9"/><text class="t1" x="712" y="551">Compartment:eu / heterochromatin</text><text class="t2" x="712" y="571">Territory;lncRNA Xist 關掉一條 X</text><text class="pg" x="972" y="594" text-anchor="end">p.57–60</text><line class="ar" x1="842.0" y1="602" x2="842.0" y2="633" marker-end="url(#a)"/><rect class="b k" x="700" y="636" width="284" height="78" rx="9"/><text class="t1" x="712" y="663">分裂:cohesin 綁姊妹 → condensin</text><text class="t2" x="712" y="683">凝縮 → anaphase separase 切 cohesin</text><text class="pg" x="972" y="706" text-anchor="end">p.61–63</text><line class="ar" x1="842.0" y1="714" x2="842.0" y2="745" marker-end="url(#a)"/><rect class="b s" x="700" y="748" width="284" height="78" rx="9"/><text class="t1" x="712" y="775">細菌 nucleoid:~500 個 loop domain</text><text class="t2" x="712" y="795">HU 動態結合,無穩定 nucleosome</text><text class="pg" x="972" y="818" text-anchor="end">p.64</text><path class="cx" d="M642 847.0 C682 847.0,660 237.0,698 237.0" marker-end="url(#b)"/><circle class="bg" cx="671.0" cy="542.0" r="11"/><text class="bt" x="671.0" y="546.5" text-anchor="middle">A</text><path class="cx" d="M642 491.0 C682 491.0,660 359.0,698 359.0" marker-end="url(#b)"/><circle class="bg" cx="671.0" cy="425.0" r="11"/><text class="bt" x="671.0" y="429.5" text-anchor="middle">B</text><g transform="translate(20,906)"><rect class="b k" width="16" height="12" rx="3"/><text class="pg" x="22" y="11">必考核心</text><rect class="b s" x="100" width="16" height="12" rx="3"/><text class="pg" x="122" y="11">對照/補充</text><path class="cx" d="M210 6 h34" marker-end="url(#b)"/><text class="pg" x="252" y="11">跨節關聯</text></g></svg></div></div>
+<p class="note">手機可左右滑動看圖。紅框是必考核心,虛線框是對照補充。紫色虛線是跨節關聯:<b>A</b> 纏 histone 形成負超螺旋,topo 再鬆掉補償的正超螺旋,所以沒有 gyrase 的真核 DNA 也是 underwound(p.52);<b>B</b> topo II 同時是 scaffold 的主要蛋白,所以 topo II 抑制劑能殺快速分裂的細胞(p.56)。</p>
+<h2>整章大綱</h2>
+<ol class="ol">
+<li><b>24.1 染色體元件</b>
+ <ol>
+ <li>基因:編碼最終產物(polypeptide 或功能性 RNA)的全部 DNA;350 aa 需 1,050 bp <i>p.5–6</i></li>
+ <li>基因體大小
+  <ul><li>E. coli:環狀 4,641,652 bp,長約 1.7 mm;plasmid 帶 β-lactamase 傳抗藥性 <i>p.9</i></li>
+  <li>人類:46 條,二倍體細胞 DNA 約 2 m <i>p.10</i></li>
+  <li>mtDNA:環狀 16,569 bp;>95% 粒線體蛋白由核編碼;密碼不完全相同 <span class="x">國考</span> <i>p.11–13</i></li></ul></li>
+ <li>Intron / exon:exon 只佔 1.5%;細菌很少有 intron,histone 基因沒有 <i>p.14</i></li>
+ <li>重複序列:satellite DNA(<10 bp,~3%)在 centromere、telomere <i>p.15</i></li>
+ <li>線性染色體三元件:centromere(接紡錘絲)、telomere(TTAGGG,telomerase 補)、origin;primer 不是 <span class="x">國考</span> <i>p.15–19</i></li>
+ </ol></li>
+<li><b>24.2 DNA 超螺旋</b>
+ <ol>
+ <li>細胞 DNA 是 underwound;聚合酶前方正、後方負超螺旋 <i>p.21–23</i></li>
+ <li>計算:Lk₀ = bp/10.5 → ΔLk = Lk − Lk₀ → σ = ΔLk/Lk₀(細胞 −0.05~−0.07);負超螺旋 ⇔ Lk < Lk₀ <span class="x">國考</span> <i>p.25–30</i></li>
+ <li>Lk 只有切斷再接回才會變:nick → 無定義;nucleosome 結合、加熱變性 → 不變 <i>p.24–26, 52</i></li>
+ <li>Underwinding 促成 cruciform(palindrome)與短段 Z-DNA <i>p.31</i></li>
+ <li>Topoisomerase(功能 = 切斷與接合磷酸雙酯鍵 <span class="x">國考</span>)
+  <ul><li>Type I:切 1 股,Tyr 共價中間物,Lk ±1,不用 ATP <i>p.33–35</i></li>
+  <li>Type II:切 2 股,Lk ±2,用 ATP <i>p.33, 36</i></li>
+  <li>細菌:topo I(Lk↑)、gyrase(ATP 引入負超螺旋,Lk↓)、topo IV(decatenation);真核只會鬆弛 <i>p.34, 37</i></li></ul></li>
+ <li>藥物:quinolone(擋接合)、coumarin(擋 ATP)→ 細菌;irinotecan、topotecan → topo I;doxorubicin、etoposide → topo II <i>p.38–39</i></li>
+ <li>Plectonemic(伸展右旋)vs solenoidal(緊密左旋,細胞內壓縮主力)<i>p.42</i></li>
+ </ol></li>
+<li><b>24.3 染色體結構</b>
+ <ol>
+ <li>Chromatin = DNA + 蛋白(約等重)+ RNA;分化細胞多在 G0 <span class="x">國考</span> <i>p.44–46</i></li>
+ <li>Histone:鹼性(Arg+Lys ≈ 1/4);H3、H4 最保守 <i>p.47</i></li>
+ <li>Nucleosome:(H2A·H2B·H3·H4)×2 + 146 bp 纏 1.67 圈;重複 ~200 bp;H1 在 linker,不在 core <span class="x">國考</span> <i>p.49–51</i></li>
+ <li>真核 underwinding 的來源:纏 histone 的負超螺旋 + topo 鬆掉補償的正超螺旋 → ΔLk −1 <i>p.52</i></li>
+ <li>組裝與變體:先 (H3–H4)₂ 後 H2A–H2B;CAF1(PCNA)、ASF1;H3.3、H2AZ、H2AX(Ser139)、CENPA;ChIP-seq 定位 <i>p.53–55</i></li>
+ <li>高階結構:scaffold loops(topo II)→ TAD(~800 kb,CTCF)→ compartment → territory;lncRNA Xist 造 Barr body <i>p.56–60</i></li>
+ <li>SMC:cohesin(SMC1–3)綁姊妹、condensin(SMC2–4)凝縮、separase 切 cohesin <i>p.61–63</i></li>
+ <li>細菌 nucleoid:~500 個 10 kb domain,HU 動態結合 <i>p.64</i></li>
+ </ol></li>
+</ol>
+</div>
+
+<h2>怎麼考:考法分析</h2>
+<p class="hint" style="margin-top:4px">依據:講義附的 8 題醫師/牙醫師國考題(p.12–51)與章末習題清單(p.66)。「推測」是我根據講義重點的判斷,不是考古紀錄。</p>
+<div class="tbl exam"><table>
+<thead><tr><th>題型</th><th>講義實際考過/練習的點</th><th>陷阱與解法</th></tr></thead>
+<tbody>
+<tr><td>何者錯誤(最多)</td><td>mtDNA(牙 111-1)、histone(牙 111-1)、細胞週期(醫 102-1)<i>p.12, 45, 50</i></td><td>錯誤選項多是「把對的事實說絕對」:密碼<b>完全</b>相同、H1 是 <b>core</b>、分化細胞在 <b>S</b> 期。看到「完全、皆、都是」先懷疑。</td></tr>
+<tr><td>名詞定義</td><td>chromatin(醫 103-1)、linker histone = H1(醫 96-2)、topoisomerase 功能(醫 110-2)<i>p.40, 45, 50</i></td><td>干擾選項會拿「同章別的結構」:centrosome vs chromatin、nucleosome vs chromatin;topo 的干擾是 telomere 保護、histone 修飾。</td></tr>
+<tr><td>拓樸判斷</td><td>負超螺旋 → Lk &lt; Lk₀(醫 102-2)<i>p.29</i></td><td>口訣:<b>負 = 少圈 = Lk 小</b>。正超螺旋在聚合酶<b>前方</b>。</td></tr>
+<tr><td>何者不屬於</td><td>維持染色體完整的序列:primer 不是(牙 111-2)<i>p.18</i></td><td>記「三元件」:centromere、telomere、origin。</td></tr>
+<tr><td>計算(推測:課堂考)</td><td>Worked Example 24-1;習題 3、5、7、8 都在算 Lk、σ <i>p.28, 66</i></td><td>照下方四步流程;容易錯在 <b>σ 忘了除以 Lk₀</b>、符號寫反。</td></tr>
+<tr><td>操作後 Lk 怎麼變(推測)</td><td>習題 5、8:nucleosome 結合、nick、gyrase + ATP、加熱變性 <i>p.66</i></td><td>只有<b>切斷再接回</b>才改 Lk:nick → 無定義;gyrase → 減少;topo I(去負超螺旋)→ 增加;nucleosome 結合與加熱變性 → <b>不變</b>(兩股仍以拓樸鍵相連 p.25)。</td></tr>
+<tr><td>藥物 ↔ 標的(推測)</td><td>Box 24-2 <i>p.38–39</i></td><td>分三層記:<b>細菌</b>(quinolone 接合、coumarin ATP)/<b>topo I</b>(-tecan)/<b>topo II</b>(doxorubicin、etoposide)。</td></tr>
+<tr><td>數字題(推測)</td><td>16,569 bp、146 bp、1.67 圈、~200 bp、10.5 bp/turn、σ −0.05~−0.07、1.5% exon <i>p.11–49</i></td><td>數字背在連連看第 1 組;注意別把 λ 的 17.5 µm 和 E. coli 的 1.7 mm 搞混。</td></tr>
+</tbody></table></div>
+<ul class="pts"><li class="mem">準備順序建議:① Lk/σ 計算與操作判斷 → ② topoisomerase 分類與藥物 → ③ nucleosome 組成與 H1 → ④ 染色體三元件、mtDNA → ⑤ TAD、SMC、Xist 等名詞配對</li></ul>
+
+<h2>24.1 染色體元件</h2>
+<ul class="pts">
+<li>基因的演進:one gene–one enzyme(Beadle &amp; Tatum)→ one gene–one polypeptide → <b>現代定義:編碼最終產物(polypeptide 或具結構/催化功能的 RNA)一級序列的全部 DNA</b> <i>p.5</i></li>
+<li>Regulatory sequences:標記基因起訖、影響轉錄、作為複製或重組起點 <i>p.5</i></li>
+<li>Colinearity:一個 codon = 3 nt;350 個胺基酸(平均大小)需 <b>1,050 bp</b> 編碼 DNA <i>p.6</i></li>
+<li>DNA 遠長於包裝它的容器:λ phage 48,502 bp,contour length 17.5 µm;算法 <b>3.4 Å/bp</b> <i>p.8</i></li>
+<li><b>E. coli</b>:一條環狀 dsDNA,<b>4,641,652 bp</b>,長 <b>~1.7 mm</b>,約細胞長度 850 倍 <i>p.7, 9</i></li>
+<li>Plasmid:細胞質中小環狀 DNA(幾 kb 到 400,000 bp);帶 <b>β-lactamase</b> → 抗 penicillin、ampicillin、amoxicillin,可跨物種傳遞 <i>p.9</i></li>
+<li>人類體細胞 <b>46</b> 條(22 對體染色體 + X、Y);一套基因體頭尾相接 ≈ 1 m,<b>二倍體細胞 ≈ 2 m</b> <i>p.10</i></li>
+<li>人類 <b>mtDNA:環狀 dsDNA,16,569 bp</b>;每粒線體 2–10 copies;編碼粒線體 tRNA、rRNA 與少數蛋白;<b>&gt;95% 粒線體蛋白由核 DNA 編碼</b> <i>p.11</i></li>
+<li class="mem">mtDNA 的密碼系統和核 DNA <b>不完全相同</b> → 「完全相同」是錯的 <span class="hit">國考</span> <i>p.12–13</i></li>
+<li>植物 mtDNA 200,000–2,500,000 bp;cpDNA 120,000–160,000 bp;來源是古細菌的染色體 <i>p.11</i></li>
+<li>Intron(不轉譯的插入段)/ exon(編碼段);<b>細菌基因很少有 intron</b>;histone 基因<b>沒有</b> intron <i>p.14</i></li>
+<li>Ovalbumin:7 個 intron 佔基因 85%;β-globin:2 個 intron <i>p.14</i></li>
+<li>人類基因體只有 <b>~1.5% 是 exon</b>;含 intron 的基因約佔 30%;transposon 約一半 <i>p.14</i></li>
+<li><b>Satellite DNA</b>(= simple-sequence DNA = SSR):重複單位 &lt;10 bp,約佔人類基因體 <b>3%</b>;CsCl 梯度中形成「衛星」帶;不編碼蛋白或 RNA;集中在 centromere、telomere <i>p.15</i></li>
+<li><b>Centromere</b>:連接 mitotic spindle 的蛋白附著點,確保平均分離。酵母 ~130 bp、富含 A=T;高等真核是數千個 5–10 bp 重複 <i>p.15</i></li>
+<li><b>Telomere</b>:(5')(T<sub>x</sub>G<sub>y</sub>)<sub>n</sub>;人類 <b>(TTAGGG)n</b>,哺乳類 n &gt; 1,500;Tetrahymena TTGGGG <i>p.16</i></li>
+<li>線性末端無法被一般機制完整複製 → <b>telomerase</b> 補:RNP reverse transcriptase,自帶 ~150 nt RNA 作模板,染色體 3' 端作 primer <i>p.16–17</i></li>
+<li>T loop + TRF1/TRF2 保護 3' 端;體細胞沒有 telomerase → 隨年齡變短 <i>p.17</i></li>
+<li class="mem">穩定線性染色體只需 3 元件:<b>centromere、兩端 telomere、replication origins</b>(YAC 就是這樣做)。<b>Primer 不是</b> <span class="hit">國考</span> <i>p.16, 18–19</i></li>
+</ul>
+
+<div class="flow"><div class="ft">流程:線性染色體末端怎麼保住 <i>p.16–17</i></div><div class="fl">
+<div class="nd"><b>問題</b>線性 DNA 末端無法被一般複製機制複製完全</div><span class="ar">→</span>
+<div class="nd"><b>序列</b>末端是 TG-rich 重複,人類 (TTAGGG)n</div><span class="ar">→</span>
+<div class="nd key"><b>Telomerase</b>RNP reverse transcriptase;自帶 ~150 nt RNA 當模板,3' 端當 primer</div><span class="ar">→</span>
+<div class="nd"><b>補另一股</b>primase + DNA polymerase 補 CA 股</div><span class="ar">→</span>
+<div class="nd ok"><b>保護</b>T loop + TRF1/TRF2 藏住 3' 端;體細胞無 telomerase → 隨年齡變短</div>
+</div></div>
+
+<h2>24.2 DNA 超螺旋</h2>
+<ul class="pts">
+<li>Supercoiling = 螺旋再纏繞(coiling of a coil)。Relaxed DNA:DNA 軸沒有淨彎曲 <i>p.21</i></li>
+<li>壓縮需中和磷酸負電:<b>Mg²⁺、polyamines</b> <i>p.21</i></li>
+<li>細胞 DNA 是 <b>underwound</b>(每長度右旋圈數比 B-form 少)<i>p.21, 23</i></li>
+<li>聚合酶前進:<b>前方 overwound(正超螺旋)、後方 underwound</b> <i>p.22</i></li>
+<li>84 bp(8 圈)拿掉 1 圈 → 12 bp/turn,有張力;通常以<b>超螺旋</b>吸收(比打斷氫鍵便宜),或局部解開約 10 bp <i>p.24</i></li>
+<li>Underwound DNA = 儲存能量;只有<b>閉環</b>或被蛋白固定時才能維持,<b>一個 nick 就鬆掉</b> <i>p.24</i></li>
+<li><b>Linking number (Lk)</b>:第二股穿過第一股所圍面的次數;拓樸性質,彎曲變形不變;<b>永遠是整數</b>;右旋為正 <i>p.25</i></li>
+<li>Lk 只有在「打斷再接回」骨架時才會改變;nick 一股 → Lk 無定義 <i>p.23, 26</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>公式</th><th>意義</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>Lk₀ = bp / 10.5</td><td>relaxed 閉環的 Lk(2,100 bp → 200)</td><td><i>p.26</i></td></tr>
+<tr><td>ΔLk = Lk − Lk₀</td><td>&lt;0 負超螺旋(underwound);&gt;0 正超螺旋</td><td><i>p.26–27</i></td></tr>
+<tr><td>σ = ΔLk / Lk₀</td><td>superhelical density,與長度無關;細胞內 <b>−0.05 ~ −0.07</b></td><td><i>p.26</i></td></tr>
+<tr><td>例:4,200 bp、Lk 374</td><td>Lk₀ 400 → ΔLk −26 → σ = <b>−0.065</b>(負)</td><td><i>p.28</i></td></tr>
+<tr><td>例:4,200 bp、Lk 412</td><td>ΔLk +12 → σ = <b>+0.03</b>(正)</td><td><i>p.28</i></td></tr>
+</tbody></table></div>
+<div class="flow"><div class="ft">流程:Lk / σ 計算四步 <i>p.26–28</i></div><div class="fl">
+<div class="nd"><b>① Lk₀</b>bp ÷ 10.5<br>4,200 → 400</div><span class="ar">→</span>
+<div class="nd"><b>② ΔLk</b>Lk − Lk₀<br>374 − 400 = −26</div><span class="ar">→</span>
+<div class="nd"><b>③ σ</b>ΔLk ÷ Lk₀<br>−26 ÷ 400 = −0.065</div><span class="ar">→</span>
+<div class="nd key"><b>④ 判讀</b>σ &lt; 0 負超螺旋(underwound,細胞常態 −0.05~−0.07);σ &gt; 0 正超螺旋</div>
+</div>
+<div class="br"><div><div class="lab">反推題(習題 5)</div>relaxed Lk = 500 → bp = 500 × 10.5 = <b>5,250 bp</b></div>
+<div><div class="lab">先問:Lk 有定義嗎?</div>只有兩股都完整的<b>閉環</b>才有;一個 nick → 無定義,張力全部釋放 p.24, 26</div></div></div>
+<ul class="pts">
+<li class="mem">Plasmid 在體內是負超螺旋 → <b>Lk &lt; Lk₀</b> <span class="hit">國考</span> <i>p.29–30</i></li>
+<li><b>Topoisomers</b>:只差在拓樸性質(如 Lk)的同一環狀 DNA;切一股、轉 360°、接回 → Lk ±1 <i>p.27</i></li>
+<li>Underwinding 促進 <b>cruciform</b>(在 palindrome)與短段 <b>Z-DNA</b>;relaxed DNA 不利 cruciform <i>p.31–32</i></li>
+<li><b>Type I topo:切一股,Lk 每次變 1;Type II:切兩股,讓另一段雙股穿過,Lk 每次變 2</b> <i>p.33</i></li>
+<li>電泳:超螺旋較緊密 → <b>跑得快</b>;梯狀每一條帶是一種 topoisomer,相鄰差 Lk = 1 <i>p.33</i></li>
+<li>E. coli 至少 4 種:<b>Topo I、III(type I)去除負超螺旋 → Lk 增加</b>;<b>DNA gyrase(type II)用 ATP 引入負超螺旋 → Lk 減少</b>;<b>Topo IV:decatenation</b>(分開纏結的子染色體)<i>p.34</i></li>
+<li>真核:type I = topo I、III;type II = IIα、IIβ;<b>不能主動 underwind</b>,只能鬆弛正、負超螺旋 <i>p.34</i></li>
+<li>Type I 機制:活性位 <b>Tyr</b> 攻擊磷酸雙酯鍵 → <b>5'-phosphotyrosyl</b> 共價中間物 → 另一股穿過 → 3'-OH 攻擊接回;<b>不需 ATP</b>,淨 Lk +1 <i>p.35</i></li>
+<li>Type IIα:結合 2 ATP → 第一段雙股切斷 → 第二段穿過 → ATP 水解 → 接回,Lk 變 2 <i>p.36</i></li>
+<li>Reverse gyrase:用 ATP 產生<b>正超螺旋</b>,只在嗜熱菌;Topo IB = swivelase(所有真核)<i>p.37</i></li>
+<li class="mem">真核怎麼變 underwound?纏 nucleosome 產生 bound 負超螺旋 + 補償的正超螺旋 → topo 把正的鬆掉 → 淨 ΔLk = −1 <i>p.34, 52</i></li>
+<li><b>Plectonemic</b>:伸展、右旋、常分支,溶液中所見。<b>Solenoidal</b>:緊密<b>左旋</b>,靠蛋白穩定,<b>細胞內主要壓縮方式</b>;兩者都是負超螺旋,可互換 <i>p.42</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:看到一個 topoisomerase / 藥物,怎麼歸類 <i>p.33–39</i></div><div class="fl">
+<div class="nd"><b>切幾股?</b></div><span class="ar">→</span>
+<div class="nd"><b>一股 = Type I</b>Lk ±1;Tyr 形成 5'-phosphotyrosyl;<b>不需 ATP</b></div><span class="ar">/</span>
+<div class="nd"><b>兩股 = Type II</b>另一段雙股穿過;Lk ±2;<b>用 ATP</b></div>
+</div>
+<div class="br"><div><div class="lab">細菌</div>Topo I、III:去負超螺旋,Lk ↑<br><b>Gyrase</b>:ATP 引入負超螺旋,Lk ↓<br>Topo IV:decatenation<br>藥:<b>quinolone</b>(擋接合)、<b>coumarin</b>(擋 ATP)</div>
+<div><div class="lab">真核</div>Topo I、III(type I);IIα、IIβ(type II)<br>只能<b>鬆弛</b>正、負超螺旋,不能主動 underwind<br>藥:<b>topo I</b> → irinotecan、topotecan<br><b>topo II</b> → doxorubicin、etoposide</div></div></div>
+<div class="flow"><div class="ft">流程:真核沒有 gyrase,DNA 為什麼還是 underwound <i>p.34, 52</i></div><div class="fl">
+<div class="nd"><b>起點</b>relaxed 閉環 DNA</div><span class="ar">→</span>
+<div class="nd"><b>纏上 histone core</b>產生 bound <b>負</b>超螺旋(solenoidal)</div><span class="ar">→</span>
+<div class="nd"><b>沒切股 ΔLk = 0</b>未結合處出現補償的<b>正</b>超螺旋(plectonemic)</div><span class="ar">→</span>
+<div class="nd"><b>Topoisomerase</b>把正超螺旋鬆掉</div><span class="ar">→</span>
+<div class="nd ok"><b>結果</b>ΔLk = −1,淨一個負超螺旋</div>
+</div></div>
+<div class="tbl"><table>
+<thead><tr><th>藥物</th><th>標的與作用</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>Quinolones:nalidixic acid → <b>ciprofloxacin</b></td><td>抑制細菌 <b>gyrase、topo IV</b> 的<b>重新接合</b>;對真核酶需高很多倍濃度</td><td><i>p.38</i></td></tr>
+<tr><td>Coumarins:<b>novobiocin</b>、coumermycin A1</td><td>阻斷 gyrase、topo IV 的 <b>ATP 結合</b>;人類少用</td><td><i>p.38</i></td></tr>
+<tr><td>Camptothecin(喜樹)→ <b>irinotecan</b>(大腸癌)、<b>topotecan</b>(卵巢癌)</td><td><b>Type I</b> 抑制:卡住已切斷的 topo I–DNA 複合物</td><td><i>p.39</i></td></tr>
+<tr><td><b>Doxorubicin</b>(Adriamycin)、<b>etoposide</b>、ellipticine</td><td><b>Type II</b> 抑制:穩定 topo II–DNA 切斷複合物</td><td><i>p.39</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li class="mem">Topoisomerase 功能 = 催化磷酸雙酯鍵<b>斷裂與接合</b>,紓緩纏繞壓力(不是保護端粒、不是修飾 histone) <span class="hit">國考</span> <i>p.40–41</i></li>
+</ul>
+
+<h2>24.3 染色體結構</h2>
+<div class="flow"><div class="ft">流程:2 公尺 DNA 怎麼一層層塞進細胞核 <i>p.48–60</i></div><div class="fl">
+<div class="nd"><b>裸 DNA</b>~10⁵ µm,核只有 5–10 µm</div><span class="ar">→</span>
+<div class="nd key"><b>Nucleosome</b>(H2A·H2B·H3·H4)×2 + 146 bp,1.67 圈左旋;10 nm fiber,只壓縮 ~7 倍</div><span class="ar">→</span>
+<div class="nd"><b>H1 + linker</b>重複單位 ~200 bp</div><span class="ar">→</span>
+<div class="nd"><b>Loops on scaffold</b>topo II 是最多的 scaffold 蛋白之一</div><span class="ar">→</span>
+<div class="nd"><b>TAD</b>~800,000 bp loop;邊界 CTCF</div><span class="ar">→</span>
+<div class="nd"><b>Compartment</b>active(鬆)/ heterochromatin(緊)</div><span class="ar">→</span>
+<div class="nd ok"><b>Territory → 分裂期染色體</b>condensin 凝縮;總計 &gt;10,000 倍</div>
+</div></div>
+
+<ul class="pts">
+<li><b>Chromatin</b>:DNA 與蛋白質約等重,另含不少 RNA;間期分散,S 期複製出 sister chromatids,prophase 凝縮 <span class="hit">國考</span> <i>p.44–46</i></li>
+<li class="mem">高度分化細胞多在 <b>G0</b>,不是 S phase;快速分裂時 S 期比例上升 <span class="hit">國考</span> <i>p.45–46</i></li>
+<li>Histone:小、<b>鹼性</b>,Arg + Lys ≈ 1/4 殘基;<b>H3、H4 最保守</b>(H4 豌豆與牛只差 2 個);H1、H2A、H2B 變異較大 <i>p.47</i></li>
+<li>修飾:methylation、acetylation、ADP-ribosylation、phosphorylation、glycosylation、SUMOylation、ubiquitination <i>p.47</i></li>
+<li>DNA 10⁵ µm 塞進 5–10 µm 核 → 約 10,000 倍壓縮;「beads on a string」<i>p.48</i></li>
+<li><b>Nucleosome</b>:octamer = H2A、H2B、H3、H4 <b>各 2</b>;<b>146 bp 纏 1.67 圈,左旋 solenoidal</b>;重複單位 <b>~200 bp</b>;<b>H1 結合 linker</b>;10 nm fiber <i>p.49</i></li>
+<li class="mem">Linker protein = <b>H1</b>;「H1 是 nucleosome 核心成分」是錯的 <span class="hit">國考</span> <i>p.50–51</i></li>
+<li>N 端 tail:intrinsically disordered,大部分修飾在這裡 <i>p.49</i></li>
+<li>Positioning:2–3 個 A=T 每 10 bp 錯開出現,幫助小溝壓縮彎曲 <i>p.53</i></li>
+<li>Deposition(複製時):先 <b>(H3–H4)₂ tetramer</b>,再兩個 <b>H2A–H2B dimer</b>。Chaperone:<b>CAF1 結合 PCNA</b>(連結複製);<b>ASF1</b> 結合新 H3–H4,促進 RTT109 乙醯化 H3K56 <i>p.53</i></li>
+<li>Epigenetic:不在 DNA 序列中、但可傳給子細胞的資訊,主要是 histone 修飾與變體;euchromatin = 活躍、較鬆 <i>p.54</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:複製時 nucleosome 怎麼重新組裝 <i>p.53–54</i></div><div class="fl">
+<div class="nd"><b>ASF1</b>接住新 H3–H4,促進 RTT109 乙醯化 H3K56</div><span class="ar">→</span>
+<div class="nd"><b>CAF1</b>結合 PCNA,在複製叉放 (H3–H4)₂ tetramer</div><span class="ar">→</span>
+<div class="nd"><b>再放</b>兩個 H2A–H2B dimer</div><span class="ar">→</span>
+<div class="nd ok"><b>複製之外</b>exchange factor 換入變體(H3.3 由 HIRA)</div>
+</div></div>
+<div class="tbl"><table>
+<thead><tr><th>Histone 變體</th><th>重點</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>H3.3</td><td>取代 H3 於 euchromatin;由 <b>HIRA</b>(非 CAF1)放置;差 4 個殘基</td><td><i>p.54</i></td></tr>
+<tr><td>H2AZ</td><td>活躍區,打開染色質;哺乳類必需</td><td><i>p.54</i></td></tr>
+<tr><td>H2AX</td><td>雙股斷裂處 <b>Ser¹³⁹ 磷酸化</b>,組裝修復複合物</td><td><i>p.54</i></td></tr>
+<tr><td>CENPA</td><td>centromere 的 H3 變體</td><td><i>p.54</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li><b>ChIP-seq</b>:抗體拉下帶某變體/修飾的 nucleosome → 定序 → 基因體圖譜(H3K4me3 在基因 5' 端)<i>p.55</i></li>
+<li>Nucleosome 只壓縮 <b>~7 倍</b>;染色體 &gt;10,000 倍 → DNA loops 附著於 <b>chromosomal scaffold</b>;<b>topo II 是最多的 scaffold 蛋白之一</b> <i>p.56</i></li>
+<li>間期:active compartment vs inactive(<b>heterochromatin</b>);<b>TAD</b> ~800,000 bp,邊界由 <b>CTCF</b> 固定 <i>p.57</i></li>
+<li><b>lncRNA</b>:&gt;200 nt、不需編碼蛋白;作為蛋白支架、連接遠端染色體區域 <i>p.58</i></li>
+<li><b>X inactivation</b>:<b>Xist</b>(17,000 nt)只從<b>不活化的 X</b> 轉錄,沿自己的 X 擴散 → <b>Barr body</b>;<b>Tsix</b>(40,000 nt)從活化 X 反向轉錄,拮抗 Xist;三花貓都是母的 <i>p.59</i></li>
+<li>Chromosome territory:基因密集的染色體(1、16、17、19、22)偏中央;heterochromatin 多的偏周邊 <i>p.60</i></li>
+<li><b>SMC 蛋白</b>(第三大類):5 domain(N、C head 各半個 ATPase、兩段 coiled coil、hinge) <i>p.61</i></li>
+<li><b>Cohesin = SMC1–SMC3 + kleisin</b>,連 sister chromatids;<b>Condensin = SMC2–SMC4</b>,進入 mitosis 時凝縮;SMC5–SMC6 管修復 <i>p.61</i></li>
+<li>週期:cohesin G1 上 → 複製時綁住姊妹染色分體 → mitosis condensin 維持 → <b>anaphase separase 切 cohesin</b> <i>p.63</i></li>
+<li>細菌 <b>nucleoid</b>:~500 個 looped domain,每個 ~10,000 bp,拓樸上各自獨立(一個斷點只鬆一個 domain);<b>HU</b> 等 histonelike 蛋白幾分鐘內就解離 → 沒有穩定 nucleosome <i>p.64</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:cohesin 與 condensin 跟著細胞週期走 <i>p.61–63</i></div><div class="fl">
+<div class="nd"><b>G1</b>cohesin(SMC1–SMC3 + kleisin)裝上</div><span class="ar">→</span>
+<div class="nd"><b>S</b>複製;cohesin 綁住 sister chromatids</div><span class="ar">→</span>
+<div class="nd"><b>Mitosis</b>condensin(SMC2–SMC4)凝縮並維持</div><span class="ar">→</span>
+<div class="nd key"><b>Anaphase</b>separase 切 cohesin,姊妹分開</div><span class="ar">→</span>
+<div class="nd ok"><b>之後</b>condensin 離開</div>
+</div></div>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">9 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 59 題</button>
+    <button class="tab" id="tab-1" data-f="24.1" aria-pressed="false">24.1 染色體元件</button>
+    <button class="tab" id="tab-2" data-f="24.2" aria-pressed="false">24.2 超螺旋</button>
+    <button class="tab" id="tab-3" data-f="24.3" aria-pressed="false">24.3 染色體結構</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">59</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"24.1",s:"p.5 · Definition of a gene",q:"Which statement best matches the modern biochemical definition of a gene?",a:2,o:[
+["A DNA segment that encodes exactly one enzyme","這是 Beadle 與 Tatum 的 one gene–one enzyme 假說,已被修正;很多基因產物不是酵素。"],
+["A DNA segment that encodes exactly one polypeptide","這是中間階段的說法,忽略了產物是功能性 RNA 的基因。"],
+["All the DNA that encodes the primary sequence of a final gene product, either a polypeptide or an RNA with a structural or catalytic function","正確。現代定義把 RNA 產物也納入。"],
+["Any DNA sequence that is transcribed into RNA","被轉錄不等於是基因;定義的重點是編碼最終產物的一級序列。"]]},
+{c:"24.1",s:"p.6 · Colinearity",q:"A polypeptide of average size has 350 amino acid residues. How many base pairs of coding DNA are needed, ignoring introns?",a:1,o:[
+["350 bp","每個胺基酸需要一個 codon,也就是 3 個核苷酸,不是 1 個。"],
+["1,050 bp","正確。350 × 3 = 1,050 bp;有 intron 的真核基因會長很多。"],
+["700 bp","這是乘 2,但 codon 是三聯體。"],
+["3,500 bp","多算了 10 倍;3.4 Å/bp 是長度換算,與 codon 數無關。"]]},
+{c:"24.1",s:"p.7, 9 · E. coli chromosome",q:"The E. coli chromosome is a single circular duplex of about 4.6 million bp. Roughly how long is it if fully extended?",a:0,o:[
+["About 1.7 mm, roughly 850 times the length of the cell","正確。4,641,652 bp × 3.4 Å ≈ 1.6–1.7 mm,細胞只有約 2 µm。"],
+["About 17 µm, roughly 8 times the length of the cell","17.5 µm 是 λ phage DNA(48,502 bp)的長度。"],
+["About 2 m","約 2 m 是一個人類二倍體細胞的 DNA 總長。"],
+["About 2 µm, the same as the cell","DNA 遠比容器長,這正是本章的重點之一。"]]},
+{c:"24.1",s:"p.9 · Plasmids and resistance",q:"Plasmids that spread penicillin and ampicillin resistance among bacteria typically carry a gene encoding which enzyme?",a:3,o:[
+["DNA gyrase","Gyrase 是 quinolone 的標的,不是抗 β-lactam 的機制。"],
+["Topoisomerase IV","Topo IV 負責 decatenation,與 β-lactam 抗藥無關。"],
+["Telomerase","細菌是環狀 DNA,不需要 telomerase。"],
+["β-Lactamase","正確。β-lactamase 破壞 penicillin、ampicillin、amoxicillin;plasmid 可在細胞間甚至跨物種傳遞。"]]},
+{c:"24.1",s:"p.10 · Eukaryotic chromosomes",q:"Which statement about human chromosomes is correct?",a:1,o:[
+["A human somatic cell has 23 chromosomes, all of similar length.","體細胞是二倍體 46 條;長度差距可達 25 倍。"],
+["Each chromosome is one very large duplex DNA, and the DNA of one diploid cell is about 2 m long.","正確。一套基因體約 1 m,二倍體約 2 m。"],
+["Each chromosome contains many separate short DNA molecules joined by proteins.","每條染色體是一個連續的巨大雙股 DNA 分子。"],
+["Human cells contain about the same amount of DNA as E. coli.","人類細胞的 DNA 約是 E. coli 的 700 倍。"]]},
+{c:"24.1",s:"p.11–13 · Human mtDNA(國考 牙醫師 111-1)",q:"Which statement about human mitochondrial DNA is FALSE?",a:2,o:[
+["It is about 16.5 kb long.","這是真實特徵:16,569 bp。"],
+["It is a closed circular double-stranded DNA.","這是真實特徵:環狀雙股。"],
+["Its genetic code is exactly the same as that of nuclear DNA.","正確(此敘述錯誤)。粒線體的密碼與核 DNA 不完全相同;這題是國考答案 C。"],
+["More than 90% of mitochondrial proteins are encoded by nuclear genes.","這是真實特徵:講義說超過 95% 由核 DNA 編碼。"]]},
+{c:"24.1",s:"p.11 · Organelle DNA",q:"Which statement about organelle DNA is correct?",a:0,o:[
+["Human mtDNA encodes mitochondrial tRNAs and rRNAs and only a few proteins.","正確。大部分粒線體蛋白由核基因編碼。"],
+["Each mitochondrion contains exactly one copy of mtDNA.","通常每個粒線體有 2–10 copies。"],
+["Plant mtDNA is smaller than animal mtDNA.","植物 mtDNA 有 200,000–2,500,000 bp,遠大於動物(<20,000 bp)。"],
+["Chloroplast DNA is linear and about 16 kb.","cpDNA 是環狀,約 120,000–160,000 bp。"]]},
+{c:"24.1",s:"p.14 · Introns and exons",q:"Approximately what fraction of the human genome consists of exons (protein-coding sequence)?",a:3,o:[
+["About 50%","約一半是 transposon 衍生序列,不是 exon。"],
+["About 30%","含 intron 在內的基因約佔 30%,但 exon 本身少很多。"],
+["About 10%","仍高估了。"],
+["About 1.5%","正確。人類基因體只有約 1.5% 是 exon。"]]},
+{c:"24.1",s:"p.14 · Intron distribution",q:"Which gene type is cited in the slides as having no introns?",a:1,o:[
+["Ovalbumin","Ovalbumin 有 7 個 intron,佔基因 85%。"],
+["Histone genes","正確。Histone 基因沒有 intron。"],
+["β-Globin","β-globin 有 2 個 intron。"],
+["Most eukaryotic protein-coding genes","大多數真核基因都有 intron;細菌基因才很少有。"]]},
+{c:"24.1",s:"p.15 · Satellite DNA",q:"Which statement about highly repetitive (simple-sequence, satellite) DNA is correct?",a:2,o:[
+["It encodes many structural proteins of the chromosome.","Satellite DNA 不編碼蛋白或 RNA。"],
+["Its repeat units are typically several thousand base pairs long.","重複單位通常少於 10 bp。"],
+["It makes up about 3% of the human genome and is concentrated at centromeres and telomeres.","正確。名稱來自它在 CsCl 密度梯度中形成的衛星帶。"],
+["It is found only in bacteria.","它是真核染色體的特徵。"]]},
+{c:"24.1",s:"p.15 · Centromere",q:"What is the main function of a centromere?",a:0,o:[
+["It is the attachment point for proteins that link the chromosome to the mitotic spindle.","正確。確保染色體平均分到子細胞;酵母約 130 bp、富含 A=T。"],
+["It caps the chromosome end and protects it from nucleases.","這是 telomere 的功能。"],
+["It is the site where DNA replication begins.","這是 replication origin。"],
+["It encodes the histone proteins.","Centromere 序列不編碼蛋白。"]]},
+{c:"24.1",s:"p.16 · Telomere repeats",q:"What is the telomere repeat sequence in humans?",a:3,o:[
+["(TTGGGG)n","這是纖毛蟲 Tetrahymena 的重複。"],
+["(TTTAGGG)n","這是植物 Arabidopsis 的重複。"],
+["(GATC)n","GATC 是 E. coli Dam methylase 的辨識序列,與端粒無關。"],
+["(TTAGGG)n","正確。哺乳類 n 可超過 1,500。"]]},
+{c:"24.1",s:"p.16–17 · Telomerase",q:"Why do eukaryotic chromosome ends need telomerase?",a:1,o:[
+["Because centromeres cannot bind the spindle without it","Telomerase 作用在染色體末端,與 centromere 無關。"],
+["Because the usual replication machinery cannot fully replicate the ends of linear DNA; telomerase, an RNA-containing reverse transcriptase, adds the repeats","正確。它用自帶的 RNA 當模板,以染色體 3' 端當 primer。"],
+["Because telomeres must be cut off before each cell division","端粒是被延長與保護,不是被切掉。"],
+["Because circular chromosomes need ends to be sealed","需要 telomerase 的是線性染色體;環狀 DNA 沒有末端。"]]},
+{c:"24.1",s:"p.18–19 · Chromosome integrity(國考 牙醫師 111-2)",q:"Which sequence is NOT required to maintain an intact, stable eukaryotic chromosome?",a:2,o:[
+["Centromere","這是必需元件之一:負責分離。"],
+["Origin of replication","這是必需元件之一:讓染色體能複製。"],
+["Primer","正確(此敘述錯誤)。Primer 只是複製時暫時的短片段,不是染色體上的固定序列;國考答案 C。"],
+["Telomere","這是必需元件之一:保護兩端。"]]},
+{c:"24.1",s:"p.16 · Artificial chromosomes",q:"According to the slides, which three elements are sufficient for a stable linear (artificial) chromosome such as a YAC?",a:0,o:[
+["A centromere, a telomere at each end, and origins of replication","正確。YAC 就是用這三種元件構築的。"],
+["A promoter, an intron and a poly(A) tail","這些與基因表現有關,不是染色體穩定所需。"],
+["Histone genes, a centromere and a primer","Primer 不是染色體元件,histone 基因也不是必要元件。"],
+["Satellite DNA, mtDNA and a telomere","mtDNA 與人工染色體無關。"]]},
+
+{c:"24.2",s:"p.21–23 · Cellular DNA is underwound",q:"Which statement describes DNA in cells?",a:3,o:[
+["It is usually relaxed, with exactly 10.5 bp per turn everywhere.","純化後的閉環 DNA 很少是 relaxed。"],
+["It is usually overwound, with more turns than B-form.","細胞 DNA 幾乎都是 underwound。"],
+["It has no supercoiling once proteins are removed.","很多環狀 DNA 除去蛋白後仍高度超螺旋,這是 DNA 三級結構的固有性質。"],
+["It is underwound, with fewer right-handed turns per length than B-form DNA.","正確。Underwinding 同時有利於壓縮與解開雙股。"]]},
+{c:"24.2",s:"p.22 · Polymerase and supercoiling",q:"As an RNA polymerase moves along a constrained DNA duplex, what happens to the DNA?",a:2,o:[
+["It becomes underwound ahead and overwound behind.","方向相反了。"],
+["Nothing, because polymerases never change DNA topology.","雙股分開會產生扭轉壓力。"],
+["It becomes overwound ahead of the polymerase and underwound behind it.","正確。前方正超螺旋、後方負超螺旋。"],
+["It is cut into short fragments.","這不是聚合酶移動的結果。"]]},
+{c:"24.2",s:"p.24 · Effects of underwinding",q:"An 84-bp relaxed DNA (8 turns) has one turn removed while the ends are held. How is the strain usually accommodated?",a:1,o:[
+["By breaking the phosphodiester backbone","打斷骨架不是吸收張力的常見方式;那需要 topoisomerase。"],
+["By forming a supercoil, because coiling the axis costs less energy than breaking hydrogen bonds","正確。另一種方式是局部解開約 10 bp,但通常只在較長、underwinding 較多時重要。"],
+["By converting all the DNA to Z-form","只有適合的序列能形成短段 Z-DNA。"],
+["By increasing the helical repeat to 7 bp per turn","移除一圈後是 84/7 = 12.0 bp/turn,不是 7。"]]},
+{c:"24.2",s:"p.24, 26 · Nicks",q:"What happens to an underwound closed-circular DNA when one strand is nicked?",a:0,o:[
+["The strain is released and the linking number is no longer defined.","正確。只有閉環或被蛋白固定時,underwinding 才能維持。"],
+["The linking number increases by 2.","Lk 只對兩股都完整的閉環有意義;nick 後 Lk 無定義。"],
+["The DNA becomes positively supercoiled.","Nick 讓股能旋轉,張力會釋放。"],
+["Nothing changes, because linking number cannot change.","Nick 正是改變拓樸狀態的方式。"]]},
+{c:"24.2",s:"p.25 · Linking number",q:"Which statement about the linking number (Lk) is correct?",a:3,o:[
+["It can take any fractional value.","Lk 永遠是整數。"],
+["It changes whenever DNA bends or is deformed.","Lk 是拓樸性質,彎曲變形不會改變它。"],
+["Left-handed interwinding is defined as positive.","右旋纏繞定義為正。"],
+["It is an integer topological property that changes only when a strand is broken and rejoined.","正確。這也是 topoisomerase 成為抗生素與化療藥標的的原因。"]]},
+{c:"24.2",s:"p.26 · Lk₀",q:"What is the linking number of a relaxed 2,100-bp closed-circular DNA?",a:2,o:[
+["210","這是除以 10。"],
+["2,100","這是鹼基對數,不是 Lk。"],
+["200","正確。Lk₀ = 2,100 / 10.5 = 200。"],
+["21","差了 10 倍。"]]},
+{c:"24.2",s:"p.28 · Worked Example 24-1",q:"A 4,200-bp closed-circular DNA has Lk = 374. What is its superhelical density (σ)?",a:1,o:[
+["+0.065","符號錯了;Lk 小於 Lk₀,是負超螺旋。"],
+["−0.065","正確。Lk₀ = 400,ΔLk = −26,σ = −26/400 = −0.065。"],
+["−26","−26 是 ΔLk,σ 還要除以 Lk₀。"],
+["−0.026","分母應是 Lk₀(400),不是 1,000。"]]},
+{c:"24.2",s:"p.28 · Positive supercoiling",q:"The same 4,200-bp DNA instead has Lk = 412. Which description is correct?",a:0,o:[
+["σ = +0.03; the DNA is positively supercoiled.","正確。ΔLk = +12,12/400 = +0.03。"],
+["σ = −0.03; the DNA is negatively supercoiled.","Lk 大於 Lk₀,是正超螺旋。"],
+["σ = +12; the DNA is relaxed.","+12 是 ΔLk;不等於 0 就不是 relaxed。"],
+["σ = 0; linking number differences do not matter.","ΔLk 不為 0,σ 就不為 0。"]]},
+{c:"24.2",s:"p.26 · Cellular σ",q:"What is the typical superhelical density of DNA in cells?",a:3,o:[
+["+0.05 to +0.07","細胞 DNA 是負超螺旋。"],
+["Exactly 0","細胞 DNA 很少是 relaxed。"],
+["−0.5 to −0.7","高估了 10 倍。"],
+["−0.05 to −0.07","正確。也就是比 relaxed 少 5–7% 的圈數。"]]},
+{c:"24.2",s:"p.29–30 · Negative supercoiling(國考 醫師 102-2)",q:"In cells, plasmid DNA is negatively supercoiled. What does this imply about its linking number?",a:2,o:[
+["Lk > Lk₀","這是正超螺旋(overwound)。"],
+["Lk = Lk₀","這是 relaxed。"],
+["Lk < Lk₀","正確。負超螺旋 = underwound,ΔLk < 0;國考答案 C。"],
+["It cannot be determined.","可以判斷:負超螺旋即 ΔLk 為負。"]]},
+{c:"24.2",s:"p.27 · Topoisomers",q:"What are topoisomers?",a:1,o:[
+["Isomers of DNA that differ in base sequence","序列不同就是不同分子,不是 topoisomer。"],
+["Forms of the same circular DNA that differ only in a topological property such as Lk","正確。切一股、轉 360°、接回,Lk 就改變 ±1,原子組成不變。"],
+["Enzymes that change the linking number","那是 topoisomerase。"],
+["Linear DNAs of different lengths","Topoisomer 指閉環 DNA 的拓樸差異。"]]},
+{c:"24.2",s:"p.33 · Gel assay",q:"In an agarose gel, how do supercoiled and relaxed forms of the same plasmid compare?",a:0,o:[
+["Supercoiled DNA is more compact and migrates faster; each band of a ladder is a topoisomer differing by Lk = 1.","正確。可用來觀察 topoisomerase 的作用。"],
+["Relaxed DNA migrates faster because it has a lower mass.","兩者質量相同;差別在構形緊密度。"],
+["Both migrate identically because they have the same sequence.","拓樸不同會造成遷移率不同。"],
+["Supercoiled DNA cannot enter the gel.","超螺旋 DNA 跑得比較快,不是卡住。"]]},
+{c:"24.2",s:"p.31–32 · Cruciforms",q:"Why does underwinding promote cruciform formation?",a:3,o:[
+["Because cruciforms form at any random sequence once DNA is underwound","Cruciform 需要 palindrome(inverted repeat)。"],
+["Because cruciforms have more base pairs than linear DNA","Cruciform 含有少數不配對的鹼基,所以 relaxed DNA 不利於它。"],
+["Because underwinding adds extra base pairs","Underwinding 不增加鹼基對。"],
+["Because a cruciform at a palindrome needs partial strand separation, which underwinding supplies","正確。Underwinding 也讓適合的序列形成短段 Z-DNA。"]]},
+{c:"24.2",s:"p.33 · Type I vs type II",q:"How do type I and type II topoisomerases differ in the way they change Lk?",a:2,o:[
+["Type I changes Lk in steps of 2; type II in steps of 1.","相反了。"],
+["Both change Lk in steps of 1.","Type II 一次改變 2。"],
+["Type I cuts one strand and changes Lk in steps of 1; type II cuts both strands, passes a duplex through, and changes Lk in steps of 2.","正確。"],
+["Neither changes Lk; they only change base sequence.","Topoisomerase 的功能就是改變 Lk。"]]},
+{c:"24.2",s:"p.35 · Type I mechanism",q:"Which feature describes the type I topoisomerase reaction?",a:1,o:[
+["It requires ATP hydrolysis for every Lk change.","不需要 ATP;每一步都是一個高能鍵換成另一個。"],
+["An active-site Tyr forms a transient 5'-phosphotyrosyl linkage with the cut strand.","正確。之後游離的 3'-OH 攻擊此鍵,把股接回;淨 Lk +1。"],
+["It cuts both strands simultaneously.","切兩股的是 type II。"],
+["It adds nucleotides to the 3' end.","那是聚合酶的功能。"]]},
+{c:"24.2",s:"p.34 · DNA gyrase",q:"What does bacterial DNA gyrase do?",a:0,o:[
+["Uses ATP to introduce negative supercoils, decreasing Lk","正確。Gyrase 是 type II(topo II);與 topo I 的平衡決定淨超螺旋。"],
+["Relaxes negative supercoils without ATP, increasing Lk","這是細菌 topo I、III 的作用。"],
+["Introduces positive supercoils in thermophiles","這是 reverse gyrase。"],
+["Separates interlinked daughter chromosomes after replication","這是 topo IV(decatenation)的主要功能。"]]},
+{c:"24.2",s:"p.34, 37 · Eukaryotic topoisomerases",q:"Which statement about eukaryotic topoisomerases is correct?",a:3,o:[
+["Eukaryotes have DNA gyrase that underwinds DNA.","Gyrase 只在細菌與古菌。"],
+["Eukaryotic type II enzymes can only relax negative supercoils.","IIα、IIβ 可鬆弛正、負超螺旋。"],
+["Eukaryotes have no type I topoisomerase.","真核有 topo I 與 III(type I)。"],
+["They cannot introduce negative supercoils; they relax both positive and negative supercoils.","正確。真核 DNA 的 underwinding 來自 nucleosome 纏繞。"]]},
+{c:"24.2",s:"p.34, 52 · Eukaryotic underwinding",q:"How does eukaryotic DNA become underwound even though eukaryotes lack an enzyme that underwinds DNA?",a:2,o:[
+["Histones cut and rejoin the DNA strands directly.","Histone 不切 DNA。"],
+["Telomerase removes helical turns.","Telomerase 延長末端,與 Lk 無關。"],
+["Wrapping DNA around a histone core forms a bound negative supercoil plus a compensating positive supercoil; a topoisomerase relaxes the positive one, giving net ΔLk = −1.","正確。所以在試管中由 histone 與環狀 DNA 組裝 chromatin 需要 topoisomerase。"],
+["DNA polymerase synthesizes DNA with fewer turns.","聚合酶合成的是 B-form;underwinding 來自包裝過程。"]]},
+{c:"24.2",s:"p.38 · Quinolones",q:"How do quinolone antibiotics such as ciprofloxacin act?",a:1,o:[
+["They block ATP binding to gyrase.","阻斷 ATP 結合的是 coumarins(novobiocin)。"],
+["They inhibit bacterial DNA gyrase and topoisomerase IV by blocking the resealing of the DNA break.","正確。對真核酵素需高出幾個數量級的濃度才有作用。"],
+["They inhibit human topoisomerase I.","那是 camptothecin 類抗癌藥。"],
+["They intercalate into telomeres.","與 telomere 無關。"]]},
+{c:"24.2",s:"p.38 · Coumarins",q:"Novobiocin and coumermycin A1 inhibit bacterial topoisomerases by:",a:0,o:[
+["Blocking ATP binding to gyrase and topoisomerase IV","正確。它們來自 Streptomyces,人類少用。"],
+["Blocking the resealing step","這是 quinolones。"],
+["Trapping topoisomerase I on cleaved DNA","這是 camptothecin 類。"],
+["Degrading the plasmid","它們抑制酵素,不分解 DNA。"]]},
+{c:"24.2",s:"p.39 · Type I inhibitors",q:"Irinotecan (colorectal cancer) and topotecan (ovarian cancer) are derived from camptothecin. What is their target?",a:3,o:[
+["Bacterial DNA gyrase","這是 quinolone 的標的。"],
+["Topoisomerase II","Doxorubicin、etoposide 才是 type II 抑制劑。"],
+["Telomerase","不是。"],
+["Topoisomerase I; they trap the enzyme–DNA complex with the DNA cleaved","正確。Camptothecin 來自喜樹。"]]},
+{c:"24.2",s:"p.39 · Type II inhibitors",q:"Which drugs act by stabilizing the covalent topoisomerase II–DNA cleaved complex?",a:2,o:[
+["Ciprofloxacin and nalidixic acid","這些是細菌 gyrase/topo IV 抑制劑。"],
+["Irinotecan and topotecan","這些是 type I 抑制劑。"],
+["Doxorubicin (Adriamycin), etoposide and ellipticine","正確。腫瘤細胞 topoisomerase 含量高,但正常組織也受影響。"],
+["Novobiocin and coumermycin A1","這些阻斷細菌酵素的 ATP 結合。"]]},
+{c:"24.2",s:"p.40–41 · Topoisomerase function(國考 醫師 110-2)",q:"Which statement about topoisomerase function is correct?",a:0,o:[
+["It catalyzes cleavage and rejoining of phosphodiester bonds to relieve torsional stress in DNA.","正確。國考答案 A。"],
+["It binds and protects chromosome ends from hydrolysis.","這是 telomere 結合蛋白(如 TRF1/TRF2)的功能。"],
+["It modifies histones to stabilize chromosome structure.","這是 histone 修飾酵素的工作。"],
+["It assists posttranslational modification of oncogene products.","與 topoisomerase 無關。"]]},
+{c:"24.2",s:"p.37 · Reverse gyrase",q:"Reverse gyrase is unusual because it:",a:1,o:[
+["Relaxes negative supercoils without ATP","這是 topo I。"],
+["Uses ATP to introduce positive supercoils and is found only in thermophiles","正確。講義 Table 24-4:reverse gyrase 只存在於嗜熱菌。"],
+["Is the main topoisomerase of human cells","人類沒有 reverse gyrase。"],
+["Decatenates daughter chromosomes","這是 topo IV。"]]},
+{c:"24.2",s:"p.42 · Plectonemic vs solenoidal",q:"Which statement correctly compares plectonemic and solenoidal supercoiling?",a:3,o:[
+["Solenoidal supercoils are extended and right-handed; they are the main form in solution.","這是 plectonemic 的描述。"],
+["Plectonemic supercoiling is the main way DNA is compacted in cells.","細胞內主要壓縮方式是 solenoidal。"],
+["They are different molecules that can never interconvert.","兩者是同一 underwound DNA 的不同形式,可互換。"],
+["Solenoidal supercoils are tight left-handed turns stabilized by protein binding and give much more compaction.","正確。像水管纏在捲盤上。"]]},
+
+{c:"24.3",s:"p.44–46 · Chromatin(國考 醫師 103-1)",q:"In the eukaryotic nucleus, the fibrous material made of the complete genomic DNA and proteins, with a role in regulating gene expression, is called:",a:0,o:[
+["Chromatin","正確。DNA 與蛋白約等重,另含不少 RNA;國考答案 A。"],
+["Centrosome","Centrosome 是微管組織中心,不含基因體 DNA。"],
+["Gene","Gene 只是 DNA 的一段。"],
+["Nucleosome","Nucleosome 是 chromatin 的基本單位,不是整體。"]]},
+{c:"24.3",s:"p.45–46 · Cell cycle(國考 醫師 102-1)",q:"Which statement about the cell cycle is FALSE?",a:2,o:[
+["Cells in S phase mainly replicate their DNA.","這是真實敘述。"],
+["Cells in M phase mainly undergo cell division.","這是真實敘述。"],
+["Most highly differentiated cells are in S phase.","正確(此敘述錯誤)。高度分化細胞多在 G0;國考答案 C。"],
+["During rapid division, the proportion of cells in S phase increases.","這是真實敘述。"]]},
+{c:"24.3",s:"p.47 · Histones",q:"Which property of histones explains their binding to DNA?",a:1,o:[
+["They are large acidic proteins rich in Asp and Glu.","Histone 是小而鹼性的蛋白。"],
+["About one-fourth of their residues are Arg or Lys, giving a positive charge that binds the DNA backbone.","正確。正電荷與磷酸骨架的負電結合。"],
+["They are glycoproteins that bind DNA through sugars.","Histone 雖可被 glycosylation,但結合 DNA 主要靠鹼性殘基。"],
+["They bind DNA through disulfide bonds.","不是。"]]},
+{c:"24.3",s:"p.47 · Histone conservation",q:"Which histones are the most highly conserved among eukaryotes?",a:3,o:[
+["H1 and H2A","H1、H2A、H2B 變異較大。"],
+["H2A and H2B","變異較大。"],
+["H1 only","H1 變異最大。"],
+["H3 and H4","正確。H4 在豌豆與牛之間只差 2 個殘基。"]]},
+{c:"24.3",s:"p.49 · Nucleosome core",q:"Which description of the nucleosome core is correct?",a:2,o:[
+["One copy each of H1, H2A, H2B and H3, with 200 bp wrapped twice","Core 是八聚體,不含 H1;146 bp 纏 1.67 圈。"],
+["Two copies each of H1, H3 and H4","Core 不含 H1。"],
+["Two copies each of H2A, H2B, H3 and H4, with 146 bp wrapped 1.67 times as a left-handed solenoidal supercoil","正確。重複單位約 200 bp,其餘是 linker DNA。"],
+["Four copies of H4 with 50 bp of DNA","不是。"]]},
+{c:"24.3",s:"p.50–51 · Linker histone(國考 醫師 96-2)",q:"Which histone binds the linker DNA where DNA enters and leaves the nucleosome core?",a:0,o:[
+["H1","正確。國考答案 A。"],
+["H2A/H2B","它們是 core 的成分。"],
+["H3","Core 成分。"],
+["H4","Core 成分。"]]},
+{c:"24.3",s:"p.50–51 · Histone facts(國考 牙醫師 111-1)",q:"Which statement about chromosomal histones is FALSE?",a:3,o:[
+["They are the most abundant chromatin proteins.","這是真實敘述。"],
+["The types include H1, H2A, H2B, H3 and H4.","這是真實敘述。"],
+["Under physiological conditions they form a histone octamer.","這是真實敘述。"],
+["H1 is a core component of the nucleosome.","正確(此敘述錯誤)。H1 結合 linker,不在 core;國考答案 D。"]]},
+{c:"24.3",s:"p.53 · Nucleosome deposition",q:"During replication, in what order are histones deposited onto new DNA?",a:1,o:[
+["Two H2A–H2B dimers first, then the (H3–H4)₂ tetramer","順序相反。"],
+["The (H3–H4)₂ tetramer first, then two H2A–H2B dimers","正確。Chaperone CAF1 結合 PCNA,把放置與複製連在一起。"],
+["H1 first, then the octamer","H1 不是先放的;它結合 linker。"],
+["A complete preformed octamer in one step","八聚體是分段組裝的。"]]},
+{c:"24.3",s:"p.53 · Nucleosome positioning",q:"Which DNA feature helps position nucleosomes?",a:0,o:[
+["Runs of 2–3 A=T pairs staggered at about 10-bp intervals, which help compress the minor groove where DNA bends","正確。AA、AT、TT 每 10 bp 錯開,可佔體內結合位置的 50%。"],
+["GATC sites methylated by Dam","這是 E. coli 區分新舊股的方式。"],
+["Long runs of G≡C pairs only","不是講義所述的定位訊號。"],
+["Telomeric TTAGGG repeats","與 nucleosome 定位無關。"]]},
+{c:"24.3",s:"p.54 · Histone variants",q:"At a DNA double-strand break, which histone variant is phosphorylated at Ser¹³⁹ to help assemble repair complexes?",a:2,o:[
+["H3.3","H3.3 放在 euchromatin。"],
+["CENPA","CENPA 在 centromere。"],
+["H2AX","正確。缺 H2AX 的小鼠有基因體不穩定與雄性不孕。"],
+["H2AZ","H2AZ 在活躍區、打開染色質。"]]},
+{c:"24.3",s:"p.54 · H3.3 and CENPA",q:"Which pairing of histone variant and location is correct?",a:3,o:[
+["H3.3 – centromeres","Centromere 的 H3 變體是 CENPA。"],
+["CENPA – active euchromatin","CENPA 在 centromere。"],
+["H2AX – telomeres only","H2AX 與 DNA 修復有關。"],
+["H3.3 – euchromatin, deposited by HIRA rather than CAF1","正確。H3.3 與 H3 只差 4 個殘基。"]]},
+{c:"24.3",s:"p.55 · ChIP-seq",q:"What does ChIP-seq determine?",a:1,o:[
+["The melting temperature of chromatin","不是。"],
+["Where a histone variant or modification sits in the genome, by pulling down nucleosomes with an antibody and sequencing the bound DNA","正確。例如 H3K4me3 集中在基因 5' 端。"],
+["The linking number of a plasmid","那要用電泳看 topoisomer。"],
+["The amino acid sequence of histones","ChIP-seq 定序的是 DNA。"]]},
+{c:"24.3",s:"p.56 · Scaffold",q:"Nucleosomes compact DNA only about 7-fold. What additional structure contributes to higher-order packing, and which enzyme is abundant there?",a:0,o:[
+["DNA loops attached to a protein chromosomal scaffold; topoisomerase II is one of its most abundant proteins","正確。這也是 topo II 抑制劑能殺死快速分裂細胞的原因。"],
+["A rigid crystalline lattice of DNA; telomerase is its main protein","折疊不是剛性的。"],
+["The nuclear envelope alone; DNA gyrase is abundant","真核沒有 gyrase。"],
+["Random knots of DNA; no protein is involved","折疊不是隨機的,而且會避免打結。"]]},
+{c:"24.3",s:"p.57 · TADs",q:"Which protein binds the borders of topologically associating domains (TADs)?",a:2,o:[
+["HU","HU 是細菌的 histonelike 蛋白。"],
+["Separase","Separase 在 anaphase 切 cohesin。"],
+["CTCF (CCCTC-binding factor)","正確。TAD 約 800,000 bp,邊界固定 loop 的基部,讓 loop 內的超螺旋能被控制。"],
+["Histone H1","H1 結合 linker DNA,不是 TAD 邊界。"]]},
+{c:"24.3",s:"p.59 · X inactivation",q:"Which statement about X inactivation is correct?",a:3,o:[
+["Xist is transcribed from the active X and encodes a protein.","Xist 不編碼蛋白,且只從不活化的 X 轉錄。"],
+["Tsix promotes condensation of the inactive X.","Tsix 拮抗 Xist。"],
+["Xist spreads to all chromosomes in the nucleus.","Xist 只影響它自己所在的 X。"],
+["Xist, a 17,000-nt lncRNA made only from the inactive X, coats that X and condenses it into a Barr body.","正確。三花貓的毛色馬賽克就是隨機 X inactivation。"]]},
+{c:"24.3",s:"p.60 · Chromosome territories",q:"Which statement about chromosome territories in the interphase nucleus is correct?",a:1,o:[
+["All chromosomes intermingle freely.","每條染色體佔自己的領域,很少混雜。"],
+["Gene-dense chromosomes such as human 1, 16, 17, 19 and 22 tend to lie centrally, and heterochromatin-rich ones at the periphery.","正確。轉錄機器集中在領域之間的空間。"],
+["Every chromosome has a fixed identical position in every cell.","位置因細胞而異,但有規律。"],
+["Heterochromatin-rich chromosomes tend to be in the center.","相反,它們偏周邊。"]]},
+{c:"24.3",s:"p.61 · SMC proteins",q:"Which pairing of SMC complex and function is correct?",a:0,o:[
+["Cohesin (SMC1–SMC3 + kleisin) – holds sister chromatids together","正確。"],
+["Condensin (SMC1–SMC3) – DNA repair","Condensin 是 SMC2–SMC4,負責 mitosis 凝縮。"],
+["SMC5–SMC6 – links sister chromatids","SMC5–SMC6 負責 DNA 修復。"],
+["Cohesin (SMC2–SMC4) – condenses chromosomes for mitosis","把 cohesin 與 condensin 的組成搞混了。"]]},
+{c:"24.3",s:"p.63 · Cohesin release",q:"What releases sister chromatids from each other at anaphase?",a:2,o:[
+["Topoisomerase I relaxes the cohesin ring.","Topo I 作用在 DNA,不是 cohesin。"],
+["Condensins pull the chromatids apart.","Condensin 維持凝縮,不負責分開。"],
+["Separase cleaves the cohesin links.","正確。之後 condensin 也會離開。"],
+["Telomerase shortens the chromatids.","與分離無關。"]]},
+{c:"24.3",s:"p.64 · Bacterial nucleoid",q:"Which statement about the bacterial nucleoid is correct?",a:3,o:[
+["It contains stable nucleosomes identical to eukaryotic ones.","細菌沒有穩定的 nucleosome 結構。"],
+["It is a single topological domain, so one break relaxes the whole chromosome.","它約有 500 個 domain,一個斷點只鬆弛一個 domain。"],
+["Its domain boundaries are fixed for the life of the cell.","邊界會隨複製移動。"],
+["About 500 looped domains of ~10,000 bp each, with histonelike proteins such as HU that bind and dissociate within minutes","正確。細胞週期短、大部分 DNA 在轉錄或複製,所以結構很動態。"]]}
+];
+const MATCH=[
+{t:"數字 → 對應的結構",p:[["人類 mtDNA","16,569 bp 環狀雙股","p.11","國考:約 16.5 kb;密碼與核 DNA 不完全相同。"],["E. coli 染色體","4,641,652 bp,長約 1.7 mm","p.7, 9","約細胞長度 850 倍。"],["Nucleosome core DNA","146 bp,纏 1.67 圈","p.49","左旋 solenoidal 超螺旋。"],["Nucleosome 重複單位","約 200 bp","p.49","core 146 bp + linker,H1 結合 linker。"],["TAD","約 800,000 bp 的 loop","p.57","邊界由 CTCF 固定。"],["細菌 nucleoid 的 domain","約 10,000 bp,共約 500 個","p.64","一個斷點只鬆一個 domain。"]]},
+{t:"染色體元件 → 功能",p:[["Centromere","連接 mitotic spindle 的附著點","p.15","酵母約 130 bp、富含 A=T。"],["Telomere","保護線性染色體末端,人類 TTAGGG","p.16","由 telomerase 延長。"],["Replication origin","複製起始點","p.16","人工染色體三元件之一。"],["Intron","不轉譯的插入段","p.14","細菌基因很少有;histone 基因沒有。"],["Exon","編碼段,只佔人類基因體約 1.5%","p.14","含 intron 的基因約佔 30%。"],["Satellite DNA","<10 bp 重複,CsCl 梯度出現衛星帶","p.15","約佔人類基因體 3%,不編碼蛋白。"]]},
+{t:"拓樸名詞 → 定義",p:[["Lk","拓樸整數,彎曲變形不會改變","p.25","右旋纏繞定義為正。"],["Lk₀","relaxed 閉環的 Lk = bp / 10.5","p.26","2,100 bp → 200。"],["ΔLk","Lk − Lk₀","p.26","<0 為負超螺旋。"],["σ(superhelical density)","ΔLk / Lk₀,細胞內約 −0.05 ~ −0.07","p.26","與 DNA 長度無關。"],["Topoisomers","只差在 Lk 的同一環狀 DNA","p.27","電泳梯狀相鄰帶差 Lk = 1。"],["Relaxed DNA","DNA 軸沒有淨彎曲","p.21","細胞內很少見。"]]},
+{t:"Topoisomerase → 作用",p:[["細菌 Topo I","不用 ATP 去除負超螺旋,Lk 增加","p.34","Type I,一次改變 1。"],["DNA gyrase","用 ATP 引入負超螺旋,Lk 減少","p.34","Type II;quinolone 的標的。"],["Topo IV","Decatenation,分開纏結的子染色體","p.34, 37","也是 quinolone 的標的。"],["Reverse gyrase","用 ATP 產生正超螺旋,只在嗜熱菌","p.37","Type IA。"],["Topo IIα / IIβ","真核,鬆弛正、負超螺旋","p.34, 37","不能主動 underwind。"],["Topo IB","Swivelase,所有真核都有","p.37","nick 讓另一股轉動釋放張力。"]]},
+{t:"藥物 → 標的",p:[["Ciprofloxacin","細菌 gyrase、topo IV:阻止重新接合","p.38","Quinolone,源自 nalidixic acid。"],["Novobiocin","阻斷 gyrase 的 ATP 結合","p.38","Coumarin,來自 Streptomyces。"],["Irinotecan","Topo I 抑制,大腸直腸癌","p.39","Camptothecin(喜樹)衍生物。"],["Topotecan","Topo I 抑制,卵巢癌","p.39","卡住已切斷的 topo I–DNA 複合物。"],["Doxorubicin","Topo II 抑制,anthracycline(Adriamycin)","p.39","穩定 topo II–DNA 切斷複合物。"],["Etoposide","Topo II 抑制,與 ellipticine 同類","p.39","正常組織也會受影響。"]]},
+{t:"Histone 與變體 → 重點",p:[["H1","結合 linker DNA,不在 core","p.49–51","國考:H1 是 linker protein。"],["H3 與 H4","最保守的 histone","p.47","H4 豌豆與牛只差 2 個殘基。"],["H3.3","Euchromatin,由 HIRA 放置","p.54","與 H3 差 4 個殘基。"],["H2AZ","活躍區,打開染色質","p.54","哺乳類必需。"],["H2AX","雙股斷裂處 Ser139 磷酸化","p.54","組裝修復複合物。"],["CENPA","Centromere 的 H3 變體","p.54","缺失對小鼠致死。"]]},
+{t:"超螺旋形式 → 特徵",p:[["Plectonemic","伸展、右旋、常分支,溶液中所見","p.42","軸長約 DNA 長度的 40%。"],["Solenoidal","緊密左旋,靠蛋白穩定,細胞內主要壓縮","p.42","像水管纏在捲盤上。"],["負超螺旋","Underwinding,ΔLk < 0","p.27","國考:plasmid 的 Lk < Lk₀。"],["正超螺旋","Overwinding,出現在聚合酶前方","p.22, 27","聚合酶後方則是 underwound。"],["Cruciform","Palindrome + underwinding 才容易形成","p.31","含少數不配對鹼基。"],["Z-DNA","Underwinding 允許的短段左旋 DNA","p.31","需適合的序列。"]]},
+{t:"染色體架構蛋白 → 角色",p:[["CTCF","固定 TAD 邊界","p.57","loop 基部成為 boundary。"],["Cohesin","SMC1–SMC3 + kleisin,綁住 sister chromatids","p.61","G1 裝上。"],["Condensin","SMC2–SMC4,進入 mitosis 時凝縮","p.61","在試管中產生正超螺旋。"],["SMC5–SMC6","DNA 修復","p.61","細菌則是 SMC homodimer。"],["Separase","Anaphase 切斷 cohesin","p.63","姊妹染色分體因此分開。"],["HU","細菌 histonelike 蛋白,幾分鐘內就解離","p.64","Mr 約 19,000。"]]},
+{t:"組裝、lncRNA 與方法",p:[["CAF1","結合 PCNA,讓 histone 放置與複製同步","p.53","H3.3 則改由 HIRA 放置。"],["ASF1","結合新 H3–H4,促進 H3K56 乙醯化","p.53","乙醯化由 RTT109 進行。"],["Xist","17,000 nt lncRNA,只從不活化的 X 轉錄","p.59","沿自己的 X 擴散。"],["Tsix","從活化 X 反向轉錄,拮抗 Xist","p.59","40,000 nt,Xist 倒著拼。"],["Barr body","凝縮的不活化 X","p.59","三花貓毛色馬賽克的由來。"],["ChIP-seq","抗體拉下 nucleosome 後定序 DNA","p.55","畫出變體或修飾的基因體分布。"]]}
+];
+const KEY="molbio-ch24-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

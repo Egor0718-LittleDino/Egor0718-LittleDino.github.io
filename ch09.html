@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch9 DNA-Based Information Technologies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html" aria-current="page">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch9 DNA-Based Information Technologies</h1>
+  <p class="lede">DNA cloning 五步驟、限制酶與 ligase、三種 vector 與篩選、蛋白表現與 tag、功能研究方法與 CRISPR、人類基因體。附整章流程圖、大綱與考法分析。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(69 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<style>
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0}
+.flow .ft{font-weight:600;font-size:.95rem;margin-bottom:8px}
+.flow .ft i{margin-left:6px}
+.fl{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.nd{flex:1 1 130px;background:var(--accent-soft);border-radius:8px;padding:7px 9px;font-size:.86rem;line-height:1.45}
+.nd b{display:block;font-size:.9rem}
+.nd.key{background:var(--bad-soft)}
+.nd.ok{background:var(--good-soft)}
+.ar{align-self:center;color:var(--muted);font-weight:700;flex:0 0 auto}
+.br{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.br>div{border:1px dashed var(--line);border-radius:8px;padding:8px}
+.br .lab{font-size:.8rem;color:var(--muted);margin-bottom:4px}
+@media (max-width:640px){.fl{flex-direction:column}.nd{flex:0 0 auto}.ar{transform:rotate(90deg)}.br{grid-template-columns:1fr}}
+.exam td:first-child{white-space:nowrap;font-weight:600}
+p.src{white-space:normal}
+@media (max-width:640px){.exam td:first-child{white-space:normal}}
+</style>
+<p class="hint">一行一考點。灰色是講義 <b>PDF 頁碼</b>。Ch9 講義有刪頁,投影片右下角印的編號比 PDF 頁數大(例如 PDF p.25 印的是 30),這裡一律用 PDF 頁數。紅底方塊是必考核心。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+<div class="cmap"><style>
+.cmap{--acc:var(--accent);--acc-soft:var(--accent-soft);--key:var(--bad-soft);--keyline:var(--bad);--side:var(--good-soft);--link:#8a5cc2}
+.cmap .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin-top:10px;width:min(1260px,calc(100vw - 24px));position:relative;left:50%;transform:translateX(-50%)}
+.cmap svg{display:block;width:100%;height:auto;font-family:inherit}
+.cmap .rt{fill:#2f6f8f}.cmap .rtt{fill:#fff;font-weight:700;font-size:17px}.cmap .rt+text+text{fill:#fff}
+.cmap .hd{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.5}.cmap .ht{fill:var(--ink);font-weight:700;font-size:16px}
+.cmap .b{fill:var(--surface);stroke:var(--line);stroke-width:1.2}.cmap .b.k{fill:var(--key);stroke:var(--keyline);stroke-width:1.6}.cmap .b.s{fill:var(--side);stroke-dasharray:4 3}
+.cmap .t1{fill:var(--ink);font-weight:700;font-size:14.5px}.cmap .t2{fill:var(--ink);font-size:13px}.cmap svg .pg{fill:var(--muted);font-size:11.5px;font-family:var(--font-mono)}
+.cmap svg .ar{fill:none;stroke:var(--muted);stroke-width:1.4}.cmap .ah{fill:var(--muted)}
+.cmap .cx{fill:none;stroke:var(--link);stroke-width:1.6;stroke-dasharray:6 4}.cmap .ah2{fill:var(--link)}.cmap .bg{fill:var(--link)}.cmap .bt{fill:#fff;font-size:12px;font-weight:700}
+.cmap .note{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+.cmap .ol{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 38px;margin:10px 0 0}
+.cmap .ol>li{margin:6px 0 12px}.cmap .ol>li>b{font-size:1.02rem}
+.cmap .ol ol{padding-left:22px;list-style:lower-alpha}.cmap .ol ol li{margin:4px 0;font-size:.93rem}.cmap .ol ul{padding-left:20px;list-style:disc}
+.cmap .ol i{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.cmap .x{font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;white-space:nowrap}
+.cmap details>summary{cursor:pointer;color:var(--muted);font-size:.9rem;margin-top:8px}
+</style>
+<h2>整章流程圖</h2>
+<div class="card"><div style="min-width:950px"><svg viewBox="0 0 1248 972" role="img" aria-label="Ch9 DNA 技術總流程圖" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+<marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah2"/></marker></defs>
+<rect class="rt" x="387" y="16" width="490" height="58" rx="12"/><text class="rtt" x="632" y="41" text-anchor="middle">DNA 技術:把基因拿出來、放大、表現、問它做什麼</text><text class="t2" x="632" y="62" text-anchor="middle">選殖 → 表現與改造 → 功能研究 → 放大到整個基因體</text><rect class="hd" x="16" y="114" width="280" height="40" rx="10"/><text class="ht" x="156.0" y="140" text-anchor="middle">9.1 選殖一個基因</text><path class="ar" d="M632 74 C632 100,156.0 80,156.0 112" marker-end="url(#a)"/><line class="ar" x1="156.0" y1="154" x2="156.0" y2="185" marker-end="url(#a)"/><rect class="b n" x="16" y="188" width="280" height="78" rx="9"/><text class="t1" x="28" y="215">① 選 cloning vector</text><text class="t2" x="28" y="235">能自主複製的小 DNA</text><text class="pg" x="284" y="258" text-anchor="end">p.17–18</text><line class="ar" x1="156.0" y1="266" x2="156.0" y2="297" marker-end="url(#a)"/><rect class="b k" x="16" y="300" width="280" height="98" rx="9"/><text class="t1" x="28" y="327">② 取得片段</text><text class="t2" x="28" y="347">限制酶(type II,4–8 bp 回文)</text><text class="t2" x="28" y="367">黏性末端 / 平滑末端;真核用 cDNA</text><text class="pg" x="284" y="390" text-anchor="end">p.22–33</text><line class="ar" x1="156.0" y1="398" x2="156.0" y2="429" marker-end="url(#a)"/><rect class="b k" x="16" y="432" width="280" height="98" rx="9"/><text class="t1" x="28" y="459">③ DNA ligase 接合</text><text class="t2" x="28" y="479">AMP 來自 ATP 或 NAD⁺</text><text class="t2" x="28" y="499">→ recombinant DNA</text><text class="pg" x="284" y="522" text-anchor="end">p.37</text><line class="ar" x1="156.0" y1="530" x2="156.0" y2="561" marker-end="url(#a)"/><rect class="b n" x="16" y="564" width="280" height="98" rx="9"/><text class="t1" x="28" y="591">④ 送進宿主</text><text class="t2" x="28" y="611">熱休克 transformation(&gt;15 kb 變差)</text><text class="t2" x="28" y="631">大片段用 electroporation</text><text class="pg" x="284" y="654" text-anchor="end">p.41</text><line class="ar" x1="156.0" y1="662" x2="156.0" y2="693" marker-end="url(#a)"/><rect class="b k" x="16" y="696" width="280" height="98" rx="9"/><text class="t1" x="28" y="723">⑤ 篩選</text><text class="t2" x="28" y="743">selectable = 生死(AmpR)</text><text class="t2" x="28" y="763">screenable = 顏色(lacZ)</text><text class="pg" x="284" y="786" text-anchor="end">p.44–45</text><line class="ar" x1="156.0" y1="794" x2="156.0" y2="825" marker-end="url(#a)"/><rect class="b s" x="16" y="828" width="280" height="98" rx="9"/><text class="t1" x="28" y="855">Vector 三選一</text><text class="t2" x="28" y="875">plasmid / BAC(100–300 kb)</text><text class="t2" x="28" y="895">YAC(TEL-CEN-ori,&gt;150 kb 才穩)</text><text class="pg" x="284" y="918" text-anchor="end">p.46–51</text><rect class="hd" x="328" y="114" width="280" height="40" rx="10"/><text class="ht" x="468.0" y="140" text-anchor="middle">9.1 做出蛋白、改造它</text><path class="ar" d="M632 74 C632 100,468.0 80,468.0 112" marker-end="url(#a)"/><line class="ar" x1="468.0" y1="154" x2="468.0" y2="185" marker-end="url(#a)"/><rect class="b n" x="328" y="188" width="280" height="78" rx="9"/><text class="t1" x="340" y="215">Expression vector</text><text class="t2" x="340" y="235">帶轉錄與轉譯訊號</text><text class="pg" x="596" y="258" text-anchor="end">p.54</text><line class="ar" x1="468.0" y1="266" x2="468.0" y2="297" marker-end="url(#a)"/><rect class="b k" x="328" y="300" width="280" height="98" rx="9"/><text class="t1" x="340" y="327">宿主取捨</text><text class="t2" x="340" y="347">細菌:量大便宜,但無修飾</text><text class="t2" x="340" y="367">哺乳類:修飾正確但很貴</text><text class="pg" x="596" y="390" text-anchor="end">p.56–61</text><line class="ar" x1="468.0" y1="398" x2="468.0" y2="429" marker-end="url(#a)"/><rect class="b n" x="328" y="432" width="280" height="98" rx="9"/><text class="t1" x="340" y="459">調控</text><text class="t2" x="340" y="479">lac promoter 會漏</text><text class="t2" x="340" y="499">T7 系統才嚴密</text><text class="pg" x="596" y="522" text-anchor="end">p.57–58</text><line class="ar" x1="468.0" y1="530" x2="468.0" y2="561" marker-end="url(#a)"/><rect class="b n" x="328" y="564" width="280" height="98" rx="9"/><text class="t1" x="340" y="591">Site-directed mutagenesis</text><text class="t2" x="340" y="611">帶突變的 oligo 引子</text><text class="t2" x="340" y="631">例:RecA K72R 結合但不水解</text><text class="pg" x="596" y="654" text-anchor="end">p.62–64</text><line class="ar" x1="468.0" y1="662" x2="468.0" y2="693" marker-end="url(#a)"/><rect class="b s" x="328" y="696" width="280" height="98" rx="9"/><text class="t1" x="340" y="723">Tag 純化</text><text class="t2" x="340" y="743">(His)₆–Ni²⁺、GST–glutathione</text><text class="t2" x="340" y="763">MBP–maltose</text><text class="pg" x="596" y="786" text-anchor="end">Table 9-3</text><line class="ar" x1="468.0" y1="794" x2="468.0" y2="825" marker-end="url(#a)"/><rect class="b s" x="328" y="828" width="280" height="98" rx="9"/><text class="t1" x="340" y="855">RT-PCR / qPCR</text><text class="t2" x="340" y="875">qPCR 測相對 copy number</text><text class="t2" x="340" y="895">CT 越小 = 起始量越多</text><text class="pg" x="596" y="918" text-anchor="end">p.69–70</text><rect class="hd" x="640" y="114" width="280" height="40" rx="10"/><text class="ht" x="780.0" y="140" text-anchor="middle">9.2 這個蛋白做什麼</text><path class="ar" d="M632 74 C632 100,780.0 80,780.0 112" marker-end="url(#a)"/><line class="ar" x1="780.0" y1="154" x2="780.0" y2="185" marker-end="url(#a)"/><rect class="b n" x="640" y="188" width="280" height="98" rx="9"/><text class="t1" x="652" y="215">Similarity 像誰</text><text class="t2" x="652" y="235">BLAST、annotation</text><text class="t2" x="652" y="255">ortholog 跨種 / paralog 同種</text><text class="pg" x="908" y="278" text-anchor="end">p.76–79</text><line class="ar" x1="780.0" y1="286" x2="780.0" y2="317" marker-end="url(#a)"/><rect class="b n" x="640" y="320" width="280" height="78" rx="9"/><text class="t1" x="652" y="347">Amount 何時表現</text><text class="t2" x="652" y="367">RNA-Seq、scRNA-Seq</text><text class="pg" x="908" y="390" text-anchor="end">p.81</text><line class="ar" x1="780.0" y1="398" x2="780.0" y2="429" marker-end="url(#a)"/><rect class="b n" x="640" y="432" width="280" height="98" rx="9"/><text class="t1" x="652" y="459">Location 在哪裡</text><text class="t2" x="652" y="479">GFP(活細胞)</text><text class="t2" x="652" y="499">免疫螢光(細胞會死)</text><text class="pg" x="908" y="522" text-anchor="end">p.82–83</text><line class="ar" x1="780.0" y1="530" x2="780.0" y2="561" marker-end="url(#a)"/><rect class="b k" x="640" y="564" width="280" height="98" rx="9"/><text class="t1" x="652" y="591">Connection 和誰互動</text><text class="t2" x="652" y="611">TAP:撈出既有複合體</text><text class="t2" x="652" y="631">two-hybrid:測兩蛋白是否結合</text><text class="pg" x="908" y="654" text-anchor="end">p.85–87</text><line class="ar" x1="780.0" y1="662" x2="780.0" y2="693" marker-end="url(#a)"/><rect class="b k" x="640" y="696" width="280" height="98" rx="9"/><text class="t1" x="652" y="723">Importance 拿掉會怎樣</text><text class="t2" x="652" y="743">CRISPR:Cas9 + sgRNA</text><text class="t2" x="652" y="763">NHEJ → knockout;HDR → 精準改</text><text class="pg" x="908" y="786" text-anchor="end">p.89–93</text><line class="ar" x1="780.0" y1="794" x2="780.0" y2="825" marker-end="url(#a)"/><rect class="b s" x="640" y="828" width="280" height="98" rx="9"/><text class="t1" x="652" y="855">高通量篩選</text><text class="t2" x="652" y="875">positive:少數贏家存活</text><text class="t2" x="652" y="895">negative:找消失的 sgRNA</text><text class="pg" x="908" y="918" text-anchor="end">p.96–97</text><rect class="hd" x="952" y="114" width="280" height="40" rx="10"/><text class="ht" x="1092.0" y="140" text-anchor="middle">9.3 人類基因體</text><path class="ar" d="M632 74 C632 100,1092.0 80,1092.0 112" marker-end="url(#a)"/><line class="ar" x1="1092.0" y1="154" x2="1092.0" y2="185" marker-end="url(#a)"/><rect class="b k" x="952" y="188" width="280" height="98" rx="9"/><text class="t1" x="964" y="215">組成比例</text><text class="t2" x="964" y="235">introns 25.9%、LINEs 20.4%</text><text class="t2" x="964" y="255">protein-coding 只有 1.5%</text><text class="pg" x="1220" y="278" text-anchor="end">p.101–102</text><line class="ar" x1="1092.0" y1="286" x2="1092.0" y2="317" marker-end="url(#a)"/><rect class="b n" x="952" y="320" width="280" height="78" rx="9"/><text class="t1" x="964" y="347">ENCODE</text><text class="t2" x="964" y="367">&gt;80% 被轉錄或參與染色質功能</text><text class="pg" x="1220" y="390" text-anchor="end">p.103</text><line class="ar" x1="1092.0" y1="398" x2="1092.0" y2="429" marker-end="url(#a)"/><rect class="b n" x="952" y="432" width="280" height="98" rx="9"/><text class="t1" x="964" y="459">重複序列</text><text class="t2" x="964" y="479">SSR &lt;10 bp,約 3%</text><text class="t2" x="964" y="499">在 centromere、telomere</text><text class="pg" x="1220" y="522" text-anchor="end">p.104</text><line class="ar" x1="1092.0" y1="530" x2="1092.0" y2="561" marker-end="url(#a)"/><rect class="b n" x="952" y="564" width="280" height="98" rx="9"/><text class="t1" x="964" y="591">個體差異</text><text class="t2" x="964" y="611">SNP;haplotype 一起遺傳</text><text class="t2" x="964" y="631">tag SNP 可代表整組</text><text class="pg" x="1220" y="654" text-anchor="end">p.105–106</text><line class="ar" x1="1092.0" y1="662" x2="1092.0" y2="693" marker-end="url(#a)"/><rect class="b s" x="952" y="696" width="280" height="98" rx="9"/><text class="t1" x="964" y="723">演化與疾病</text><text class="t2" x="964" y="743">outgroup 定祖先支系</text><text class="t2" x="964" y="763">linkage analysis 定位致病基因</text><text class="pg" x="1220" y="786" text-anchor="end">p.108–110</text><path class="cx" d="M608 745.0 C648 745.0,600 613.0,638 613.0" marker-end="url(#b)"/><circle class="bg" cx="624.0" cy="679.0" r="11"/><text class="bt" x="624.0" y="683.5" text-anchor="middle">A</text><path class="cx" d="M296 227.0 C336 227.0,288 227.0,326 227.0" marker-end="url(#b)"/><circle class="bg" cx="312.0" cy="213.0" r="11"/><text class="bt" x="312.0" y="217.5" text-anchor="middle">B</text><g transform="translate(20,946)"><rect class="b k" width="16" height="12" rx="3"/><text class="pg" x="22" y="11">必考核心</text><rect class="b s" x="100" width="16" height="12" rx="3"/><text class="pg" x="122" y="11">對照/補充</text><path class="cx" d="M210 6 h34" marker-end="url(#b)"/><text class="pg" x="252" y="11">跨節關聯</text></g></svg></div></div>
+<p class="note">手機可左右滑動看圖。紅框是必考核心,虛線框是對照補充。紫色虛線是跨欄關聯:<b>A</b> 接在基因末端的 tag,正是 TAP 兩段純化的原理(Table 9-3、p.86);<b>B</b> 選好的 vector 要能表現蛋白,就換成帶轉錄與轉譯訊號的 expression vector(p.46、54)。另一條要記的線:9.1 的限制酶位點不能出現在目標序列內,所以切點要放在 PCR primer 的非互補尾端(p.34)。</p>
+<h2>整章大綱</h2>
+<ol class="ol">
+<li><b>9.0 複習:合成、PCR 與定序(與 Ch8 重疊)</b>
+ <ol>
+ <li>聚合酶只把核苷酸加到 primer 的 <b>3′ 端</b> <i>p.3</i></li>
+ <li>Sanger 用 ddNTP 終止;NGS 分 reversible terminator(Illumina)與 SMRT(30–40 kb)<i>p.5–11</i></li>
+ <li>Sequencing depth = 平均覆蓋次數;contig = 組裝出的長連續序列 <i>p.12</i></li>
+ </ol></li>
+<li><b>9.1 研究基因與其產物</b>
+ <ol>
+ <li>DNA cloning 五步驟(講義重複 6 次):vector → 取得片段 → ligase 接合 → transformation → 篩選 <i>p.17</i></li>
+ <li>限制酶
+  <ul><li>Type I、III 為多次單元複合體;<b>type II 不需 ATP、在辨識序列內切</b> <i>p.22</i></li>
+  <li>位點 4–8 bp、回文;EcoRI、BamHI、HindIII、PstI 切黏性末端,PvuII、EcoRV、HaeIII 切平滑末端 <i>p.23–24</i></li>
+  <li>目標序列內不可有要用的切點,切點放在 primer 的非互補尾端 <i>p.34</i></li></ul></li>
+ <li>DNA ligase 三步:酵素腺苷化(AMP 來自 ATP 或 NAD⁺)→ 活化 5′ 磷酸 → 趕走 AMP 封口 <i>p.37–38</i></li>
+ <li>片段來源:基因體 DNA、PCR、<b>cDNA</b>(reverse transcriptase,無 intron)與 cDNA library <i>p.31–33</i></li>
+ <li>導入與篩選:transformation(熱休克,&gt;15 kb 變差)/ electroporation;selectable 決定生死、screenable 決定顏色;pBR322 用 PstI 切在 AmpR 內做正負篩選 <i>p.41–45</i></li>
+ <li>三種 vector:plasmid、BAC(100–300 kb,par 基因、CamR + lacZ)、YAC(TEL-X-ori-CEN-Y-TEL;&gt;150 kb 穩定,&lt;100 kb 流失)<i>p.46–51</i></li>
+ <li>表現:expression vector;細菌優缺點(無修飾、inclusion body);lac promoter 會漏、<b>T7 系統嚴密</b>;baculovirus;哺乳類細胞修飾正確但昂貴 <i>p.54–61</i></li>
+ <li>改造:site-directed 與 oligonucleotide-directed mutagenesis(甲基化專一核酸酶除去親代模板);RecA K72R;combinatorial library;fusion protein <i>p.62–66</i></li>
+ <li>Tag 純化((His)₆–Ni²⁺ 等);RT-PCR;qPCR 測相對 copy number,CT 越小起始量越多 <i>Table 9-3, p.69–70</i></li>
+ </ol></li>
+<li><b>9.2 在細胞或個體層次探究蛋白功能</b>
+ <ol>
+ <li>三個層次:phenotypic → cellular → molecular <i>p.72</i></li>
+ <li>Genome / genomics;transcriptome 與 proteome 都是「某一刻」的快照 <i>p.73–74</i></li>
+ <li>Similarity:comparative genomics、BLAST、annotation;<b>ortholog 跨物種、paralog 同物種</b>;synteny;structural motif <i>p.76–79</i></li>
+ <li>Amount / Location:RNA-Seq 與 scRNA-Seq;GFP 看活細胞、免疫螢光需固定(細胞會死);epitope tag <i>p.81–83</i></li>
+ <li>Connection:immunoprecipitation;TAP tag 兩段純化(Protein A → IgG 管柱 → TEV 切 → calmodulin 管柱);yeast two-hybrid(Gal4p 兩個域被拉在一起才啟動報導基因)<i>p.85–87</i></li>
+ <li>Importance:CRISPR 天然三組件(gRNA、tracrRNA、Cas)→ 現行只需 <b>Cas9 + sgRNA</b>;NHEJ → knockout,加 recombination fragment → HDR;失活 Cas9 可做轉錄 ON/OFF;高通量正負篩選 <i>p.89–97</i></li>
+ </ol></li>
+<li><b>9.3 基因體學與人類的故事</b>
+ <ol>
+ <li>組成:introns 25.9%、LINEs 20.4%、SINEs 13.1%、<b>protein-coding 僅 1.5%</b>;功能分類中 unknown 佔 37.4% <i>p.101–102</i></li>
+ <li>ENCODE:&gt;80% 的 DNA 被轉錄或參與染色質功能 <i>p.103</i></li>
+ <li>SSR &lt;10 bp、約 3%,在 centromere 與 telomere;short tandem repeat <i>p.104</i></li>
+ <li>SNP;haplotype 與 tag SNP <i>p.105–106</i></li>
+ <li>親緣樹用 SNP、inversion、insertion、deletion、fusion、duplication;outgroup 判斷祖先支系 <i>p.107–108</i></li>
+ <li>&gt;6,000 種突變表型已定位;linkage analysis;haplotype 追溯人類遷徙 <i>p.110–112</i></li>
+ </ol></li>
+</ol>
+</div>
+
+<h2>怎麼考:考法分析</h2>
+<p class="hint" style="margin-top:4px">Ch9 講義沒有附國考題。以下依講義本身的強調訊號推測:同一張投影片重複出現、投影片直接拋出問題、留白要填的空格、整理表格。全部是<b>推測</b>,不是考古紀錄。</p>
+<div class="tbl exam"><table>
+<thead><tr><th>題型</th><th>講義訊號</th><th>陷阱與解法</th></tr></thead>
+<tbody>
+<tr><td>Cloning 五步驟排序</td><td>同一張「5 general processes」在講義中出現 <b>6 次</b> <i>p.17–42</i></td><td>順序:選 vector → 取得片段 → 接合成 recombinant DNA → transformation → 篩選。最容易混的是第 4、5 步:<b>transformation 是送進去,antibiotic selection 是挑出來</b>。</td></tr>
+<tr><td>投影片直接問的 why</td><td>p.34 寫著「目標序列不能含你要用的限制酶位點,why?」</td><td>答:那個酶會把目標片段<b>從內部切斷</b>,而不是只切兩端,插入片段就毀了。解法是把切點放在 primer 的非互補尾端。</td></tr>
+<tr><td>留白填空</td><td>p.48 BAC 投影片寫「positive selection marker = ___ / screenable marker = ___」</td><td>答:<b>CamR</b>(氯黴素抗性)與 <b>lacZ</b>;帶插入片段的菌落在 X-gal 上是<b>白色</b>。</td></tr>
+<tr><td>酶與 marker 配對</td><td>Table(type II 酶)、Table 9-3(tag)、p.44 marker 定義</td><td>Selectable 決定<b>生死</b>(AmpR、TetR);screenable 決定<b>顏色</b>(lacZ)。Tag 與配體要一起背:(His)₆–Ni²⁺、GST–glutathione、MBP–maltose。</td></tr>
+<tr><td>數字題</td><td>pBR322 4,361 bp;BAC 100–300 kb;YAC 穩定門檻;SMRT 30–40 kb;人類基因體比例</td><td>最常考:YAC <b>&gt;150 kb 很穩、&lt;100 kb 在有絲分裂中逐漸流失</b>;protein-coding 只佔 <b>1.5%</b>,introns 佔 25.9%。</td></tr>
+<tr><td>技術選擇</td><td>p.84 列出「要知道蛋白和誰互動」的兩種方法</td><td>看目的選:純化複合體(免疫沉澱、TAP)看<b>既有的</b>結合夥伴;yeast two-hybrid 測<b>兩個特定蛋白</b>會不會結合。</td></tr>
+<tr><td>定義對比</td><td>ortholog / paralog、transcriptome / proteome、選殖三層次功能</td><td>Ortholog <b>跨</b>物種、paralog <b>同一</b>物種內。三層功能由大到小:phenotypic(整隻生物)→ cellular(網絡)→ molecular(生化活性)。</td></tr>
+<tr><td>表現系統優缺點</td><td>p.56 細菌的優缺點整頁列出;p.57 lac vs T7</td><td>細菌最大缺點:<b>無轉譯後修飾</b>、易形成 inclusion body。lac promoter 調控「leaky」,<b>T7 系統才是 tight regulation</b>。</td></tr>
+<tr><td>CRISPR 組成與結果</td><td>p.91、p.93 各列一次組成</td><td>天然系統 = gRNA + tracrRNA + Cas 蛋白;現行技術只要 <b>Cas9 + sgRNA</b>(兩者融合)。修復方式決定結果:<b>NHEJ → 突變/knockout;有 recombination fragment → HDR 精準改</b>。</td></tr>
+</tbody></table></div>
+<ul class="pts"><li class="mem">準備順序建議:① cloning 五步驟與限制酶、ligase → ② 三種 vector 與 marker 篩選 → ③ 蛋白表現與 tag、突變 → ④ 功能研究方法(RNA-Seq、GFP、TAP、two-hybrid、CRISPR)→ ⑤ 人類基因體數字與 SNP、haplotype</li></ul>
+
+<h2>9.0 複習:合成、PCR 與定序</h2>
+<p class="src">講義 p.2–12 是 Ch8 後半的複習,內容與 Ch8 重疊。這裡只列 Ch9 版本多出來或講得更細的部分,完整內容見 Ch8 的 8.3。</p>
+<ul class="pts">
+<li>PCR 原理:DNA polymerase 用模板和 dNTP 合成 DNA,<b>只能把核苷酸加到既有股(primer)的 3′ 端</b> <i>p.3</i></li>
+<li>Sanger = dideoxy chain-termination;ddNTP 中斷合成 <i>p.5</i></li>
+<li>NGS 兩大類:<b>reversible terminator</b>(Illumina)與 <b>SMRT</b>(單分子即時)<i>p.7–8</i></li>
+<li>SMRT 平均讀長 <b>30,000–40,000 bp</b> <i>p.11</i></li>
+<li><b>Sequencing depth</b>:基因體中某個核苷酸平均被定序的次數;<b>contig</b>:由重疊片段組裝出的長連續序列 <i>p.12</i></li>
+</ul>
+
+<h2>9.1 研究基因與其產物</h2>
+<ul class="pts">
+<li><b>Clone</b> = 完全相同的複製品;<b>DNA cloning</b> = 選擇性放大特定基因或片段,以便研究與利用;<b>recombinant DNA technology(genetic engineering)</b> = 達成這件事的各種方法 <i>p.16</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:DNA cloning 五步驟(講義重複 6 次,最可能考) <i>p.17–42</i></div><div class="fl">
+<div class="nd"><b>① 選 cloning vector</b>能自主複製的小 DNA</div><span class="ar">→</span>
+<div class="nd"><b>② 取得目標片段</b>限制酶切、PCR 或 cDNA</div><span class="ar">→</span>
+<div class="nd key"><b>③ 共價接合</b>DNA ligase → recombinant DNA</div><span class="ar">→</span>
+<div class="nd"><b>④ 送入宿主</b>transformation(熱休克)或 electroporation</div><span class="ar">→</span>
+<div class="nd ok"><b>⑤ 篩選</b>antibiotic selection 找出帶重組 DNA 的細胞</div>
+</div></div>
+<ul class="pts">
+<li><b>Cloning vector</b>:能自主複製的小 DNA;<b>recombinant DNA</b>:由兩個以上來源的片段共價相連的複合分子 <i>p.18</i></li>
+</ul>
+
+<h3>限制酶與接合</h3>
+<ul class="pts">
+<li><b>Restriction endonuclease</b>:辨識特定序列(recognition sequence / restriction site)並切斷 DNA;<b>methylase</b> 甲基化宿主自己的 DNA 以免被切;兩者合稱 <b>restriction-modification system</b> <i>p.21</i></li>
+<li class="mem"><b>Type I、III</b>:大型多次單元複合體,同時具 endonuclease 與 methylase 活性。<b>Type II</b>:較簡單、<b>不需 ATP</b>、在辨識序列<b>之內</b>水解切斷 — 選殖用的是 type II <i>p.22</i></li>
+<li>Type II 辨識序列:通常 <b>4–8 bp</b>、<b>palindromic(inverted repeat)</b> <i>p.23</i></li>
+<li>命名規則:三個字母的菌種縮寫 + 菌株代號 + 羅馬數字。<b>BamHI</b> = <i>Bacillus amyloliquefaciens</i> strain H 的第一個 <i>p.23</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>Type II 酶</th><th>辨識序列</th><th>切出</th></tr></thead>
+<tbody>
+<tr><td><b>EcoRI</b></td><td>GAATTC</td><td><b>Sticky end</b>(5′ 突出 AATT)</td></tr>
+<tr><td>BamHI</td><td>GGATCC</td><td>Sticky end</td></tr>
+<tr><td>HindIII</td><td>AAGCTT</td><td>Sticky end</td></tr>
+<tr><td>PstI</td><td>CTGCAG</td><td>Sticky end(3′ 突出)</td></tr>
+<tr><td>ClaI</td><td>ATCGAT</td><td>Sticky end</td></tr>
+<tr><td><b>PvuII</b></td><td>CAGCTG</td><td><b>Blunt end</b></td></tr>
+<tr><td>EcoRV</td><td>GATATC</td><td>Blunt end</td></tr>
+<tr><td>HaeIII</td><td>GGCC</td><td>Blunt end(只有 4 bp,切點最多)</td></tr>
+<tr><td>NotI</td><td>GCGGCCGC</td><td>Sticky end(8 bp,切點最少)</td></tr>
+<tr><td>Tth111I</td><td>GACNNNGTC</td><td>N 代表任意鹼基</td></tr>
+</tbody></table></div>
+<p class="src">Table、p.23–24。辨識序列越長,在基因體中出現的機會越低,切出的片段越大。</p>
+<ul class="pts">
+<li class="mem"><b>Sticky end(黏性末端)</b>:交錯切,留下單股突出,互補的末端可自行配對 → 接合效率高、有方向性。<b>Blunt end(平滑末端)</b>:對稱切,沒有突出 → 任何平滑末端都能接,但效率低、無方向性 <i>p.24</i></li>
+<li>可用同一個 vector 同時以兩種酶切(如 EcoRI + PvuII),一端黏一端平,控制插入方向 <i>p.24</i></li>
+<li><b>Linker</b>:人工合成的短 DNA,用來橋接要接合的末端;常帶 <b>multiple cloning site</b>(一段內含多個限制酶位點的序列)<i>p.28</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:DNA ligase 封口的三步 <i>p.37–38</i></div><div class="fl">
+<div class="nd"><b>① Adenylylation</b>酵素的 Lys 接上 AMP<br>AMP 來自 <b>ATP</b>(放出 PPi)或 <b>NAD⁺</b>(放出 NMN)</div><span class="ar">→</span>
+<div class="nd"><b>② 活化 5′ 磷酸</b>AMP 轉給 nick 處的 5′-磷酸</div><span class="ar">→</span>
+<div class="nd key"><b>③ 封口</b>3′-OH 攻擊,<b>趕走 AMP</b>,形成磷酸雙酯鍵</div>
+</div>
+<div class="br"><div><div class="lab">記憶點</div>細菌 ligase 用 <b>NAD⁺</b>,動物與噬菌體 T4 用 <b>ATP</b>;NMN = nicotinamide mononucleotide,是 NAD⁺ 的一半(另一半是 AMP)</div>
+<div><div class="lab">和限制酶的分工</div>限制酶負責<b>切</b>並產生可配對的末端,ligase 負責把骨架<b>接回去</b>;只靠鹼基配對的黏性末端是鬆的,不接就會散開</div></div></div>
+
+<h3>取得要選殖的片段</h3>
+<ul class="pts">
+<li>原核基因可直接用基因體 DNA 當模板;<b>真核基因含 intron</b>,直接用基因體 DNA 在細菌中表現會做不出正確蛋白 <i>p.31–32</i></li>
+<li class="mem"><b>cDNA</b>:以 mRNA 為模板、靠 <b>reverse transcriptase</b> 做出的雙股 DNA(<b>已經沒有 intron</b>);把 cDNA 片段放進 vector 選殖出的集合叫 <b>cDNA library</b> <i>p.33</i></li>
+<li>cDNA 合成:oligo(dT) primer 黏上 mRNA 的 poly(A) 尾 → reverse transcriptase 做出 mRNA–DNA 雜合 → 鹼降解 mRNA → DNA polymerase I 補成雙股 <i>p.33</i></li>
+<li class="mem"><b>用 PCR 取得片段時,目標序列內部不能有你要用的限制酶位點</b>,否則目標會被從中間切斷;做法是把切點放在 primer 的<b>非互補尾端</b>,PCR 後再切 <i>p.34</i></li>
+</ul>
+
+<h3>送入宿主與篩選</h3>
+<ul class="pts">
+<li><b>Transformation</b>:用<b>熱休克</b>把小 plasmid 送進細菌;原因尚未完全清楚;<b>plasmid 超過約 15 kb 後效率明顯下降</b> <i>p.41</i></li>
+<li><b>Electroporation</b>:用高壓脈衝<b>暫時</b>讓細菌膜通透 <i>p.41</i></li>
+<li class="mem"><b>Selectable marker</b>:在特定條件下讓細胞<b>活下來(positive selection)或死掉(negative selection)</b>,如 TetR、AmpR。<b>Screenable marker</b>:讓細胞產生有色或螢光分子的基因,如 <b>lacZ</b> <i>p.44</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:pBR322 的正負篩選(為什麼要兩個抗性) <i>p.27, 45</i></div><div class="fl">
+<div class="nd"><b>pBR322</b>4,361 bp,帶 <b>AmpR</b> 與 <b>TetR</b>,ori,及 EcoRI、BamHI、SalI、PstI、PvuII 位點</div><span class="ar">→</span>
+<div class="nd"><b>用 PstI 切</b>切點落在 <b>AmpR 基因內</b>,插入外來 DNA 會<b>破壞 AmpR</b>(TetR 完好)</div><span class="ar">→</span>
+<div class="nd"><b>Tet 盤:正選擇</b>長出來 = 有 plasmid(不論有無插入)</div><span class="ar">→</span>
+<div class="nd key"><b>轉印到 Tet + Amp 盤</b><b>只長 Tet、不長 Tet+Amp = 帶重組 plasmid</b>;兩盤都長 = 空 plasmid</div>
+</div></div>
+
+<h3>三種 cloning vector</h3>
+<div class="tbl"><table>
+<thead><tr><th></th><th>Plasmid</th><th>BAC</th><th>YAC</th></tr></thead>
+<tbody>
+<tr><td>可裝長度</td><td>小片段(transformation &gt;15 kb 後變差)</td><td><b>100,000–300,000 bp</b></td><td>更長的基因體片段</td></tr>
+<tr><td>關鍵構造</td><td>ori + 抗藥基因 + 多切點</td><td>穩定 ori <b>維持低 copy number</b>;來自 <b>F plasmid 的 par 基因</b>確保分裂時正確分配</td><td><b>TEL–X–ori–CEN–Y–TEL</b>(兩端端粒、一個中節、複製起點、兩個 marker)</td></tr>
+<tr><td>Marker</td><td>AmpR、TetR、lacZ</td><td>Positive = <b>CamR</b>;screenable = <b>lacZ</b>(重組菌落為<b>白色</b>)</td><td>兩個 selectable marker <b>X 與 Y</b>,分別在兩臂</td></tr>
+<tr><td>導入方式</td><td>熱休克 transformation</td><td><b>Electroporation</b></td><td>酵素消化細胞壁成 spheroplast 後轉形</td></tr>
+<tr><td>宿主</td><td>E. coli</td><td>E. coli</td><td>酵母菌</td></tr>
+</tbody></table></div>
+<p class="src">p.46–51。三種常用 vector:plasmid、bacterial artificial chromosome、yeast artificial chromosome。</p>
+<ul class="pts">
+<li>YAC 構築:<b>BamHI</b> 切出帶端粒末端的線性染色體;<b>EcoRI</b> 切出兩條各帶一個 selectable marker 的臂,再與不完全消化的基因體片段接合 <i>p.50</i></li>
+<li class="mem"><b>YAC 穩定性</b>:隨插入片段變長而增加(到一定程度為止);插入 <b>&gt;150,000 bp 很穩定</b>;<b>&lt;100,000 bp 在有絲分裂中逐漸流失</b>;<b>任一端缺少 telomere 就會迅速被降解</b> <i>p.51</i></li>
+<li>YAC 中的 DNA 可被改造,用來研究特化序列在染色體代謝中的功能,以及基因調控與表現的機制 <i>p.49</i></li>
+<li><b>Pulsed field gel electrophoresis</b>:分離 BAC、YAC 這類超長 DNA 用的電泳 <i>p.52</i></li>
+</ul>
+
+<h3>表現選殖的基因、做出蛋白</h3>
+<ul class="pts">
+<li>純化蛋白的用途:釐清功能、研究反應機制、製造抗體、在試管中重建複雜的細胞活性、找結合夥伴 <i>p.53</i></li>
+<li><b>Expression vector</b>:除了選殖功能,還帶有調控表現所需的轉錄與轉譯訊號 <i>p.54</i></li>
+<li>宿主選擇:細菌、酵母、昆蟲與昆蟲病毒、培養的哺乳類細胞 <i>p.55</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>宿主</th><th>優點</th><th>缺點</th></tr></thead>
+<tbody>
+<tr><td><b>細菌</b>(最常用)</td><td>調控序列清楚、表現量高、便宜好養、轉形與萃取方法成熟、可大量培養</td><td>異源蛋白<b>可能摺疊錯誤</b>、<b>沒有轉譯後修飾與蛋白切割</b>、某些序列難表現、內在無序區聚集成<b>inclusion body</b></td></tr>
+<tr><td>昆蟲 / baculovirus</td><td>可用 <b>p10、polyhedrin</b> 基因位置放入外源基因;<b>bacmid</b> 是能在 E. coli 中複製的大型環狀 DNA</td><td>系統較複雜</td></tr>
+<tr><td>哺乳類細胞</td><td>可<b>暫時或永久</b>表現;<b>轉譯後修飾正確</b></td><td><b>非常昂貴</b></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li class="mem"><b>lac promoter 的調控是「leaky」(會漏);把基因接到 T7 promoter、由 T7 RNA polymerase 轉錄,才能得到嚴密調控</b>。pET 系統:IPTG 使 lac repressor 脫落 → 宿主 DE3 上的 T7 RNA polymerase 被表現 → 再轉錄 pET 上的目標基因 <i>p.57–58</i></li>
+</ul>
+
+<h3>改造選殖的基因</h3>
+<ul class="pts">
+<li><b>Site-directed mutagenesis</b>:逐一置換特定胺基酸;<b>oligonucleotide-directed mutagenesis</b>:用帶突變的引子造成特定序列改變 <i>p.62–63</i></li>
+<li>做法:變性 plasmid → 黏上帶突變的 oligo 引子 → DNA polymerase 延伸 → 用<b>甲基化專一的核酸酶消化未突變的親代模板</b> → 轉形進細胞,由細胞修復 nick <i>p.63</i></li>
+<li class="mem">經典例:RecA 的 <b>Lys72</b> 負責水解 ATP;<b>K72R 突變體會結合 ATP 但不水解</b> — 用來分開「結合」與「水解」兩個步驟 <i>p.64</i></li>
+<li><b>Combinatorial(gene)library</b>:聚焦在單一基因內序列變異的庫,可用 <b>error-prone DNA polymerase</b> 製造;<b>DNA library</b> 則是 DNA 選殖株的集合 <i>p.65</i></li>
+<li>其他改造:用限制酶切掉一段再接回做 <b>deletion</b>;把兩個基因的部分接在一起,產物叫 <b>fusion protein</b> <i>p.66</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>Tag</th><th>分子量 (kDa)</th><th>固定化配體</th></tr></thead>
+<tbody>
+<tr><td>Protein A</td><td>59</td><td>IgG 的 <b>Fc</b> 部分</td></tr>
+<tr><td><b>(His)₆</b></td><td><b>0.8</b>(最小)</td><td><b>Ni²⁺</b></td></tr>
+<tr><td>Glutathione-S-transferase (GST)</td><td>26</td><td><b>Glutathione</b></td></tr>
+<tr><td>Maltose-binding protein</td><td>41</td><td><b>Maltose</b></td></tr>
+<tr><td>β-Galactosidase</td><td>116(最大)</td><td>TPEG</td></tr>
+<tr><td>Chitin-binding domain</td><td>5.7</td><td>Chitin</td></tr>
+</tbody></table></div>
+<p class="src">Table 9-3、p.67。Tag = 能以高親和力與專一性結合某簡單穩定配體的胜肽或蛋白,接在目標基因末端後可用親和層析純化。</p>
+<ul class="pts">
+<li><b>RT-PCR</b>:先用 reverse transcriptase 把 RNA 做成 DNA,再用耐熱聚合酶 PCR 放大;20 個循環約放大 10⁶ 倍 <i>p.69</i></li>
+<li class="mem"><b>qPCR(quantitative PCR)</b>:估計樣本中特定序列的<b>相對 copy number</b>。探針上的 fluorophore 被 quencher 壓住,探針結合目標後兩者分開、螢光上升;訊號越過 threshold 的循環數稱 <b>CT</b>,<b>CT 越小代表起始量越多</b> <i>p.70</i></li>
+</ul>
+
+<h2>9.2 在細胞或個體層次探究蛋白功能</h2>
+<ul class="pts">
+<li class="mem">蛋白功能的<b>三個層次</b>:<b>phenotypic</b>(對整個個體的影響)→ <b>cellular</b>(在細胞層次參與的交互作用網絡)→ <b>molecular</b>(精確的生化活性)<i>p.72</i></li>
+<li><b>Genome</b>:一個生物完整的單倍體遺傳組成;<b>genomics</b>:在細胞尺度研究 DNA,屬於 <b>systems biology</b> 的一環 <i>p.73</i></li>
+<li class="mem"><b>Transcriptome</b>:細胞在<b>某個時刻</b>所有被轉錄出的 RNA 總和;<b>proteome</b>:某個時刻所有蛋白質的總和 — 兩者都是「某一刻的快照」,會隨條件改變 <i>p.74</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:拿到一個未知功能的蛋白,講義給的五條線索 <i>p.75, 88, 94</i></div><div class="fl">
+<div class="nd"><b>Similarity</b>序列像誰?<br>BLAST、ortholog、motif</div><span class="ar">→</span>
+<div class="nd"><b>Amount(When)</b>什麼時候表現?<br>RNA-Seq、qPCR</div><span class="ar">→</span>
+<div class="nd"><b>Location(Where)</b>在哪裡?<br>GFP、免疫螢光</div><span class="ar">→</span>
+<div class="nd"><b>Connection</b>和誰互動?<br>免疫沉澱、TAP、two-hybrid</div><span class="ar">→</span>
+<div class="nd key"><b>Importance</b>拿掉會怎樣?<br>CRISPR/Cas9 篩選</div>
+</div></div>
+
+<h3>線索一:序列與結構相似性</h3>
+<ul class="pts">
+<li><b>Comparative genomics</b>:用基因體資料庫做比對來推定基因功能;<b>BLAST</b> 是快速搜尋的演算法;<b>genome annotation</b> 把序列轉換成「基因位置與功能」的資訊 <i>p.76</i></li>
+<li class="mem"><b>Ortholog</b>:<b>不同物種</b>之間,序列與功能有明確對應關係的基因。<b>Paralog</b>:<b>同一物種內</b>彼此相關的基因(來自基因重複)<i>p.77</i></li>
+<li><b>Synteny</b>:基因順序在物種間保守;相關片段中位置相同的基因,是 ortholog 關係的額外證據 <i>p.78</i></li>
+<li><b>Structural motif</b>:特定胺基酸序列對應特定結構模組,可推測分子功能,例如「會水解 ATP」「會結合 DNA」「會與鋅離子形成複合體」<i>p.79</i></li>
+</ul>
+
+<h3>線索二、三:何時表現、在哪裡</h3>
+<ul class="pts">
+<li><b>RNA-Seq</b>:判定在特定條件下基因體轉錄出哪些 RNA;<b>scRNA-Seq</b> 是靈敏度高到可做<b>單一細胞</b>的版本 <i>p.81</i></li>
+<li><b>GFP</b>:與目標蛋白融合後可在<b>活細胞</b>中直接看位置;發色團由 Tyr-Gly-Ser 自行環化、脫水、氧化形成 <i>p.82</i></li>
+<li class="mem"><b>Immunofluorescence</b>:用抗體看<b>內生</b>蛋白,但需要固定細胞(<b>細胞會死</b>) — 這是它與 GFP 的主要差別。<b>Epitope tag</b>:一小段能被抗體緊密結合的蛋白序列 <i>p.83</i></li>
+</ul>
+
+<h3>線索四:和誰互動</h3>
+<ul class="pts">
+<li>兩類方法:<b>純化蛋白複合體</b>與 <b>yeast two-hybrid analysis</b> <i>p.84</i></li>
+<li><b>Immunoprecipitation</b>:用對 epitope tag 的抗體,把融合蛋白(連同它帶著的夥伴)沉澱下來 <i>p.85</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:TAP tag 兩段式純化 <i>p.86</i></div><div class="fl">
+<div class="nd"><b>TAP tag 組成</b>目標蛋白–<b>calmodulin 結合胜肽</b>–<b>TEV 切點</b>–<b>Protein A</b></div><span class="ar">→</span>
+<div class="nd"><b>① IgG 管柱</b>Protein A 結合 IgG,抓住複合體</div><span class="ar">→</span>
+<div class="nd"><b>② TEV 蛋白酶</b>在切點切開,把複合體放出來(留下 Protein A)</div><span class="ar">→</span>
+<div class="nd"><b>③ Calmodulin 管柱</b>鬆散結合的雜質先流掉</div><span class="ar">→</span>
+<div class="nd ok"><b>④ 過量 calmodulin 沖提</b>得到乾淨的蛋白複合體</div>
+</div>
+<div class="br"><div><div class="lab">為什麼要「兩段」</div>單一親和管柱會帶下很多非專一結合的雜質;<b>連續兩種不同原理的親和步驟</b>才能讓偽陽性大幅下降</div>
+<div><div class="lab">和 two-hybrid 的分工</div>TAP 是<b>撈出「現在就結合在一起」的整個複合體</b>;two-hybrid 是<b>驗證「這兩個蛋白會不會直接結合」</b></div></div></div>
+<div class="flow"><div class="ft">流程:Yeast two-hybrid <i>p.87</i></div><div class="fl">
+<div class="nd"><b>拆開 Gal4p</b>轉錄活化因子分成 <b>DNA 結合域</b>與<b>活化域</b>,單獨都不能啟動轉錄</div><span class="ar">→</span>
+<div class="nd"><b>做兩個融合蛋白</b>菌株 1:DNA 結合域–<b>蛋白 X</b><br>菌株 2:活化域–<b>蛋白 Y</b></div><span class="ar">→</span>
+<div class="nd"><b>交配成雙倍體</b>兩個融合蛋白在同一個細胞中</div><span class="ar">→</span>
+<div class="nd key"><b>X 與 Y 若結合</b>兩個域被拉在一起 → <b>reporter gene 轉錄</b> → 細胞在選擇培養基上存活成菌落</div><span class="ar">→</span>
+<div class="nd ok"><b>定序融合蛋白</b>得知是哪兩個蛋白在互動</div>
+</div></div>
+
+<h3>線索五:CRISPR/Cas 與重要性</h3>
+<ul class="pts">
+<li><b>CRISPR</b> = clustered, regularly interspaced short palindromic repeats <i>p.89</i></li>
+<li class="mem">天然系統是<b>細菌的免疫系統</b>,三個組成:<b>guide RNA</b>(由存下的病毒間隔序列轉錄而來並被切出)、<b>tracrRNA</b>、一個以上的 <b>Cas 蛋白</b>;複合體結合入侵的噬菌體 DNA,由 Cas 的核酸酶活性摧毀它 <i>p.91</i></li>
+<li class="mem">現行技術只需<b>兩個</b>組件:單一 <b>Cas9</b> 蛋白 + 單一 <b>sgRNA</b>(gRNA 與 tracrRNA 融合成一條 RNA)<i>p.93</i></li>
+<li class="mem">切完之後的結果取決於修復方式:只有雙股斷裂 → <b>NHEJ</b> → 產生 frameshift 突變、插入終止密碼(<b>knockout</b>);另外提供 <b>recombination fragment</b> → <b>HDR</b> → 精準置換成指定序列 <i>p.92</i></li>
+<li>用<b>失去核酸酶活性</b>的 Cas9 則可只定位不切,接上 repressor 做轉錄抑制(OFF)或接上 activator 做轉錄活化(ON)<i>p.92, 97</i></li>
+<li><b>High-throughput screening</b>:建 sgRNA 寡核苷酸庫 → 選殖進 vector → 包成病毒 → 感染細胞 → 加選擇壓力 → PCR 放大 sgRNA 區域 → 深度定序,看哪些 sgRNA 被富集或消失 <i>p.96</i></li>
+<li><b>Positive screen</b>:施加選擇後只有少數「贏家」存活,找出參與該選擇路徑的基因。<b>Negative screen</b>:多數細胞存活,用次世代定序找出<b>消失</b>的那些 <i>p.97</i></li>
+<li>講義提醒:使用適當的正負對照是<b>研究者自己的責任</b>;投影片只是簡化概觀 <i>p.97</i></li>
+<li>仍有許多蛋白未被發現、未知功能 <i>p.95</i></li>
+</ul>
+
+<h2>9.3 基因體學與人類的故事</h2>
+<ul class="pts">
+<li><b>細菌基因很少含 intron</b>,人類基因體則大量含有 <i>p.100</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>人類基因體的序列組成</th><th>比例</th></tr></thead>
+<tbody>
+<tr><td><b>Introns</b></td><td><b>25.9%</b>(最大一塊)</td></tr>
+<tr><td>LINEs(long interspersed nuclear elements)</td><td>20.4%</td></tr>
+<tr><td>SINEs(short interspersed nuclear elements)</td><td>13.1%</td></tr>
+<tr><td>Miscellaneous unique sequences</td><td>11.6%</td></tr>
+<tr><td>LTR retrotransposons</td><td>8.3%</td></tr>
+<tr><td>Long repetitive sequences(centromere、telomere)</td><td>8%</td></tr>
+<tr><td>Segment duplications</td><td>5%</td></tr>
+<tr><td>Simple-sequence repeats</td><td>3%</td></tr>
+<tr><td>DNA transposons</td><td>2.9%</td></tr>
+<tr><td class="mem"><b>Protein-coding genes</b></td><td class="mem"><b>1.5%</b></td></tr>
+</tbody></table></div>
+<p class="src">p.101–102。蛋白編碼基因的功能分類中,<b>unknown 佔 37.4%</b> 最多,其次是 enzymes 16.2%、nucleic acid binding 9.8%、transcription factors 7.0%。</p>
+<ul class="pts">
+<li class="mem"><b>ENCODE</b> 計畫:找出人類基因體中的功能性元件。結論是 <b>&gt;80% 的 DNA 會被轉錄成 RNA 或參與染色質結構的某種功能</b>;剩下約 20% 中大多含有調控元件 <i>p.103</i></li>
+<li><b>SSR(simple-sequence repeat)</b>:高度重複、一般 &lt;10 bp,約佔人類基因體 <b>3%</b>,集中在 centromere 與 telomere。<b>Short tandem repeat</b>:孤立的重複片段,常含數十個串聯重複 <i>p.104</i></li>
+<li><b>SNP</b>:單一鹼基的變異;此外 deletion、insertion、rearrangement 也造成個體差異 <i>p.105</i></li>
+<li class="mem"><b>Haplotype</b>:通常會一起遺傳的一組 SNP;<b>tag SNP</b>:能代表整個 haplotype 的少數 SNP — 所以不必測全部 SNP 就能判定 haplotype <i>p.106</i></li>
+<li>建構親緣樹可用的基因體差異:SNP、inversion、insertion、deletion、fusion、duplication <i>p.107</i></li>
+<li><b>Outgroup</b>:親緣關係較遠的物種,用來判斷哪些序列改變是某一祖先支系獨有的 <i>p.108</i></li>
+<li>部分 RNA 編碼基因顯示<b>加速演化</b>的證據,且在股配對處仍保留互補性 <i>p.109</i></li>
+<li>已有 <b>&gt;6,000 種</b>人類突變表型被定位到特定基因或基因群;<b>Linkage analysis</b>:把致病基因相對於已知多型性標記定位 <i>p.110</i></li>
+<li>人類遷徙路徑可用現存族群中的 <b>haplotype</b> 追溯 <i>p.112</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">11 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 69 題</button>
+    <button class="tab" id="tab-1" data-f="9.0" aria-pressed="false">9.0 複習</button>
+    <button class="tab" id="tab-2" data-f="9.1" aria-pressed="false">9.1 基因與產物</button>
+    <button class="tab" id="tab-3" data-f="9.2" aria-pressed="false">9.2 蛋白功能</button>
+    <button class="tab" id="tab-4" data-f="9.3" aria-pressed="false">9.3 人類基因體</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">69</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"9.0",s:"p.3 · PCR basics",q:"DNA polymerases add nucleotides to which position of a preexisting strand?",a:2,o:[
+["The 5′ end of the template","聚合酶是延伸 primer,不是延伸模板。"],["The 5′ end of the primer","合成方向是 5′→3′,所以加在 3′ 端。"],["The 3′ end of the primer","正確。這是為什麼一定要有 primer 提供游離的 3′-OH。"],["Either end, depending on the enzyme","所有已知 DNA polymerase 都只往 3′ 端加。"]]},
+{c:"9.0",s:"p.11–12 · Sequencing terms",q:"Which pairing is correct?",a:1,o:[
+["Sequencing depth – the length of the longest read","Depth 指覆蓋次數,不是長度。"],["SMRT sequencing – average read lengths up to 30,000–40,000 bp","正確。"],["Contig – a single unassembled read","Contig 是由重疊片段組裝出的長連續序列。"],["Reversible terminator sequencing – single-molecule real-time detection","Reversible terminator 是 Illumina 的方法;SMRT 才是單分子即時。"]]},
+
+{c:"9.1",s:"p.16 · Definitions",q:"What is DNA cloning?",a:3,o:[
+["Producing a genetically identical whole organism","講義中的 clone 指完全相同的複製品,但 DNA cloning 專指 DNA 片段。"],["Determining the sequence of a DNA fragment","那是定序。"],["Amplifying DNA in a test tube using a thermostable polymerase","那是 PCR;cloning 是在宿主細胞中放大。"],["The selective amplification of a particular gene or DNA segment so that it can be studied and utilized","正確。相關方法總稱 recombinant DNA technology 或 genetic engineering。"]]},
+{c:"9.1",s:"p.17 · Five general processes",q:"In DNA cloning, which step immediately follows joining the two DNA fragments covalently?",a:0,o:[
+["Moving the recombinant DNA into a host organism (transformation)","正確。五步驟:選 vector → 取得片段 → 接合 → transformation → 篩選。"],["Selecting host cells with antibiotics","篩選是第 5 步,在 transformation 之後。"],["Selecting a cloning vector","選 vector 是第 1 步。"],["Obtaining the DNA segment to be cloned","取得片段是第 2 步。"]]},
+{c:"9.1",s:"p.18 · Vectors",q:"What defines a cloning vector?",a:1,o:[
+["Any DNA fragment produced by a restriction endonuclease","限制酶切出的片段不一定能自主複製。"],["A small DNA capable of autonomous replication","正確。recombinant DNA 則是由兩個以上來源的片段共價相連的分子。"],["An enzyme that joins two DNA fragments","那是 DNA ligase。"],["A short synthetic DNA used to bridge ligated ends","那是 linker。"]]},
+{c:"9.1",s:"p.21 · Restriction-modification",q:"What is the role of the methylase in a bacterial restriction-modification system?",a:2,o:[
+["It cleaves invading DNA at specific sequences.","切斷是 restriction endonuclease 的工作。"],["It joins DNA fragments after cleavage.","接合是 ligase 的工作。"],["It methylates the host's own DNA so that the host's restriction endonuclease will not digest it.","正確。兩種酵素合稱 restriction-modification system。"],["It removes methyl groups so the DNA can be transcribed.","Methylase 是加上甲基,不是移除。"]]},
+{c:"9.1",s:"p.22 · Types of restriction enzymes",q:"Which statement about type II restriction endonucleases is correct?",a:0,o:[
+["They are simpler than types I and III, require no ATP, and cleave within the recognition sequence.","正確。所以選殖幾乎都用 type II。"],["They are large multisubunit complexes with both endonuclease and methylase activities.","那是 type I 與 type III。"],["They require ATP and cleave far from the recognition site.","Type II 不需 ATP,且在辨識序列之內切。"],["They methylate rather than cleave DNA.","Type II 是核酸內切酶。"]]},
+{c:"9.1",s:"p.23 · Recognition sequences",q:"Type II restriction sites are typically:",a:1,o:[
+["20–30 bp long and non-palindromic","太長了,而且 type II 位點是回文。"],["4–8 bp long and palindromic (inverted repeats)","正確。"],["Always exactly 6 bp with no exceptions","HaeIII 只有 4 bp、NotI 有 8 bp。"],["Mirror repeats rather than inverted repeats","是 inverted repeat,不是 mirror repeat。"]]},
+{c:"9.1",s:"p.23 · Enzyme naming",q:"The name BamHI indicates that the enzyme is:",a:2,o:[
+["The first enzyme isolated from a bacterium whose genus starts with B, from any strain","菌株代號 H 也有意義,不能忽略。"],["A type I enzyme from Bacillus","BamHI 是 type II。"],["The first (I) restriction endonuclease characterized from Bacillus amyloliquefaciens strain H","正確。三字母菌種縮寫 + 菌株 + 羅馬數字。"],["An enzyme that cleaves the sequence BAMHI","辨識序列是 GGATCC,名字不是序列。"]]},
+{c:"9.1",s:"p.23–24 · Sticky vs blunt",q:"Which enzyme listed in the slides leaves blunt ends?",a:3,o:[
+["EcoRI","EcoRI 切 GAATTC,留下 5′ 突出的黏性末端。"],["BamHI","BamHI 切 GGATCC,留下黏性末端。"],["HindIII","HindIII 切 AAGCTT,留下黏性末端。"],["PvuII","正確。PvuII 切 CAGCTG,對稱切出平滑末端(EcoRV、HaeIII 也是)。"]]},
+{c:"9.1",s:"p.24 · Why sticky ends help",q:"Why are sticky ends usually preferred over blunt ends in cloning?",a:0,o:[
+["The single-stranded overhangs are complementary, so the fragment and vector pair up before ligation, giving higher efficiency and control of orientation","正確。平滑末端任何兩端都能接,效率低且方向不定。"],["Sticky ends can be ligated without DNA ligase","鹼基配對只是暫時的,仍需 ligase 接回骨架。"],["Sticky ends are produced only by type I enzymes","黏性末端由 type II 的交錯切產生。"],["Blunt ends cannot be ligated at all","平滑末端可以接,只是效率較低。"]]},
+{c:"9.1",s:"p.23 · Cut frequency",q:"Compared with HaeIII (GGCC), the enzyme NotI (GCGGCCGC) will cut a genome:",a:2,o:[
+["More often, because its sequence is longer","辨識序列越長,出現機率越低。"],["With the same frequency, because both are palindromic","回文與否不決定出現頻率。"],["Less often, producing larger fragments","正確。8 bp 的位點比 4 bp 的位點罕見得多。"],["Only if the DNA is methylated","甲基化是保護機制,不是切割的前提。"]]},
+{c:"9.1",s:"p.28 · Linkers",q:"What is a linker in cloning?",a:1,o:[
+["An enzyme that seals nicks in DNA","那是 DNA ligase。"],["A synthetic DNA fragment created to bridge ligated ends, often carrying a multiple cloning site","正確。"],["The origin of replication of a plasmid","ori 與 linker 無關。"],["A tag used for affinity purification","那是 protein tag。"]]},
+{c:"9.1",s:"p.37–38 · DNA ligase mechanism",q:"In the DNA ligase reaction, where does the AMP attached to the enzyme come from?",a:3,o:[
+["From GTP only","講義指出的供體不是 GTP。"],["From cAMP","cAMP 是訊號分子,不是此處的供體。"],["From S-adenosylmethionine","SAM 是甲基供體。"],["From ATP (releasing PPi) or NAD⁺ (releasing NMN)","正確。細菌 ligase 用 NAD⁺,動物與 T4 用 ATP。"]]},
+{c:"9.1",s:"p.37 · Sealing the nick",q:"What is the final step of the DNA ligase reaction?",a:2,o:[
+["Methylation of the newly joined strand","Ligase 不做甲基化。"],["Hydrolysis of the phosphodiester bond","Ligase 是形成鍵,不是水解。"],["The 3′-OH attacks the activated 5′-phosphate, displacing AMP and sealing the nick","正確。三步:酵素腺苷化 → 活化 5′ 磷酸 → 趕走 AMP 封口。"],["Addition of a dideoxynucleotide to block further extension","那是 Sanger 定序。"]]},
+{c:"9.1",s:"p.31–33 · Eukaryotic templates",q:"Why is cDNA, rather than genomic DNA, usually used to express a eukaryotic protein in bacteria?",a:0,o:[
+["cDNA is made from mRNA and therefore lacks introns, which bacteria cannot splice out","正確。細菌沒有剪接機制。"],["cDNA is single-stranded and inserts more easily","cDNA 是雙股 DNA。"],["Genomic DNA cannot be cut by restriction enzymes","基因體 DNA 當然可以被切。"],["cDNA contains the promoter needed for transcription","啟動子由 expression vector 提供。"]]},
+{c:"9.1",s:"p.33 · Making cDNA",q:"Which enzyme is essential for synthesizing cDNA from an mRNA template?",a:1,o:[
+["DNA ligase","Ligase 負責接合,不負責由 RNA 合成 DNA。"],["Reverse transcriptase","正確。之後鹼降解 mRNA,再由 DNA polymerase I 補成雙股。"],["Restriction endonuclease","限制酶負責切割。"],["Taq polymerase","Taq 用於 PCR,不能以 RNA 為模板。"]]},
+{c:"9.1",s:"p.33 · cDNA library",q:"A cDNA library is:",a:2,o:[
+["A collection of all restriction fragments of a genome","那比較接近基因體庫。"],["A set of sequence variants of a single gene","那是 combinatorial(gene)library。"],["A population of clones created by inserting cDNA fragments into vectors and cloning them","正確。"],["A database of published cDNA sequences","講義指的是實體的選殖株集合。"]]},
+{c:"9.1",s:"p.34 · Restriction sites in the target",q:"Why must the target sequence not contain the restriction site you plan to use for cloning?",a:3,o:[
+["Because the enzyme would fail to cut the vector","Vector 的切割不受影響。"],["Because the primers would not anneal","引子黏合與內部切點無關。"],["Because the fragment would be too long to ligate","長度不是問題所在。"],["Because the enzyme would also cut inside the target, destroying the fragment you want to insert","正確。解法是把切點放在 primer 的非互補尾端。"]]},
+{c:"9.1",s:"p.41 · Getting DNA into bacteria",q:"Which statement about transformation and electroporation is correct?",a:0,o:[
+["Transformation uses heat shock and becomes less successful as plasmid size increases beyond about 15 kb; electroporation uses high-voltage pulses that transiently make the membrane permeable","正確。所以 BAC 這類大 vector 用 electroporation。"],["Transformation uses high-voltage pulses and works best for very large plasmids","高壓脈衝是 electroporation。"],["Electroporation permanently destroys the bacterial membrane","只是暫時使膜通透。"],["Both methods require a virus as a carrier","兩者都不需要病毒。"]]},
+{c:"9.1",s:"p.44 · Markers",q:"Which pairing of marker type and example is correct?",a:1,o:[
+["Selectable marker – lacZ producing a colored product","產生顏色的是 screenable marker。"],["Selectable marker – AmpR, which permits growth under defined conditions","正確。Selectable marker 決定細胞的生死。"],["Screenable marker – TetR, which kills cells","TetR 是 selectable marker。"],["Screenable marker – the origin of replication","ori 不是 marker。"]]},
+{c:"9.1",s:"p.45 · pBR322 selection",q:"pBR322 is cleaved with PstI, which cuts inside the AmpR gene, and foreign DNA is ligated in. Which colonies carry recombinant plasmids?",a:2,o:[
+["Those that grow on both tetracycline and tetracycline + ampicillin","兩盤都長代表 AmpR 完好,也就是沒有插入片段。"],["Those that grow on neither plate","兩盤都不長代表沒有拿到 plasmid。"],["Those that grow on tetracycline but not on tetracycline + ampicillin","正確。插入片段破壞了 AmpR,TetR 仍完好。"],["Those that grow on ampicillin but not on tetracycline","TetR 沒有被破壞,所以不會出現這種結果。"]]},
+{c:"9.1",s:"p.27 · pBR322 facts",q:"Which is true of the plasmid pBR322?",a:3,o:[
+["It is about 43,000 bp long.","pBR322 是 4,361 bp。"],["It carries only a single antibiotic resistance gene.","它同時帶 AmpR 與 TetR。"],["It contains a centromere and two telomeres.","那是 YAC 的構造。"],["It is 4,361 bp and carries AmpR, TetR, an origin of replication, and sites for EcoRI, BamHI, SalI, PstI and PvuII.","正確。"]]},
+{c:"9.1",s:"p.47 · BACs",q:"Bacterial artificial chromosomes were developed to clone DNA segments of roughly what size?",a:0,o:[
+["100,000–300,000 bp","正確。"],["1,000–5,000 bp","這是一般 plasmid 的插入片段大小。"],["About 15,000 bp","15 kb 是熱休克 transformation 開始變差的大小。"],["More than 10 million bp","超過 BAC 的範圍。"]]},
+{c:"9.1",s:"p.48 · BAC vector design",q:"Why does the BAC vector contain par genes from an F plasmid?",a:1,o:[
+["To increase the plasmid copy number","BAC 的 ori 刻意維持低 copy number。"],["To direct reliable distribution of the recombinant chromosomes at cell division","正確。"],["To provide ampicillin resistance","抗性由 CamR 提供。"],["To allow the DNA to be cut by BamHI","par 基因與限制酶無關。"]]},
+{c:"9.1",s:"p.48 · BAC markers",q:"In the BAC vector shown in the slides, what are the positive selection marker and the screenable marker?",a:2,o:[
+["AmpR and TetR","這是 pBR322 的兩個 selectable marker。"],["TetR and GFP","講義標示的不是這組。"],["CamR (chloramphenicol resistance) and lacZ, with recombinant colonies appearing white","正確。插入片段破壞 lacZ,不產生 β-galactosidase。"],["lacZ and par","par 是分配基因,不是 marker。"]]},
+{c:"9.1",s:"p.50 · YAC construction",q:"Which set of elements is assembled into a yeast artificial chromosome?",a:3,o:[
+["Two origins of replication and no centromere","YAC 需要一個 CEN。"],["A centromere and a single telomere","兩端都必須有 telomere。"],["Only selectable markers X and Y","還需要 TEL、CEN 與 ori。"],["Telomeres at both ends, a centromere, an origin of replication and two selectable markers (X and Y)","正確。BamHI 切出端粒末端,EcoRI 切出兩條臂。"]]},
+{c:"9.1",s:"p.51 · YAC stability",q:"Which statement about YAC clone stability is correct?",a:0,o:[
+["Inserts larger than 150,000 bp are very stable, while inserts smaller than 100,000 bp are gradually lost during mitosis","正確。穩定性隨插入長度增加(到一定程度為止)。"],["Short inserts are the most stable","恰好相反。"],["YACs lacking a telomere at one end are still stable","缺少任一端的 telomere 都會迅速被降解。"],["Stability does not depend on insert length","講義明確指出與長度有關。"]]},
+{c:"9.1",s:"p.54 · Expression vectors",q:"What distinguishes an expression vector from an ordinary cloning vector?",a:1,o:[
+["It can replicate autonomously","所有 cloning vector 都能自主複製。"],["It carries the transcription and translation signals needed for regulated expression of the cloned gene","正確。"],["It contains no selectable marker","表現載體同樣需要 marker。"],["It can only be used in yeast","表現載體有細菌、酵母、昆蟲、哺乳類各種版本。"]]},
+{c:"9.1",s:"p.56 · Bacteria as hosts",q:"Which is a disadvantage of expressing a eukaryotic protein in bacteria?",a:2,o:[
+["Bacteria cannot be grown in large amounts","大量培養正是細菌的優點。"],["Bacterial regulatory sequences are poorly understood","細菌的調控序列是最清楚的。"],["Bacteria perform no posttranslational modification, and disordered regions can aggregate into insoluble inclusion bodies","正確。有些異源蛋白也會摺疊錯誤。"],["Bacterial growth media are expensive","細菌培養基便宜。"]]},
+{c:"9.1",s:"p.57 · T7 system",q:"Why is the bacteriophage T7 promoter system preferred over a simple lac promoter for protein expression?",a:3,o:[
+["Because the T7 promoter needs no inducer","pET 系統仍用 IPTG 誘導。"],["Because T7 RNA polymerase works only in eukaryotes","T7 RNA polymerase 在細菌宿主中作用。"],["Because the lac promoter cannot be induced at all","Lac promoter 可以被誘導,問題在於未誘導時仍會漏。"],["Because regulation from the lac promoter alone is 'leaky', whereas the T7 system affords tight regulation","正確。IPTG 使 lac repressor 脫落,先表現 T7 RNA polymerase,再轉錄目標基因。"]]},
+{c:"9.1",s:"p.59 · Baculovirus expression",q:"In baculovirus expression systems, which viral genes are typically replaced by the gene for the heterologous protein?",a:0,o:[
+["p10 and polyhedrin","正確。bacmid 則是能在 E. coli 中複製的大型環狀 DNA。"],["lacZ and AmpR","這些是細菌 marker。"],["gal4 and its reporter","那是 yeast two-hybrid 的元件。"],["cas9 and tracrRNA","那是 CRISPR 系統。"]]},
+{c:"9.1",s:"p.61 · Mammalian cell expression",q:"What is the main advantage and the main disadvantage of expressing proteins in cultured mammalian cells?",a:1,o:[
+["Advantage: very cheap; disadvantage: no posttranslational modification","成本高,而且修飾正是它的優點。"],["Advantage: proper posttranslational modification and either transient or permanent expression; disadvantage: very expensive","正確。"],["Advantage: highest yield of all systems; disadvantage: slow growth only","講義強調的優點是修飾正確,缺點是昂貴。"],["Advantage: no vector needed; disadvantage: unstable","仍需以工程化的哺乳類病毒當載體。"]]},
+{c:"9.1",s:"p.62–63 · Mutagenesis",q:"In oligonucleotide-directed mutagenesis, how is the nonmutated parental plasmid removed?",a:2,o:[
+["By heating to 95 °C, which destroys only parental DNA","加熱無法區分親代與新股。"],["By cutting it with EcoRI","一般限制酶不能區分甲基化狀態。"],["By digesting it with a methylation-specific nuclease, since only the parental DNA is methylated","正確。新合成的股沒有甲基化。"],["By gel purification of the mutant strand only","講義描述的步驟是甲基化專一的消化。"]]},
+{c:"9.1",s:"p.64 · RecA K72R",q:"The RecA K72R mutant was made to study ATP use. What is its phenotype?",a:3,o:[
+["It neither binds nor hydrolyzes ATP.","它仍然會結合 ATP。"],["It hydrolyzes ATP faster than wild type.","它無法水解。"],["It binds DNA but not ATP.","差別在水解,不在結合 ATP。"],["It binds ATP but does not hydrolyze it","正確。Lys72 是負責水解的殘基,這樣就能把結合與水解兩步分開研究。"]]},
+{c:"9.1",s:"p.65 · Libraries",q:"Which describes a combinatorial (gene) library?",a:0,o:[
+["A library focusing on sequence variants within one gene, which can be generated with error-prone DNA polymerases","正確。"],["A collection of cDNAs made from all mRNAs in a cell","那是 cDNA library。"],["A set of sgRNAs targeting many different genes","那是 CRISPR 篩選用的 sgRNA 庫。"],["A database of protein structures","講義指的是實體的 DNA 選殖株。"]]},
+{c:"9.1",s:"p.66 · Fusion proteins",q:"A fusion protein is the product of:",a:1,o:[
+["A gene from which a segment has been deleted","那是 deletion 的產物。"],["A ligated gene containing parts of two different genes","正確。"],["A gene expressed in two different hosts","宿主數目與 fusion 無關。"],["Two separate proteins that bind each other noncovalently","Fusion protein 是同一條多肽。"]]},
+{c:"9.1",s:"Table 9-3 · Affinity tags",q:"Which tag–ligand pairing is correct?",a:2,o:[
+["(His)₆ – glutathione","(His)₆ 結合的是 Ni²⁺。"],["GST – maltose","GST 結合 glutathione;結合 maltose 的是 MBP。"],["Maltose-binding protein – maltose","正確(41 kDa)。"],["Protein A – chitin","Protein A 結合 IgG 的 Fc 部分;結合 chitin 的是 chitin-binding domain。"]]},
+{c:"9.1",s:"Table 9-3 · Tag size",q:"Which tag listed in the slides has the smallest molecular mass?",a:0,o:[
+["(His)₆, about 0.8 kDa","正確。體積小、對目標蛋白影響最少。"],["Chitin-binding domain, 5.7 kDa","比 (His)₆ 大。"],["GST, 26 kDa","比 (His)₆ 大得多。"],["β-Galactosidase, 116 kDa","這是表中最大的。"]]},
+{c:"9.1",s:"p.70 · qPCR",q:"What is qPCR used for, and what does a smaller CT value mean?",a:1,o:[
+["To determine a DNA sequence; a smaller CT means a longer read","qPCR 不是定序方法。"],["To estimate the relative copy number of a sequence; a smaller CT means more starting template","正確。螢光越過 threshold 的循環數就是 CT。"],["To estimate copy number; a smaller CT means less starting template","起始量越多,越早越過 threshold,CT 越小。"],["To purify a protein complex; CT is the column temperature","與蛋白純化無關。"]]},
+{c:"9.1",s:"p.70 · qPCR probe",q:"In the probe-based qPCR shown in the slides, why does fluorescence increase as product accumulates?",a:3,o:[
+["Because the quencher is degraded by heat","講義描述的機制不是熱破壞。"],["Because more fluorophore is synthesized each cycle","螢光團不會被合成。"],["Because the DNA itself fluoresces at high concentration","DNA 本身不發螢光。"],["Because the probe binds the target DNA, separating the fluorophore from the quenching molecule","正確。探針成半穩定髮夾時螢光被壓住。"]]},
+
+{c:"9.2",s:"p.72 · Levels of protein function",q:"Which description matches the cellular function of a protein?",a:2,o:[
+["Its effects on the entire organism","那是 phenotypic function。"],["Its precise biochemical activity","那是 molecular function。"],["The network of interactions it engages in at the cellular level","正確。"],["Its amino acid sequence","序列本身不是功能的層次。"]]},
+{c:"9.2",s:"p.73–74 · Omics definitions",q:"Which definition is correct?",a:0,o:[
+["Transcriptome – the entire complement of RNAs transcribed in a cell at a given moment","正確。Proteome 則是某一刻所有蛋白的總和。"],["Genome – all the proteins present in a cell","Genome 是完整的單倍體遺傳組成。"],["Proteome – the study of proteins","研究本身叫 proteomics。"],["Genomics – the study of a single gene","Genomics 是在細胞尺度研究 DNA。"]]},
+{c:"9.2",s:"p.76 · Comparative genomics",q:"What does genome annotation do?",a:1,o:[
+["It amplifies a gene before sequencing.","放大是 PCR 的工作。"],["It converts a sequence of residues into useful information about the location and function of genes and other critical sequences","正確。BLAST 則是快速搜尋資料庫的演算法。"],["It measures how much of each mRNA is present.","那是 RNA-Seq 或 qPCR。"],["It removes introns from a cloned gene.","剪接不是註解的工作。"]]},
+{c:"9.2",s:"p.77 · Orthologs and paralogs",q:"Two genes with a clear sequence and functional relationship found in two different species are called:",a:3,o:[
+["Paralogs","Paralog 是同一物種內彼此相關的基因。"],["Haplotypes","Haplotype 是一起遺傳的一組 SNP。"],["Contigs","Contig 是組裝出的連續序列。"],["Orthologs","正確。跨物種是 ortholog,同物種內是 paralog。"]]},
+{c:"9.2",s:"p.78 · Synteny",q:"Synteny refers to:",a:0,o:[
+["Conserved gene order, which provides additional evidence for an orthologous relationship","正確。"],["The presence of two copies of a gene in one species","那比較接近 paralog 或 duplication。"],["The folding pattern shared by two proteins","那是結構相似性。"],["The rate at which a gene accumulates mutations","那是演化速率。"]]},
+{c:"9.2",s:"p.81 · RNA-Seq",q:"What does RNA-Seq determine?",a:2,o:[
+["The three-dimensional structure of an RNA","RNA-Seq 不解結構。"],["Which proteins bind a given RNA","那需要其他方法。"],["Which RNAs are transcribed from a genome under a given set of conditions","正確。靈敏度高到可做單一細胞的版本稱 scRNA-Seq。"],["The number of chromosomes in a cell","與染色體計數無關。"]]},
+{c:"9.2",s:"p.82–83 · GFP vs immunofluorescence",q:"What is the main practical difference between using GFP fusions and immunofluorescence to localize a protein?",a:1,o:[
+["GFP requires fixation and kills the cell; immunofluorescence works in living cells","方向顛倒了。"],["GFP fusions can be observed in living cells, whereas immunofluorescence involves fixation and death of the cell","正確。免疫螢光的好處是看的是內生蛋白。"],["Both methods require an antibody","GFP 不需要抗體。"],["Immunofluorescence can only detect RNA","免疫螢光偵測的是蛋白。"]]},
+{c:"9.2",s:"p.83 · Epitope tag",q:"An epitope tag is:",a:3,o:[
+["A fluorescent protein fused to the target","那是 GFP 這類螢光蛋白。"],["A sequence that targets a protein to the nucleus","那是 nuclear localization signal。"],["A short RNA that guides Cas9","那是 sgRNA。"],["A short protein sequence that is bound tightly by an antibody","正確。可用於免疫螢光與免疫沉澱。"]]},
+{c:"9.2",s:"p.85–86 · TAP tags",q:"In tandem affinity purification, what is the role of the TEV protease?",a:2,o:[
+["It degrades proteins that do not bind the target.","非專一結合的蛋白是在洗滌時流掉。"],["It activates the calmodulin-binding peptide.","TEV 的作用是切割,不是活化。"],["It cleaves at a site in the tag to release the complex from the first (IgG) column","正確。之後再過 calmodulin 管柱做第二段純化。"],["It fluorescently labels the complex.","TEV 不帶螢光標記。"]]},
+{c:"9.2",s:"p.86 · Why two steps",q:"Why does TAP use two successive affinity steps rather than one?",a:0,o:[
+["Because two different affinity steps greatly reduce the nonspecifically bound contaminants that a single column would carry through","正確。TAP tag 同時帶 Protein A 與 calmodulin 結合胜肽。"],["Because the first column destroys the target protein","目標蛋白是被完整釋出的。"],["Because calmodulin cannot bind proteins directly","Calmodulin 結合的是 tag 上的胜肽。"],["Because two columns are needed to separate DNA from protein","TAP 純化的是蛋白複合體。"]]},
+{c:"9.2",s:"p.87 · Yeast two-hybrid principle",q:"On what principle does yeast two-hybrid analysis depend?",a:1,o:[
+["Both halves of Gal4p activate transcription independently","單獨的任一半都不能啟動轉錄,這正是方法成立的前提。"],["The Gal4p DNA-binding domain and activation domain only activate the reporter gene when brought together by an interaction between the two fused proteins","正確。"],["The reporter gene is cleaved by Cas9 when X and Y interact","與 CRISPR 無關。"],["Protein X must be an antibody against protein Y","兩個蛋白都是一般的候選蛋白。"]]},
+{c:"9.2",s:"p.87 · Two-hybrid readout",q:"In the yeast two-hybrid screen shown, which cells form colonies on the selective medium?",a:2,o:[
+["All diploid cells, regardless of interaction","只有互動發生的細胞能存活。"],["Only haploid cells of strain 1","兩種融合蛋白必須在同一個細胞中,所以要先交配。"],["Only those diploids in which the binding-domain and activation-domain fusions interact, allowing reporter gene transcription","正確。之後定序融合蛋白就知道是哪兩個蛋白。"],["Only cells that have lost the reporter gene","失去報導基因反而不能存活。"]]},
+{c:"9.2",s:"p.84 · Choosing a method",q:"You want to know whether two specific purified candidate proteins can bind each other directly. Which approach fits best?",a:3,o:[
+["RNA-Seq","RNA-Seq 測的是轉錄本。"],["Genome annotation","註解是序列層次的分析。"],["Pulsed field gel electrophoresis","那是分離超長 DNA 的電泳。"],["Yeast two-hybrid analysis","正確。純化複合體(免疫沉澱、TAP)則適合撈出既有的結合夥伴。"]]},
+{c:"9.2",s:"p.89, 91 · CRISPR components",q:"Which components make up the natural bacterial CRISPR/Cas complex?",a:0,o:[
+["Guide RNAs transcribed from stored viral spacer sequences, tracrRNA, and one or more Cas proteins","正確。CRISPR = clustered, regularly interspaced short palindromic repeats。"],["A single Cas9 protein and a single guide RNA only","那是現行的簡化技術版本,不是天然系統。"],["Gal4p domains and a reporter gene","那是 yeast two-hybrid。"],["Reverse transcriptase and oligo(dT) primers","那是 cDNA 合成。"]]},
+{c:"9.2",s:"p.93 · Current CRISPR technology",q:"Current CRISPR technology requires only which two components?",a:2,o:[
+["Cas9 and tracrRNA, kept separate","tracrRNA 已與 gRNA 融合。"],["A guide RNA and a restriction endonuclease","切割由 Cas9 進行。"],["A single Cas protein (Cas9) and a single guide RNA (sgRNA), which fuses gRNA and tracrRNA into one RNA","正確。"],["Cas9 and a recombination fragment","Recombination fragment 只有在要做精準置換時才加。"]]},
+{c:"9.2",s:"p.92 · Repair outcomes",q:"After Cas9 creates a double-strand break, what determines whether you get a gene knockout or a precise sequence replacement?",a:1,o:[
+["Whether the cell is prokaryotic or eukaryotic","關鍵在修復途徑,不在物種。"],["Whether the break is repaired by nonhomologous end joining, which causes mutations, or by recombination with an added fragment, giving homology-directed repair","正確。"],["Whether Cas9 is fused to GFP","螢光標記不影響修復結果。"],["Whether the sgRNA is longer than 100 nt","sgRNA 長度不是決定因素。"]]},
+{c:"9.2",s:"p.92, 97 · Nuclease-dead Cas9",q:"What is achieved by inactivating the nuclease domains of Cas9?",a:3,o:[
+["The complex can no longer bind DNA.","失活的是核酸酶活性,定位功能仍在。"],["The sgRNA is no longer needed.","仍需 sgRNA 帶路。"],["Only single-strand breaks are produced at random sites.","定位仍然專一。"],["The complex still binds the target sequence but does not cut, so fused repressors or activators can turn transcription off or on","正確。"]]},
+{c:"9.2",s:"p.96–97 · CRISPR screening",q:"In a CRISPR/Cas9 high-throughput negative screen, how are the relevant genes identified?",a:0,o:[
+["Most cells survive, and next-generation sequencing identifies the sgRNAs that have disappeared from the population","正確。Positive screen 則是只有少數「贏家」存活。"],["Only a few 'winners' survive and are sequenced","那是 positive screen。"],["The colonies turn blue on X-gal","顏色篩選用於 lacZ,不是 CRISPR 篩選。"],["Protein complexes are purified on an IgG column","那是 TAP。"]]},
+
+{c:"9.3",s:"p.101–102 · Human genome composition",q:"Approximately what fraction of the human genome is protein-coding genes?",a:2,o:[
+["25.9%","25.9% 是 introns。"],["20.4%","20.4% 是 LINEs。"],["1.5%","正確。"],["13.1%","13.1% 是 SINEs。"]]},
+{c:"9.3",s:"p.101–102 · Largest categories",q:"Which category occupies the largest share of the human genome in the slide's pie chart?",a:1,o:[
+["SINEs","SINEs 佔 13.1%。"],["Introns","正確,佔 25.9%;其次是 LINEs 的 20.4%。"],["LTR retrotransposons","佔 8.3%。"],["Simple-sequence repeats","佔 3%。"]]},
+{c:"9.3",s:"p.102 · Abbreviations",q:"What do SINEs and LINEs stand for?",a:3,o:[
+["Single and long interspersed noncoding elements","S 代表 short,不是 single。"],["Short and long internal nuclear exons","不是 exon。"],["Simple and long intergenic nucleotide elements","不是講義的定義。"],["Short interspersed nuclear elements and long interspersed nuclear elements","正確。LTR 則是 long terminal repeats。"]]},
+{c:"9.3",s:"p.101 · Protein-coding gene functions",q:"Among human protein-coding genes classified by function, which category is largest?",a:0,o:[
+["Unknown (about 37.4%)","正確。其次是 enzymes(16.2%)。"],["Enzymes (about 16.2%)","Enzymes 是第二大,不是最大。"],["Transcription factors (about 7.0%)","比例較小。"],["Receptors (about 5.2%)","比例較小。"]]},
+{c:"9.3",s:"p.103 · ENCODE",q:"What did the ENCODE initiative report?",a:1,o:[
+["That only about 1.5% of the genome has any function at all","1.5% 是蛋白編碼的比例,不是全部功能性元件。"],["That more than 80% of the DNA is transcribed into RNA or is involved in some functional aspect of chromatin structure","正確。剩下約 20% 中大多含調控元件。"],["That the genome contains no repetitive sequences","重複序列佔相當大的比例。"],["That introns have been eliminated from the human genome","人類基因體中 introns 佔 25.9%。"]]},
+{c:"9.3",s:"p.104 · Simple-sequence repeats",q:"Which statement about simple-sequence repeats (SSRs) in the human genome is correct?",a:2,o:[
+["They are typically several thousand base pairs long.","一般小於 10 bp。"],["They make up about 25% of the genome.","約佔 3%。"],["They are generally less than 10 bp long, make up about 3% of the genome, and are found in centromeres and telomeres","正確。"],["They encode most human enzymes.","SSR 不編碼蛋白。"]]},
+{c:"9.3",s:"p.105–106 · SNPs and haplotypes",q:"What is a tag SNP?",a:3,o:[
+["A SNP that causes disease","Tag SNP 不一定與疾病有關。"],["A SNP found only in outgroup species","與 outgroup 無關。"],["A SNP located inside a telomere","位置不是定義。"],["A subset of SNPs that defines an entire haplotype","正確。Haplotype 是通常一起遺傳的一組 SNP。"]]},
+{c:"9.3",s:"p.107–108 · Phylogenetics",q:"Why are outgroups used when constructing phylogenetic trees?",a:0,o:[
+["More distantly related species help determine which sequence alterations are unique to one ancestral line","正確。"],["They provide a source of cDNA for cloning","與選殖無關。"],["They supply the tag SNPs for a haplotype","Tag SNP 來自同物種內的變異。"],["They are needed to calibrate qPCR","與 qPCR 無關。"]]},
+{c:"9.3",s:"p.110 · Linkage analysis",q:"What is linkage analysis used for?",a:1,o:[
+["Joining two DNA fragments with ligase","那是 ligation。"],["Mapping the gene involved in a disease relative to well-characterized genetic polymorphisms","正確。已有超過 6,000 種人類突變表型被定位。"],["Measuring the amount of a transcript in a cell","那是 RNA-Seq 或 qPCR。"],["Determining the three-dimensional structure of a protein","與結構測定無關。"]]},
+{c:"9.3",s:"p.112 · Human migrations",q:"How can human migration routes be traced according to the slides?",a:2,o:[
+["By comparing restriction enzyme recognition sequences","限制酶位點不是用來追溯遷徙的工具。"],["By measuring the melting temperature of ancient DNA","與 tm 無關。"],["By using haplotypes present in extant human populations","正確。"],["By counting the number of introns in each population","intron 數目不隨族群改變。"]]}
+];
+const MATCH=[
+{t:"Cloning 五步驟 → 做什麼",p:[["① Cloning vector","選一個能自主複製的小 DNA","p.17–18","plasmid、BAC 或 YAC。"],["② 取得片段","限制酶切、PCR 或由 mRNA 做 cDNA","p.17, 33","真核基因通常用 cDNA 以去掉 intron。"],["③ DNA ligase","把兩段 DNA 共價接成 recombinant DNA","p.17, 37","黏性末端只是配對,仍需接回骨架。"],["④ Transformation","把重組 DNA 送進宿主細胞","p.17, 41","熱休克;大 plasmid 改用 electroporation。"],["⑤ Antibiotic selection","挑出帶有重組 DNA 的細胞","p.17, 45","例:只長 Tet、不長 Tet+Amp。"],["Recombinant DNA","由兩個以上來源共價相連的 DNA","p.18","第 3 步的產物。"]]},
+{t:"限制酶 → 辨識序列與末端",p:[["EcoRI","GAATTC,黏性末端","p.23–24","最常舉例的 type II 酶。"],["BamHI","GGATCC,黏性末端","p.23","來自 Bacillus amyloliquefaciens strain H。"],["HindIII","AAGCTT,黏性末端","p.23","6 bp 回文。"],["PvuII","CAGCTG,平滑末端","p.23–24","對稱切,無突出。"],["HaeIII","GGCC,平滑末端","p.23","只有 4 bp,基因體中切點最多。"],["NotI","GCGGCCGC,8 bp","p.23","位點罕見,切出的片段最大。"]]},
+{t:"酵素與工具 → 功能",p:[["Restriction endonuclease","在辨識序列處切斷 DNA","p.21","Type II 不需 ATP。"],["Methylase","甲基化宿主 DNA 使其不被自己的酶切","p.21","與限制酶合稱 restriction-modification system。"],["DNA ligase","封住 nick,形成磷酸雙酯鍵","p.37","AMP 來自 ATP 或 NAD⁺。"],["Reverse transcriptase","以 mRNA 為模板做出 cDNA","p.33","cDNA 沒有 intron。"],["Linker","橋接要接合的末端,常含多切點","p.28","multiple cloning site。"],["Error-prone DNA polymerase","製造單一基因的序列變異庫","p.65","用於 combinatorial library。"]]},
+{t:"Vector → 特徵",p:[["pBR322","4,361 bp,帶 AmpR 與 TetR","p.27","PstI 切在 AmpR 內,可做正負篩選。"],["BAC","可裝 100,000–300,000 bp","p.47","低 copy number;用 electroporation 導入。"],["par 基因","確保分裂時重組染色體正確分配","p.48","來自 F plasmid。"],["YAC","TEL–X–ori–CEN–Y–TEL","p.50","在酵母中複製的人工染色體。"],["YAC 穩定門檻","插入 >150 kb 很穩,<100 kb 會流失","p.51","缺端粒則迅速降解。"],["Expression vector","帶有轉錄與轉譯訊號的選殖載體","p.54","用於製造蛋白。"]]},
+{t:"Marker 與篩選",p:[["Selectable marker","決定細胞在特定條件下生或死","p.44","例:AmpR、TetR。"],["Screenable marker","讓細胞產生有色或螢光分子","p.44","例:lacZ。"],["BAC 的 CamR","BAC vector 的正選擇 marker","p.48","氯黴素抗性。"],["BAC 的 lacZ","插入後被破壞,菌落呈白色","p.48","在含 X-gal 的培養基上判讀。"],["只長 Tet、不長 Tet+Amp","帶重組 plasmid 的菌落","p.45","插入片段破壞了 AmpR。"],["兩盤都長","帶沒有插入片段的空 plasmid","p.45","AmpR 完好。"]]},
+{t:"蛋白表現系統",p:[["細菌","表現量高、便宜,但無轉譯後修飾","p.56","易形成 inclusion body。"],["Lac promoter","調控會「漏」(leaky)","p.57","未誘導時仍有基礎表現。"],["T7 promoter + T7 RNA polymerase","可得到嚴密調控","p.57–58","pET 系統用 IPTG 誘導。"],["Inclusion body","內在無序區聚集成的不溶沉澱","p.56","細菌表現常見問題。"],["Baculovirus","替換 p10、polyhedrin 基因放入外源基因","p.59","昆蟲細胞系統。"],["哺乳類細胞","修飾正確但非常昂貴","p.61","可暫時或永久表現。"]]},
+{t:"Tag → 配體",p:[["(His)₆","Ni²⁺;僅 0.8 kDa","Table 9-3","表中最小的 tag。"],["GST","Glutathione;26 kDa","Table 9-3","Glutathione-S-transferase。"],["Maltose-binding protein","Maltose;41 kDa","Table 9-3",""],["Protein A","IgG 的 Fc 部分;59 kDa","Table 9-3","TAP tag 的組成之一。"],["β-Galactosidase","TPEG;116 kDa","Table 9-3","表中最大的 tag。"],["Chitin-binding domain","Chitin;5.7 kDa","Table 9-3",""]]},
+{t:"研究蛋白功能的方法",p:[["RNA-Seq","判定特定條件下轉錄出哪些 RNA","p.81","單細胞版本稱 scRNA-Seq。"],["GFP 融合","在活細胞中看蛋白位置","p.82","不需固定細胞。"],["Immunofluorescence","用抗體看內生蛋白,但細胞會死","p.83","需要固定。"],["Immunoprecipitation","用抗 epitope tag 的抗體沉澱融合蛋白","p.85","連同結合夥伴一起帶下。"],["TAP tag","兩段親和純化,中間用 TEV 切開","p.86","大幅降低非專一雜質。"],["Yeast two-hybrid","測兩個蛋白是否直接結合","p.87","Gal4p 兩個域被拉在一起才啟動報導基因。"]]},
+{t:"CRISPR 與基因體",p:[["sgRNA","gRNA 與 tracrRNA 融合成的單一 RNA","p.93","現行技術只需它加 Cas9。"],["NHEJ","造成 frameshift 或插入終止密碼","p.92","結果是 knockout。"],["Recombination fragment","提供模板做精準序列置換","p.92","走 homology-directed repair。"],["失活核酸酶的 Cas9","只定位不切,可接 repressor 或 activator","p.92, 97","做轉錄 OFF 或 ON。"],["Positive screen","加選擇壓力後只有少數贏家存活","p.97","找出參與該路徑的基因。"],["Negative screen","多數細胞存活,找出消失的 sgRNA","p.97","靠次世代定序判讀。"]]},
+{t:"人類基因體數字與名詞",p:[["Introns","25.9%,比例最大的一塊","p.101","蛋白編碼基因只佔 1.5%。"],["LINEs","20.4%","p.102","long interspersed nuclear elements。"],["SINEs","13.1%","p.102","short interspersed nuclear elements。"],["ENCODE",">80% 的 DNA 被轉錄或參與染色質功能","p.103","剩下約 20% 多含調控元件。"],["Haplotype","通常一起遺傳的一組 SNP","p.106","可用 tag SNP 代表。"],["Linkage analysis","相對於已知多型性定位致病基因","p.110","已定位超過 6,000 種突變表型。"]]},
+{t:"容易混淆的成對名詞",p:[["Ortholog","不同物種間功能對應的基因","p.77","序列與功能都有明確關係。"],["Paralog","同一物種內彼此相關的基因","p.77","多來自基因重複。"],["Transcriptome","某一刻所有被轉錄的 RNA","p.74","研究它叫 transcriptomics。"],["Proteome","某一刻所有的蛋白質","p.74","研究它叫 proteomics。"],["Phenotypic function","對整個個體的影響","p.72","三層次中最大的尺度。"],["Molecular function","精確的生化活性","p.72","三層次中最小的尺度。"]]}
+];
+const KEY="molbio-ch09-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

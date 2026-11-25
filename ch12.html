@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch12 Biochemical Signaling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+p.src{white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html" aria-current="page">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch12 Biochemical Signaling</h1>
+  <p class="lede">GPCR 與第二傳訊者、感覺系統、RTK 與胰島素、離子通道與核受體、細胞週期與癌症。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(69 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<p class="hint">一行一考點,灰色是講義 PDF 頁碼;<span class="hit">本課考題</span> 是講義標出的本課程考題 Q20–Q25。看完切到「連連看」,再用「題目練習」驗收。</p>
+
+<h2>12.1 訊號傳遞的共同特徵</h2>
+<div class="tbl"><table>
+<thead><tr><th>特徵</th><th>意思</th></tr></thead>
+<tbody>
+<tr><td>Specificity</td><td>分子互補</td></tr>
+<tr><td>Sensitivity</td><td>高親和力,Kd ≤ 10^-7 M</td></tr>
+<tr><td>Amplification</td><td>酵素串聯</td></tr>
+<tr><td>Modularity</td><td>可互換的模組</td></tr>
+<tr><td>Desensitization</td><td>回饋關閉</td></tr>
+<tr><td><b>Integration</b></td><td>兩個訊號的淨反應(epinephrine 經 Gs 升 cAMP、PGE2 經 Gi 降 cAMP) <span class="hit">本課考題 Q20</span></td></tr>
+<tr><td>Divergence</td><td>一個受體、兩個以上反應</td></tr>
+</tbody></table></div>
+<p class="src">p.5–7</p>
+<ul class="pts">
+<li>四類受體:<b>GPCR</b>、<b>RTK</b>(受體本身是酵素,作用在細胞質受質)、<b>gated ion channel</b>、<b>nuclear receptor</b> <i>p.9–11</i></li>
+</ul>
+
+<h2>12.2 GPCR 與第二傳訊者</h2>
+<ul class="pts">
+<li>GPCR = 7 個跨膜螺旋 + G protein + effector;人類約 800 個;&gt; 1/3 美國藥物打 GPCR;orphan receptor = 配體不明 <i>p.14</i></li>
+<li>Agonist 模仿、antagonist 阻擋;Kd:epinephrine 5 µM、<b>isoproterenol(agonist)0.4</b>、<b>propranolol(antagonist)0.0046</b> <i>p.17</i></li>
+<li><b>β-adrenergic</b>:epinephrine 結合 → <b>受體當 GEF</b>,Gsα 換 GTP → Gsα·GTP 活化 adenylyl cyclase → cAMP → PKA → 磷酸化 → PDE 把 cAMP 變 5′-AMP <span class="hit">本課考題 Q21、Q22</span> <i>p.18, 21–27</i></li>
+<li>G protein 自帶 GTPase = 自我計時;RGS 加速 <i>p.23</i></li>
+<li><b>PKA</b>:cAMP 結合 regulatory subunit → 移開自我抑制區;受質序列 x R [RK] x [S/T] B <i>p.28</i></li>
+<li>放大:受體 → 多個 G → 多個 cAMP → PKA → phosphorylase b kinase → glycogen phosphorylase;<b>cAMP 結合 PKA 那步不放大</b> <span class="hit">本課考題 Q24</span> <i>p.32–34</i></li>
+<li>四種關法:荷爾蒙離開、<b>Gsα 水解 GTP</b>(GAP/RGS)、<b>cAMP PDE</b>、<b>phosphatase</b>(PP1) <i>p.35</i></li>
+<li><b>減敏</b>:βARK 磷酸化受體 C 端 Ser → <b>β-arrestin</b> 結合 → 阻斷 G、內吞;去磷酸後回到表面 <span class="hit">本課考題 Q23</span> <i>p.36, 40</i></li>
+<li>G protein 與 arrestin 不會同時結合;受體–arrestin 可啟動 MAPK;<b>biased agonism</b>(最易成癮的 opioid 偏 G 分支) <i>p.39</i></li>
+<li>同一 cAMP 被很多荷爾蒙使用;<b>PGE2 在脂肪耦合 Gi(降 cAMP),在其他組織耦合 Gs</b> <i>p.42–43</i></li>
+<li><b>AKAP</b>:抓住 PKA R 次單元,把 PKA 固定在特定位置 <i>p.44</i></li>
+<li><b>Ras</b>:約 20 kDa;switch I Thr35、switch II Gly60;<b>約 25% 癌症 Ras 突變失去 GTPase</b>;<b>NF1 = Ras GAP</b>;Gsα 活化突變 → 約 40% 腦下垂體腺瘤;transducin 突變 → 夜盲 <i>p.45–46</i></li>
+<li><b>Cholera toxin</b>:B 次單元接 ganglioside → A1 把 NAD+ 的 ADP-ribose 接到 Gsα 的 Arg → GTPase 失效 → cAMP 高 → PKA 開 CFTR → 腹瀉 <i>p.49–50</i></li>
+<li><b>cGMP</b>:ANF(心房被撐)→ 膜型 guanylyl cyclase → 排鈉排水;<b>NO</b>(Arg,Ca2+ 依賴的 NO synthase)→ 可溶性含 heme 的 GC → PKG → 鬆弛;<b>nitroglycerin 放 NO</b>;<b>sildenafil 抑制 cGMP PDE</b>;E. coli 耐熱毒素打 guanylin 受體 <i>p.53–54</i></li>
+<li><b>Gq → PLCβ → PIP2 → DAG + IP3</b>;IP3 開 ER 的 IP3-gated Ca2+ 通道;DAG + Ca2+ → PKC <span class="hit">本課考題 Q25</span> <i>p.61, 72–74</i></li>
+<li class="mem">別混:PIP2 = 4,5-bisphosphate 脂質;<b>PIP3 = PI3K 做的膜脂</b>;<b>IP3 = PLC 切下的水溶性頭基</b> <i>p.62, 108</i></li>
+<li><b>Calmodulin</b>:4 個高親和力 EF hand;靜止 Ca2+ &lt; 10^-7 M,刺激後約 10^-6 M <i>p.75</i></li>
+<li>Ca2+ 振盪:荷爾蒙濃度轉成頻率與幅度(Fura-2 測量);Ca2+ 訊號局部化 <i>p.78</i></li>
+</ul>
+
+<h2>12.3 視覺、嗅覺、味覺</h2>
+<ul class="pts">
+<li><b>視覺</b>:光 → 11-cis 變 all-trans → rhodopsin → transducin 換 GTP → 移除 cGMP PDE 的抑制次單元 → <b>cGMP ↓</b> → cGMP-gated Na+/Ca2+ 通道關 → <b>過極化</b> <i>p.80</i></li>
+<li>恢復:transducin GTPase;<b>低 Ca2+ 活化 guanylyl cyclase</b> 補回 cGMP;rhodopsin kinase + arrestin 1;一個光子活化 ≥ 500 transducin <i>p.82</i></li>
+<li>色盲:三種 cone opsin(約 420、530、560 nm);Dalton 的 DNA 證實 <i>p.85</i></li>
+<li><b>嗅覺</b>:約 800 個 GPCR → 嗅覺 G protein → adenylyl cyclase → <b>cAMP</b>-gated 通道;<b>味覺</b>:<b>gustducin</b> <i>p.88</i></li>
+</ul>
+
+<h2>12.4 Receptor tyrosine kinase</h2>
+<ul class="pts">
+<li><b>INSR = (αβ)2</b>;insulin 夾在兩個 α 之間 → β 互相磷酸化 3 個 Tyr → 活化環移開 <i>p.94</i></li>
+<li><b>基因分支</b>:INSR → <b>IRS1</b>(P-Tyr)→ <b>Grb2</b>(SH2 + SH3)→ <b>Sos</b>(GEF)→ <b>Ras</b> → <b>Raf-1</b> → <b>MEK</b> → <b>ERK</b> → 進核 Elk1 → 約 100 個基因 <i>p.95</i></li>
+<li>MAPKKK(Raf-1,Ser/Thr)→ MAPKK(<b>MEK,雙重專一 Ser/Thr + Tyr</b>)→ MAPK(ERK) <i>p.101</i></li>
+<li><b>代謝分支</b>:IRS1-P → <b>PI3K</b>(PIP2 → PIP3)→ <b>PKB</b>(PDK1 活化)→ <b>GSK3 失活</b> → glycogen synthase 活化;PKB → RAC1、Rab → <b>GLUT4 上膜</b> <i>p.103–104</i></li>
+<li><b>PTEN</b> 移除 PIP3 的 3 位磷酸;突變 → PIP3 高 → 分裂 <i>p.108</i></li>
+<li>時間:受體、IRS 秒級 → ERK1 約 3 分 → <b>GLUT4 約 15 分</b> → 基因數小時 <i>p.109</i></li>
+<li>人類 58 個 RTK;多數單體,配體使其二聚 → 自我磷酸化;<b>INSR 例外,永遠是二聚體</b> <i>p.110</i></li>
+<li>Cross talk:INSR(Tyr)與 PKB(Ser)磷酸化 β2 受體 → 內吞 → 對 epinephrine 不敏感 <i>p.115</i></li>
+</ul>
+
+<h2>12.5 Adaptor 與 raft</h2>
+<ul class="pts">
+<li><b>SH2</b>:P-Tyr(+1 到 +3 決定專一性);<b>PTB</b>:不同序列的 P-Tyr(IRS1);<b>PH</b>:PIP3;<b>SH3</b>:富 Pro 序列 <i>p.117, 120</i></li>
+<li>自我抑制:<b>Src 的 SH2 抓自己的 P-Tyr</b> → 不活化,phosphatase 移除後活化;GSK3 的 pseudosubstrate <i>p.118–119</i></li>
+<li>Writer(kinase)/ reader(SH2、PTB、PH)/ eraser(phosphatase) <i>p.120</i></li>
+<li><b>KSR</b> 支架抓住 Raf、MEK、ERK;ERK 回頭磷酸化 KSR → 負回饋 <i>p.121</i></li>
+<li>β-adrenergic 受體與 G、AC、PKA 在 raft 中;EGFR 集中在 caveolae <i>p.122–123</i></li>
+</ul>
+
+<h2>12.6 閘控離子通道</h2>
+<ul class="pts">
+<li>Vm 約 −60 mV;<b>Na+、Ca2+ 流入 → 去極化</b>;<b>K+ 流出 → 過極化</b> <i>p.126</i></li>
+<li>動作電位:<b>Na+ 通道開 → K+ 通道開 → 軸突末端 Ca2+ 通道開 → ACh exocytosis</b> → ACh 開 ligand-gated 受體通道 <i>p.127</i></li>
+<li>Ionotropic(本身是通道)vs metabotropic(第二傳訊者);ACh、serotonin、glutamate 開陽離子通道;<b>glycine、GABA 開 Cl− 通道</b> <i>p.130</i></li>
+<li>毒素:<b>tetrodotoxin → Na+ 通道</b>;<b>dendrotoxin → K+ 通道</b>;<b>cobrotoxin → ACh 受體</b> <i>p.130</i></li>
+</ul>
+
+<h2>12.7 核受體</h2>
+<ul class="pts">
+<li>類固醇隨血中蛋白運送 → 進細胞 → 核受體 → 二聚 → 結合 <b>HRE</b> → coactivator 或 corepressor → 數小時到數天 <i>p.135</i></li>
+<li><b>Tamoxifen</b> 競爭 estrogen receptor(乳癌);<b>RU486</b> 阻斷 progesterone receptor(防著床) <i>p.135</i></li>
+</ul>
+
+<h2>12.8 細胞週期</h2>
+<ul class="pts">
+<li>G1 → S(DNA 複製)→ G2 → M;G0 靜止;restriction point 後承諾分裂;培養細胞約 24 小時 <i>p.139</i></li>
+<li class="mem">Cyclin D–CDK4/6(G1)→ <b>E–CDK2(G1/S)</b> → A–CDK2(S、G2)→ <b>B–CDK1(M)</b> <i>p.142</i></li>
+<li>CDK2 活化:cyclin 結合(活性 ↑ 10,000 倍)+ <b>Thr160 磷酸化</b> + <b>Tyr15 去磷酸</b> <i>p.143</i></li>
+<li>四種調控:磷酸化、cyclin 被 ubiquitin–proteasome 降解、生長因子 → Jun/Fos → E2F 增加合成、<b>p21 等抑制劑</b> <i>p.144</i></li>
+<li>CDK 受質:<b>lamin 磷酸化 → 核膜崩解</b>;myosin;pRb <i>p.147</i></li>
+<li><b>正常</b>:cyclin E–CDK2 磷酸化 <b>pRb</b> → 放開 <b>E2F</b> → 複製基因 → G1 → S;<b>DNA 損傷</b>:ATM/ATR → <b>p53 → p21</b> → 抑制 CDK2 → 停在 G1;太嚴重 → 凋亡 <i>p.150</i></li>
+</ul>
+
+<h2>12.9 癌症與凋亡</h2>
+<div class="tbl"><table>
+<thead><tr><th>類別</th><th>例子</th><th>遺傳</th><th>比喻</th></tr></thead>
+<tbody>
+<tr><td><b>Oncogene</b></td><td>突變的生長因子、受體、G 蛋白(Ras)、kinase</td><td><b>顯性</b></td><td>油門卡住</td></tr>
+<tr><td><b>Tumor suppressor</b></td><td>pRb、p53、p21、PTEN、APC、DCC</td><td><b>隱性</b></td><td>煞車失靈</td></tr>
+<tr><td>Stability gene</td><td>ATM、XP、BRCA1、MMR</td><td>讓其他突變不被修</td><td>不會修車的技師</td></tr>
+</tbody></table></div>
+<p class="src">p.154</p>
+<ul class="pts">
+<li><b>Retinoblastoma</b>:遺傳一個壞 Rb → 每個細胞已中一擊 → 雙眼多發、年幼;<b>Li–Fraumeni</b> = 遺傳一個壞 p53;p53 在約 50% 癌症有缺陷 <i>p.157</i></li>
+<li>Kinase 抑制劑:<b>imatinib → Abl(CML)</b>、erlotinib → EGFR(NSCLC)、<b>trastuzumab → HER2</b>;難處:各 kinase ATP 位相似 <i>p.160</i></li>
+<li>大腸癌:約 7 擊(APC、DCC、p53 各兩擊 + ras 一擊);早期切除息肉;&gt; 99.9% 是 passenger <i>p.163</i></li>
+<li><b>凋亡</b>:TNFα → TNF 受體 → death domain → TRADD → <b>caspase-8</b>;粒線體放 <b>cytochrome c + Apaf-1 → caspase-9</b> → 破壞蛋白與 DNA <i>p.164</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">11 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 69 題</button>
+    <button class="tab" id="tab-1" data-f="12.1–2" aria-pressed="false">12.1–2 GPCR</button>
+    <button class="tab" id="tab-2" data-f="12.3" aria-pressed="false">12.3 感覺</button>
+    <button class="tab" id="tab-3" data-f="12.4–5" aria-pressed="false">12.4–5 RTK</button>
+    <button class="tab" id="tab-4" data-f="12.6–7" aria-pressed="false">12.6–7 通道、核受體</button>
+    <button class="tab" id="tab-5" data-f="12.8–9" aria-pressed="false">12.8–9 週期、癌症</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">69</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"12.1–2",s:"p.5 · Fig. 12-1",q:"Which pairing of a general feature of signal transduction with its meaning is correct?",a:2,o:[["Sensitivity — one receptor triggers two or more responses","那是 divergence。"],["Divergence — feedback shuts the signal off","那是 desensitization。"],["Sensitivity — high receptor affinity, with a dissociation constant of 10^-7 M or less","正確。Specificity 靠分子互補;amplification 靠酵素串聯。"],["Integration — molecular complementarity between signal and receptor","那是 specificity;integration 是兩個訊號的淨反應。"]]},
+{c:"12.1–2",s:"p.6–7 · 本課程考題 Q20",q:"In adipocytes, epinephrine raises [cAMP] through Gs-coupled receptors while PGE2 lowers it through Gi-coupled receptors, and the response reflects the sum. Which general feature is this?",a:0,o:[["Integration","正確。"],["Amplification","放大是一個訊號被逐級放大。"],["Desensitization","減敏是持續刺激後反應下降。"],["Modularity","模組化是可互換的蛋白 domain。"]]},
+{c:"12.1–2",s:"p.9–11 · Fig. 12-2",q:"Which statement about receptor enzymes (such as receptor tyrosine kinases) is correct?",a:1,o:[["They are usually not membrane proteins.","它們是膜蛋白。"],["Ligand binding outside activates an enzyme activity that acts on substrates in the cytoplasm.","正確。四類受體:GPCR、RTK、gated ion channel、nuclear receptor。"],["They act enzymatically on the extracellular ligand.","酵素作用在細胞內的受質。"],["Their substrate-binding site is on the extracellular side.","在細胞質側。"]]},
+{c:"12.1–2",s:"p.14 · GPCRs",q:"Which statement about GPCRs is correct?",a:3,o:[["Humans have about 30 GPCRs.","約 800 個。"],["They have 12 transmembrane helices.","7 個跨膜螺旋。"],["Few drugs act on them.","超過三分之一的美國藥物以 GPCR 為標靶。"],["Humans have about 800, with seven transmembrane helices; more than a third of US drugs target them, and some are orphan receptors with unknown ligands.","正確。例:β blocker 治高血壓、心律不整。"]]},
+{c:"12.1–2",s:"p.17 · Fig. 12-3",q:"Isoproterenol and propranolol both bind the β-adrenergic receptor. How do they differ?",a:0,o:[["Isoproterenol is an agonist that mimics epinephrine; propranolol is an antagonist that binds very tightly without triggering a response.","正確。Kd:epinephrine 5 µM、isoproterenol 0.4 µM、propranolol 0.0046 µM。"],["Both are antagonists.","Isoproterenol 是 agonist。"],["Propranolol is an agonist.","它是 antagonist(β blocker)。"],["Neither binds more tightly than epinephrine.","兩者都比 epinephrine 結合更緊。"]]},
+{c:"12.1–2",s:"p.18, 21–22 · 本課程考題 Q21",q:"Order these events: (1) cAMP binds PKA regulatory subunits; (2) Gsα exchanges GDP for GTP; (3) epinephrine binds its receptor; (4) adenylyl cyclase is activated; (5) PKA catalytic subunits phosphorylate targets.",a:2,o:[["2 → 3 → 4 → 1 → 5","受體結合要在 G protein 換 GTP 之前。"],["3 → 4 → 2 → 1 → 5","G protein 活化後才去活化 adenylyl cyclase。"],["3 → 2 → 4 → 1 → 5","正確。最後由 cAMP PDE 把 cAMP 變成 5′-AMP 結束訊號。"],["3 → 2 → 1 → 4 → 5","cAMP 要先由 adenylyl cyclase 製造。"]]},
+{c:"12.1–2",s:"p.18, 26–27 · 本課程考題 Q22",q:"When epinephrine binds the β-adrenergic receptor, what does the occupied receptor do to the stimulatory G protein?",a:1,o:[["Acts as a GAP, accelerating GTP hydrolysis","GAP 是關閉訊號用的。"],["Acts as a GEF, promoting exchange of GDP for GTP on Gsα","正確。"],["Phosphorylates Gsα using ATP","GPCR 沒有 kinase 活性。"],["Converts ATP to cAMP itself","那是 adenylyl cyclase。"]]},
+{c:"12.1–2",s:"p.28 · Fig. 12-6",q:"How does cAMP activate PKA?",a:3,o:[["It phosphorylates the catalytic subunit.","cAMP 不是 kinase。"],["It binds the catalytic subunits and releases inactive regulatory subunits.","結合的是 regulatory subunit。"],["It causes PKA to dimerize.","不是。"],["It binds the regulatory subunits, removing their autoinhibitory domain from the catalytic subunits.","正確。PKA 的受質序列 x R [RK] x [S/T] B。"]]},
+{c:"12.1–2",s:"p.32–34 · 本課程考題 Q24",q:"Which step of the epinephrine–cAMP cascade does NOT amplify the signal?",a:0,o:[["cAMP binding to PKA to release the catalytic subunits","正確。cAMP 與 PKA 是按比例結合,不放大。"],["The occupied receptor activating many G proteins","會放大。"],["Adenylyl cyclase making many cAMP molecules","會放大。"],["Each PKA phosphorylating many phosphorylase b kinase molecules","會放大。"]]},
+{c:"12.1–2",s:"p.35 · Fig. 12-8",q:"Which set lists the four ways the β-adrenergic signal is turned off?",a:2,o:[["Receptor degradation, cAMP export, ATP depletion, G-protein synthesis","不是講義的四種方法。"],["Adenylyl cyclase phosphorylation, PKA degradation, calmodulin binding, Ca2+ release","不是。"],["Epinephrine leaves the receptor; Gsα hydrolyzes GTP (sped by GAP/RGS); cAMP PDE makes 5′-AMP; phosphatases remove phosphoryl groups","正確。"],["Only cAMP phosphodiesterase","不只一種。"]]},
+{c:"12.1–2",s:"p.36, 40–41 · 本課程考題 Q23",q:"All Ser/Thr residues of the β-adrenergic receptor C-terminal tail are replaced by Ala. What happens during prolonged epinephrine exposure?",a:1,o:[["Adenylyl cyclase cannot be activated.","受體仍能活化 Gs。"],["The receptor cannot be phosphorylated by βARK, so β-arrestin does not bind and desensitization fails.","正確。正常時 β-arrestin 結合後阻斷 G protein 並促使受體內吞。"],["The receptor becomes desensitized faster.","相反。"],["Epinephrine cannot bind.","結合位不在 C 端尾巴。"]]},
+{c:"12.1–2",s:"p.39 · Fig. 12-10",q:"Which statement about β-arrestin and biased agonism is correct?",a:3,o:[["A receptor binds G protein and arrestin at the same time.","兩者不會同時結合。"],["Arrestin binding increases G-protein activation.","它阻斷 G protein 活化。"],["Arrestin can only end signaling.","它也能啟動 MAPK cascade。"],["The receptor–arrestin complex can start a MAPK cascade, and a biased agonist may favor the G-protein or the arrestin branch.","正確。最易成癮的 opioid 偏向 G protein 分支。"]]},
+{c:"12.1–2",s:"p.42–43 · Table 12-3",q:"PGE2 lowers [cAMP] in adipose tissue but raises it in other tissues. Why?",a:0,o:[["In adipose tissue its receptor couples to the inhibitory G protein; in other tissues it couples to the stimulatory G protein.","正確。同一 ligand,不同受體耦合不同 G protein。"],["Adipose tissue lacks adenylyl cyclase.","脂肪細胞有 adenylyl cyclase。"],["PGE2 is degraded in adipose tissue.","不是。"],["PGE2 acts on nuclear receptors in fat.","作用在 GPCR。"]]},
+{c:"12.1–2",s:"p.44 · Fig. 12-11",q:"What do AKAPs do?",a:2,o:[["Degrade cAMP","那是 PDE。"],["Activate adenylyl cyclase","不是。"],["Bind PKA regulatory subunits and tether PKA to specific structures, so cAMP acts on local targets","正確。AKAP5 還同時抓住受體、adenylyl cyclase、PP2A。"],["Phosphorylate the receptor","那是 βARK。"]]},
+{c:"12.1–2",s:"p.45–46 · Figs. 12-12, 12-13",q:"Which statement about Ras and its regulators is correct?",a:1,o:[["Ras has strong intrinsic GTPase activity.","本身 GTPase 很弱,靠 GAP 加速至 10^5 倍。"],["About 25% of human cancers carry Ras mutations that abolish GTPase; NF1 encodes a Ras GAP, so its loss also leaves Ras on.","正確。GTP 的 γ 磷酸與 switch I(Thr35)、switch II(Gly60)形成氫鍵。"],["GEFs turn Ras off.","GEF 是開,GAP 是關。"],["Ras is a heterotrimer.","Ras 是約 20 kDa 的單體小 G 蛋白。"]]},
+{c:"12.1–2",s:"p.49–50 · Fig. 12-14",q:"How does cholera toxin cause diarrhea?",a:3,o:[["It blocks CFTR.","相反,CFTR 被打開。"],["It ADP-ribosylates Giα.","那是 pertussis toxin。"],["It inhibits adenylyl cyclase.","Adenylyl cyclase 一直開著。"],["Subunit B binds gangliosides; A1 transfers ADP-ribose from NAD+ to an Arg of Gsα, killing its GTPase, so cAMP stays high and PKA opens CFTR → NaCl and water loss.","正確。"]]},
+{c:"12.1–2",s:"p.53–54 · Box 12-2",q:"Which statement about cGMP signaling is correct?",a:0,o:[["Nitroglycerin releases NO, which activates soluble guanylyl cyclase; sildenafil inhibits the cGMP phosphodiesterase, so cGMP stays high.","正確。前者多做 cGMP,後者減慢分解。"],["ANF acts through a soluble heme-containing guanylyl cyclase.","ANF 受體是跨膜的 guanylyl cyclase;NO 才作用在可溶型。"],["Sildenafil activates guanylyl cyclase.","它抑制 PDE。"],["cGMP activates PKA.","cGMP 活化 PKG。"]]},
+{c:"12.1–2",s:"p.61, 73–74 · 本課程考題 Q25",q:"After a hormone activates phospholipase C through a GPCR, what directly raises cytosolic [Ca2+]?",a:2,o:[["DAG opens a plasma membrane Ca2+ channel.","DAG 活化 PKC。"],["PKC opens the ER Ca2+ pump.","不是。"],["IP3 binds and opens a ligand-gated Ca2+ channel in the ER membrane.","正確。Gq → PLCβ → PIP2 → DAG + IP3。"],["cAMP releases Ca2+ from mitochondria.","不是。"]]},
+{c:"12.1–2",s:"p.62 · Figs. 12-15, 10-14",q:"Which pair should NOT be confused?",a:1,o:[["IP3 and inositol 1,4,5-trisphosphate","兩者是同一個分子。"],["PIP3 (a membrane lipid made by PI3K) and IP3 (a soluble head group made by PLC)","正確。PIP2 是 4,5-bisphosphate 脂質。"],["DAG and diacylglycerol","兩者是同一個分子。"],["PLC and phospholipase C","兩者是同一個酵素。"]]},
+{c:"12.1–2",s:"p.75 · Fig. 12-17",q:"Which statement about calmodulin is correct?",a:3,o:[["It binds Ca2+ at resting cytosolic concentrations of 10^-3 M.","靜止時 Ca2+ 低於 10^-7 M。"],["It has two low-affinity Ca2+ sites.","四個高親和力 EF hand。"],["It is a kinase.","它是 Ca2+ 感應蛋白,調控其他酵素。"],["It has four high-affinity EF hands; when Ca2+ rises to about 10^-6 M it changes shape and wraps around target helices.","正確。"]]},
+{c:"12.1–2",s:"p.78 · Fig. 12-18",q:"With a constant hormone level, cytosolic [Ca2+] spikes every few seconds. What does this oscillation encode?",a:0,o:[["Hormone concentration, converted into spike frequency and amplitude","正確。可用 Fura-2 螢光測量。"],["The time of day","不是。"],["The cell's ATP level","不是。"],["Nothing; it is noise","是有意義的訊號編碼。"]]},
+{c:"12.1–2",s:"p.23, 35 · Fig. 12-5, 12-8",q:"How is the signal carried by the α subunit of the stimulatory G protein switched off?",a:0,o:[["The α subunit hydrolyzes its bound GTP to GDP through its own GTPase activity.","正確。GTP 水解後 α subunit 回到 GDP 型並與 βγ 重新結合;GAP(RGS)可加速這一步。"],["The receptor phosphorylates the α subunit on a Tyr residue.","GPCR 沒有 kinase 活性。"],["cAMP displaces GTP from the α subunit.","cAMP 作用在 PKA,不與 G protein 結合。"],["The βγ subunits hydrolyze the GTP bound to the α subunit.","βγ 沒有 GTPase 活性。"]]},
+{c:"12.1–2",s:"p.49 · Fig. 12-14",q:"Cholera toxin causes massive fluid loss from intestinal cells. What is its molecular action?",a:3,o:[["It ADP-ribosylates the α subunit of the inhibitory G protein, so adenylyl cyclase cannot be activated.","作用在 inhibitory G protein 的是 pertussis toxin,而且結果是 cAMP 上升。"],["It inhibits cAMP phosphodiesterase directly.","Cholera toxin 不作用在 phosphodiesterase。"],["It blocks hormone binding to the β-adrenergic receptor.","它作用在受體下游的 G protein。"],["It ADP-ribosylates the α subunit of the stimulatory G protein, blocking GTP hydrolysis and keeping adenylyl cyclase active.","正確。cAMP 持續升高 → PKA 活化 CFTR 等通道 → Cl− 與水大量流入腸腔。"]]},
+{c:"12.1–2",s:"p.51–52 · 國考題(Bacterial toxins)",q:"Pertussis toxin ADP-ribosylates the α subunit of the inhibitory G protein. What is the consequence?",a:1,o:[["Adenylyl cyclase can no longer be stimulated, so [cAMP] falls.","受影響的是 inhibitory G protein;stimulatory G protein 仍可正常活化 adenylyl cyclase。"],["The inhibitory G protein can no longer inhibit adenylyl cyclase, so [cAMP] rises.","正確。被修飾的 G protein 無法與受體作用,抑制訊號傳不下去。"],["Phospholipase C becomes permanently active.","Phospholipase C 由另一類 G protein(Gq)活化,與此無關。"],["The catalytic subunits of PKA are degraded.","毒素不影響 PKA 的量。"]]},
+{c:"12.1–2",s:"p.28, 18 · Fig. 12-6, 12-4",q:"Which description of protein kinase A (PKA) is correct?",a:0,o:[["Inactive PKA is an R2C2 tetramer; cAMP binds the regulatory subunits and releases active catalytic subunits.","正確。每個 R subunit 結合 2 個 cAMP,共 4 個 cAMP 釋出 2 個有活性的 C subunit。"],["Inactive PKA is a monomer that becomes active when adenylyl cyclase phosphorylates it.","Adenylyl cyclase 不是 kinase,它的產物是 cAMP。"],["Inactive PKA is an R2C2 tetramer; cAMP binds the catalytic subunits and releases the regulatory subunits for signaling.","cAMP 結合的是 regulatory subunit;執行磷酸化的是 catalytic subunit。"],["PKA is a dimer activated by the Ca2+–calmodulin complex.","由 Ca2+–calmodulin 活化的是 CaM kinase。"]]},
+{c:"12.1–2",s:"p.35 · Fig. 12-8",q:"A cell is treated with an inhibitor of cyclic nucleotide phosphodiesterase and then with epinephrine. What is expected?",a:2,o:[["No cAMP is formed.","cAMP 由 adenylyl cyclase 合成,不受這個抑制劑影響。"],["The stimulatory G protein can no longer bind GTP.","抑制劑不作用在 G protein。"],["cAMP persists longer, prolonging PKA activity.","正確。cAMP 無法被水解成 5′-AMP,訊號被延長並增強。"],["The receptor can no longer be phosphorylated by βARK.","βARK 與 β-arrestin 的減敏機制不受 phosphodiesterase 影響。"]]},
+{c:"12.1–2",s:"p.23, 170 · Fig. 12-5;章末 Problem 14",q:"Isolated membranes are incubated with epinephrine and Gpp(NH)p, a GTP analog that cannot be hydrolyzed. What happens to adenylyl cyclase?",a:3,o:[["It cannot be activated, because the analog cannot bind the G protein.","類似物可以結合,只是不能被水解。"],["It is activated briefly and then switched off faster than normal.","不能水解代表關不掉,不會更快關閉。"],["It is unaffected, because the G protein does not use GTP in membranes.","G protein 的開關完全依賴 GTP 與 GDP 的交換。"],["It stays persistently active, because the α subunit cannot return to its GDP-bound form.","正確。效果與 cholera toxin 相似。"]]},
+{c:"12.1–2",s:"p.61 · Fig. 12-15",q:"Phospholipase C cleaves PIP2 into two second messengers. Which statement describes their fates?",a:1,o:[["Both are water soluble and diffuse to the ER to open Ca2+ channels.","Diacylglycerol 是疏水的,留在膜上。"],["IP3 diffuses to the ER and releases Ca2+, while diacylglycerol stays in the membrane and, with Ca2+, activates PKC.","正確。IP3 打開 ER 上的 IP3-gated Ca2+ channel。"],["Diacylglycerol diffuses to the ER and releases Ca2+, while IP3 stays in the membrane and activates PKC.","兩者的角色對調了。"],["Both stay in the plasma membrane and activate PKA.","IP3 是水溶性的;被活化的是 PKC,PKA 由 cAMP 活化。"]]},
+{c:"12.1–2",s:"p.45–46 · Fig. 12-13, 12-12",q:"Oncogenic mutations of Ras typically have which effect?",a:1,o:[["They prevent Ras from binding GTP.","不能結合 GTP 的 Ras 會失去活性,不會致癌。"],["They abolish its GTPase activity, so Ras stays in the active GTP-bound form.","正確。等於開關卡在 on,即使沒有生長因子也持續送出增殖訊號。"],["They increase its affinity for GDP.","與 GDP 結合更牢會使 Ras 更不活化。"],["They delete its SH2 domain.","Ras 是小 G protein,沒有 SH2 domain。"]]},
+{c:"12.3",s:"p.80 · Fig. 12-19",q:"Which sequence describes rod-cell phototransduction?",a:2,o:[["Light → cGMP rises → channels open → depolarization","方向相反。"],["Light → transducin activates adenylyl cyclase → cAMP rises","視覺用的是 cGMP PDE。"],["Light isomerizes 11-cis-retinal → rhodopsin makes transducin exchange GDP for GTP → transducin removes PDE's inhibitory subunit → cGMP falls → cation channels close → hyperpolarization","正確。"],["Light opens Ca2+ channels directly","Rhodopsin 是 GPCR,不是通道。"]]},
+{c:"12.3",s:"p.82 · Fig. 12-19",q:"How does a rod cell recover after light?",a:1,o:[["High [Ca2+] activates guanylyl cyclase.","是低 Ca2+ 活化 guanylyl cyclase。"],["Transducin hydrolyzes GTP; low [Ca2+] activates guanylyl cyclase to restore cGMP; rhodopsin kinase phosphorylates rhodopsin and arrestin 1 binds it.","正確。一個光子可活化 ≥ 500 個 transducin。"],["Rhodopsin is degraded after each photon.","它被磷酸化與 arrestin 關閉,不是降解。"],["cGMP is exported from the cell.","不是。"]]},
+{c:"12.3",s:"p.85 · Box 12-3",q:"What causes red–green color blindness?",a:3,o:[["Lack of rhodopsin in rods","那會影響夜視。"],["Lack of transducin","不是。"],["Damage to the vitreous humor","Dalton 自己的推測,後來被 DNA 檢驗推翻。"],["Missing or altered red or green cone opsin; the three cone opsins absorb near 420, 530 and 560 nm","正確。缺色素 → dichromat;色素改變 → anomalous trichromat。"]]},
+{c:"12.3",s:"p.88 · Olfaction and gustation",q:"Which statement about olfaction and taste is correct?",a:0,o:[["Odorant GPCRs raise cAMP through an olfactory G protein, opening cAMP-gated Na+/Ca2+ channels; sweet taste uses gustducin.","正確。人類約 800 個嗅覺 GPCR。"],["Olfaction uses cGMP like vision.","嗅覺主要用 cAMP。"],["Taste uses transducin.","味覺用 gustducin。"],["Odorants open ion channels directly without G proteins.","經過 G protein。"]]},
+{c:"12.3",s:"p.80 · Fig. 12-19",q:"What happens when light is absorbed by rhodopsin in a rod cell?",a:2,o:[["[cGMP] rises, cation channels open, and the cell depolarizes.","方向相反。黑暗中 cGMP 高、通道開著。"],["[cAMP] rises, PKA is activated, and Ca2+ channels open.","視覺的 second messenger 是 cGMP。"],["Transducin activates cGMP phosphodiesterase, [cGMP] falls, cation channels close, and the cell hyperpolarizes.","正確。11-cis retinal 異構成 all-trans → rhodopsin 活化 transducin → phosphodiesterase 水解 cGMP。"],["Rhodopsin itself opens as a Ca2+ channel.","Rhodopsin 是 GPCR,不是通道。"]]},
+{c:"12.4–5",s:"p.94 · Fig. 12-21",q:"How is the insulin receptor activated?",a:2,o:[["Insulin causes two monomers to dimerize.","INSR 本來就是 (αβ)2 二聚體。"],["Insulin activates a G protein.","它是 RTK。"],["Insulin binds between the α subunits; the β kinase domains phosphorylate three Tyr on each other, moving the activation loop out of the active site.","正確。與 PKA、PKC 同樣是移開自我抑制。"],["Insulin enters the cell and binds DNA.","不是。"]]},
+{c:"12.4–5",s:"p.95 · Fig. 12-22",q:"Which order of the insulin → gene expression pathway is correct?",a:1,o:[["INSR → Sos → Grb2 → IRS1 → Ras → MEK → Raf-1 → ERK","順序錯誤。"],["INSR → IRS1 (P-Tyr) → Grb2 (SH2, SH3) → Sos (GEF) → Ras → Raf-1 → MEK → ERK → Elk1","正確。ERK 進核磷酸化 Elk1,影響約 100 個基因。"],["INSR → PI3K → PKB → ERK → Ras","那混進了另一分支。"],["INSR → Ras → IRS1 → Grb2 → ERK → MEK → Raf-1","順序錯誤。"]]},
+{c:"12.4–5",s:"p.101 · MAPK nomenclature",q:"Which kinase in the MAPK cascade is dual-specific, phosphorylating both Ser/Thr and Tyr?",a:3,o:[["Raf-1 (MAPKKK)","只磷酸化 Ser 或 Thr。"],["ERK (MAPK)","磷酸化 Ser 或 Thr。"],["PKB","不在這條 cascade。"],["MEK (MAPKK)","正確。它磷酸化 ERK 的 Thr 與 Tyr。"]]},
+{c:"12.4–5",s:"p.103 · Fig. 12-23",q:"How does insulin promote glycogen synthesis and glucose uptake through the PI3K branch?",a:0,o:[["IRS1-P activates PI3K (PIP2 → PIP3); PKB binds PIP3 and is activated by PDK1; PKB inactivates GSK3 and, through RAC1 and Rab, moves GLUT4 to the surface.","正確。"],["PKB activates GSK3, which activates glycogen synthase.","GSK3 被關掉,glycogen synthase 才保持活性。"],["ERK moves GLUT4 to the membrane.","是 PKB 分支。"],["PI3K degrades PIP3.","PI3K 製造 PIP3;移除的是 PTEN。"]]},
+{c:"12.4–5",s:"p.108 · Fig. 12-24",q:"Why is PTEN a tumor suppressor?",a:2,o:[["It activates Ras.","不是。"],["It makes PIP3.","那是 PI3K。"],["It removes the 3-phosphate from PIP3; when mutated, PIP3 stays high and promotes division.","正確。"],["It inhibits p53.","不是。"]]},
+{c:"12.4–5",s:"p.109 · Fig. 12-25",q:"Roughly how long after insulin binding does GLUT4 reach the cell surface?",a:1,o:[["Within 1 second","受體與 IRS 是秒級。"],["About 15 minutes","正確。ERK1 約 3 分鐘,基因表現要數小時。"],["About 24 hours","太久。"],["Never; insulin does not affect GLUT4","會。"]]},
+{c:"12.4–5",s:"p.110 · Fig. 12-26",q:"Which statement about the RTK family is correct?",a:3,o:[["All RTKs are permanent dimers like the insulin receptor.","INSR 是例外。"],["Their extracellular domains are identical.","胞外區決定專一性,各不相同。"],["They use Ser/Thr kinase domains.","是 Tyr kinase。"],["Most are monomers that dimerize when ligand binds and then autophosphorylate; P-Tyr residues dock SH2 adaptors such as Grb2.","正確。人類有 58 個 RTK。"]]},
+{c:"12.4–5",s:"p.115 · Fig. 12-27",q:"How does insulin reduce a cell's sensitivity to epinephrine?",a:0,o:[["INSR phosphorylates Tyr and PKB phosphorylates Ser in the β2-adrenergic receptor tail, leading to clathrin-aided internalization.","正確。另一方面,GPCR 上的 P-Tyr 也能接 Grb2 啟動 MAPK。"],["Insulin destroys epinephrine in the blood.","不是。"],["Insulin blocks adenylyl cyclase directly.","不是講義的機制。"],["Insulin activates βARK.","不是。"]]},
+{c:"12.4–5",s:"p.117 · Fig. 12-28",q:"Which pairing of a protein module with what it binds is correct?",a:2,o:[["SH2 — PIP3","SH2 結合 P-Tyr。"],["PH — phosphotyrosine","PH 結合 PIP3。"],["SH2 — phosphotyrosine (specificity from residues +1 to +3); PTB — phosphotyrosine in different sequences (for example in IRS1); PH — PIP3","正確。SH3 結合富含 Pro 的序列。"],["SH3 — phosphoserine","SH3 結合富含 Pro 的序列。"]]},
+{c:"12.4–5",s:"p.118 · Fig. 12-29",q:"How is Src kinase kept inactive?",a:1,o:[["By binding cAMP","不是。"],["Its own SH2 domain binds a phosphorylated Tyr in Src; a phosphatase removing that phosphate activates it.","正確。這是 autoinhibition。"],["By ubiquitination","不是。"],["By lacking an SH3 domain","Src 有 SH3。"]]},
+{c:"12.4–5",s:"p.121 · Fig. 12-31",q:"What does the scaffold protein KSR do?",a:3,o:[["Degrades ERK","不是。"],["Activates PKA","不是。"],["Removes PIP3","那是 PTEN。"],["Holds Raf, MEK and ERK in place; active ERK then phosphorylates KSR and displaces Raf, giving negative feedback.","正確。輸出因此短暫。"]]},
+{c:"12.4–5",s:"p.94 · Fig. 12-21",q:"What is the first event after insulin binds its receptor?",a:0,o:[["The β subunits autophosphorylate on Tyr residues, activating the receptor's kinase.","正確。兩個 β subunit 互相磷酸化 Tyr,之後才磷酸化 IRS-1。"],["The receptor causes a heterotrimeric G protein to exchange GDP for GTP.","這是 GPCR 的機制。"],["The α subunits phosphorylate IRS-1 on Ser residues.","α subunit 在細胞外負責結合 insulin;IRS-1 是被磷酸化在 Tyr 上。"],["The receptor moves to the nucleus and binds a hormone response element.","這是 nuclear receptor 的行為。"]]},
+{c:"12.4–5",s:"p.95 · Fig. 12-22",q:"Which order of components in the insulin pathway that regulates gene expression is correct?",a:3,o:[["IRS-1 → Ras → Grb2 → Sos → MEK → Raf-1 → ERK","Grb2 與 Sos 在 Ras 之前;Raf-1 在 MEK 之前。"],["Grb2 → IRS-1 → Sos → Raf-1 → Ras → ERK → MEK","IRS-1 最先被受體磷酸化;Ras 活化 Raf-1;MEK 磷酸化 ERK。"],["IRS-1 → Sos → Grb2 → Ras → MEK → Raf-1 → ERK","Grb2 是 adaptor,先以 SH2 結合 IRS-1,再帶來 Sos。"],["IRS-1 → Grb2 → Sos → Ras → Raf-1 → MEK → ERK","正確。Sos 是 Ras 的 GEF;Raf-1 → MEK → ERK 是三層 kinase cascade,ERK 進核。"]]},
+{c:"12.4–5",s:"p.103, 119 · Fig. 12-23",q:"How does insulin stimulate glycogen synthesis through the PI3K branch?",a:2,o:[["PKB phosphorylates glycogen synthase directly and activates it.","磷酸化會使 glycogen synthase 失活;PKB 的目標是 GSK3。"],["ERK enters the nucleus and induces glycogen synthase.","ERK 是調控基因表現的分支。"],["PKB phosphorylates and inactivates GSK3, so glycogen synthase stays dephosphorylated and active.","正確。PI3K → PIP3 → PKB;GSK3 被關掉,glycogen synthase 維持活性。PKB 也促使 GLUT4 移到細胞膜。"],["PIP3 binds glycogen synthase as an allosteric activator.","PIP3 的作用是把帶 PH domain 的 PKB 招到膜上。"]]},
+{c:"12.4–5",s:"p.108 · Fig. 12-24",q:"A tumor has lost both copies of the PTEN gene. What is the direct consequence?",a:0,o:[["PIP3 persists, so PKB stays active and promotes cell survival and growth.","正確。PTEN 是 tumor suppressor,要兩個 allele 都失去功能才表現。"],["PIP3 cannot be made, so PKB is never activated.","製造 PIP3 的是 PI3K;PTEN 負責移除它。"],["Ras cannot hydrolyze GTP.","這是 ras 突變。"],["The insulin receptor cannot autophosphorylate.","PTEN 不影響受體本身。"]]},
+{c:"12.4–5",s:"p.117 · Fig. 12-28",q:"What does an SH2 domain recognize?",a:3,o:[["PIP3 in the plasma membrane","認 PIP3 的是 PH domain。"],["Proline-rich sequences","認 proline-rich 序列的是 SH3 domain。"],["Phosphoserine residues in any sequence","SH2 只認磷酸化的 Tyr,而且看周圍序列。"],["Phosphotyrosine residues in a specific sequence context","正確。例如 Grb2 的 SH2 結合 IRS-1 上的 phosphotyrosine。"]]},
+{c:"12.6–7",s:"p.126 · Fig. 12-32",q:"The resting membrane potential is about −60 mV. What happens when K+ channels open?",a:2,o:[["K+ flows in and the cell depolarizes.","K+ 是往外流。"],["Na+ flows out.","打開的是 K+ 通道。"],["K+ flows out and the cell hyperpolarizes.","正確。Na+ 或 Ca2+ 流入則去極化。"],["Ion concentrations change greatly.","離子通量對濃度影響很小,但足以改變膜電位。"]]},
+{c:"12.6–7",s:"p.127 · Fig. 12-33",q:"Which sequence describes an action potential reaching a synapse?",a:0,o:[["Voltage-gated Na+ channels open → voltage-gated K+ channels open → Ca2+ channels open at the axon tip → Ca2+ triggers acetylcholine exocytosis → ACh opens ligand-gated receptor channels","正確。"],["K+ channels open first, then Na+ channels","Na+ 先開(去極化)。"],["Acetylcholine release comes before Ca2+ entry","Ca2+ 觸發釋放。"],["Ca2+ channels open first along the whole axon","Ca2+ 通道在軸突末端。"]]},
+{c:"12.6–7",s:"p.130 · Neurotoxins",q:"Which pairing of a neurotoxin with its target is correct?",a:3,o:[["Tetrodotoxin — voltage-gated K+ channels","河豚毒素擋 Na+ 通道。"],["Dendrotoxin — acetylcholine receptor","Dendrotoxin(黑曼巴)擋 K+ 通道。"],["Cobrotoxin — voltage-gated Na+ channels","Cobrotoxin 讓 ACh 受體失效。"],["Tetrodotoxin — voltage-gated Na+ channels; cobrotoxin — acetylcholine receptor channels","正確。通道分子少、通量大,所以少量毒素影響很大。"]]},
+{c:"12.6–7",s:"p.130 · Receptor channels",q:"Which statement about receptor channels in neurons is correct?",a:1,o:[["Glycine and GABA receptors open cation channels.","它們開 Cl− 通道,抑制性。"],["Ionotropic receptors are themselves channels; acetylcholine, serotonin and glutamate open cation channels, while glycine and GABA receptors open Cl− channels.","正確。Metabotropic 受體則透過第二傳訊者。"],["Metabotropic receptors are ion channels.","那是 ionotropic。"],["A neuron fires whenever any single input arrives.","要淨去極化夠大才發放。"]]},
+{c:"12.6–7",s:"p.135 · Fig. 12-34",q:"Which statement about nuclear hormone receptors is correct?",a:0,o:[["The hormone–receptor complex dimerizes, binds hormone response elements (HREs) and recruits coactivators or corepressors; tamoxifen blocks the estrogen receptor and RU486 the progesterone receptor.","正確。反應需要數小時到數天。"],["They act within seconds through cAMP.","作用慢,改變基因表現。"],["Tamoxifen activates the estrogen receptor.","它是 antagonist。"],["RU486 blocks the glucocorticoid receptor only.","講義寫的是 progesterone receptor,阻止著床。"]]},
+{c:"12.6–7",s:"p.9, 130 · Fig. 12-2",q:"The nicotinic acetylcholine receptor opens a cation pore within milliseconds of binding acetylcholine. To which receptor class does it belong?",a:2,o:[["G protein-coupled receptor","GPCR 透過 G protein 與 second messenger 作用,較慢,本身不是通道。"],["Receptor tyrosine kinase","Receptor tyrosine kinase(如 insulin receptor)靠 Tyr 磷酸化傳訊。"],["Ligand-gated ion channel","正確。Acetylcholine 結合使通道構形改變,Na+ 與 Ca2+ 流入,膜去極化。"],["Nuclear receptor","Nuclear receptor 在細胞內調控轉錄,反應需數小時。"]]},
+{c:"12.6–7",s:"p.127 · Fig. 12-33",q:"Consider these events as an action potential reaches the axon terminal: (1) voltage-gated K+ channels open; (2) voltage-gated Na+ channels open; (3) voltage-gated Ca2+ channels open; (4) neurotransmitter is released by exocytosis. Which order is correct?",a:1,o:[["1 → 2 → 3 → 4","K+ channel 是在 Na+ channel 之後才開,負責再極化。"],["2 → 1 → 3 → 4","正確。去極化 → 再極化 → 抵達末端時 Ca2+ 流入 → 突觸小泡與膜融合。"],["2 → 3 → 1 → 4","Ca2+ channel 位於軸突末端,是動作電位沿軸突傳到之後才開。"],["3 → 2 → 1 → 4","Ca2+ 流入是最後觸發釋放的步驟。"]]},
+{c:"12.6–7",s:"p.135 · Fig. 12-34",q:"Responses to steroid hormones take hours, whereas responses to epinephrine take seconds. What is the main reason?",a:2,o:[["Steroids cannot cross the plasma membrane and need slow transporters.","類固醇是疏水的,可直接穿過細胞膜。"],["Steroid receptors are GPCRs coupled to slow G proteins.","類固醇受體是細胞內的 nuclear receptor。"],["Steroid receptors act as transcription factors at hormone response elements, so the response needs new mRNA and protein.","正確。Tamoxifen、RU486 就是在這類受體上作拮抗劑。"],["Steroids are degraded within seconds and must be released repeatedly.","類固醇在血中由 carrier protein 攜帶,作用時間長。"]]},
+{c:"12.8–9",s:"p.142 · Fig. 12-36",q:"Which pairing of cyclin–CDK with cell-cycle phase is correct?",a:2,o:[["Cyclin B–CDK1 — G1","Cyclin B–CDK1 是 M 期。"],["Cyclin D–CDK4/6 — M","Cyclin D–CDK4/6 是 G1。"],["Cyclin E–CDK2 — G1/S; cyclin B–CDK1 — M","正確。Cyclin A–CDK2 在 S、G2。"],["Cyclin A–CDK2 — G1","在 S、G2。"]]},
+{c:"12.8–9",s:"p.143–144 · Figs. 12-37, 12-38",q:"Which events fully activate CDK2?",a:1,o:[["Phosphorylation of Tyr15 and degradation of cyclin","Tyr15 要去磷酸;cyclin 要結合。"],["Cyclin binding, phosphorylation of Thr160 in the T loop, and removal of phosphate from Tyr15","正確。光是 cyclin 結合就提高活性約 10,000 倍。"],["Binding of p21","p21 是抑制劑。"],["Removal of the T loop by proteolysis","不是。"]]},
+{c:"12.8–9",s:"p.147 · Fig. 12-39",q:"What happens when CDKs phosphorylate lamin?",a:3,o:[["DNA replication begins.","不是。"],["Cyclin is degraded.","不是。"],["The cell enters G0.","不是。"],["The nuclear envelope breaks down.","正確。"]]},
+{c:"12.8–9",s:"p.150 · Fig. 12-40",q:"After DNA damage, how is a cell held in G1?",a:0,o:[["ATM/ATR phosphorylate p53, which induces p21; p21 inhibits CDK2, so pRb stays bound to E2F.","正確。損傷太嚴重時則啟動凋亡。"],["p21 phosphorylates pRb.","p21 是 CDK 抑制劑。"],["E2F is degraded by p53.","不是。"],["pRb activates CDK2.","不是。"]]},
+{c:"12.8–9",s:"p.154 · Three classes of defects",q:"Which statement about cancer genes is correct?",a:2,o:[["Tumor suppressor mutations are dominant.","需要兩個 allele 都壞,是隱性。"],["Oncogenes need both copies mutated.","一個壞掉就夠,是顯性。"],["Oncogenes are dominant (accelerator stuck); tumor suppressors such as pRb, p53, p21 and PTEN are recessive (brake failure); stability genes such as ATM and BRCA1 repair damage.","正確。"],["BRCA1 is an oncogene.","它是 stability gene。"]]},
+{c:"12.8–9",s:"p.157 · Two hits",q:"Why do children who inherit one defective Rb allele often get tumors in both eyes?",a:1,o:[["Rb is an oncogene, so one copy is enough.","Rb 是腫瘤抑制基因。"],["Every retinal cell already carries the first hit, so losing the single good copy in any cell is enough.","正確。兩個好 allele 都要在同一細胞突變則少見,通常單眼、較晚發生。"],["The tumors spread from one eye to the other.","不是。"],["They lack p53 entirely.","那是 Li–Fraumeni 的機制。"]]},
+{c:"12.8–9",s:"p.160 · Box 12-4",q:"Which pairing of a cancer drug with its target is correct?",a:3,o:[["Imatinib — HER2","Imatinib 打 Abl(CML)。"],["Trastuzumab — Abl","Trastuzumab 是抗 HER2 抗體。"],["Erlotinib — Bcr-Abl","Erlotinib 打 EGFR(NSCLC)。"],["Imatinib — Abl (CML); erlotinib — EGFR (NSCLC); trastuzumab — HER2","正確。難處:各 kinase 的 ATP 位很像。"]]},
+{c:"12.8–9",s:"p.163 · Fig. 12-41",q:"Which statement about colorectal cancer is correct?",a:0,o:[["It needs about seven hits, including both copies of APC, DCC and p53 plus one ras; removing polyps at the early adenoma stage prevents carcinoma.","正確。大部分突變是 passenger。"],["A single ras mutation is sufficient.","需要多次突變累積。"],["Most mutations in tumors are drivers.","超過 99.9% 是 passenger。"],["APC is an oncogene.","APC 是腫瘤抑制基因。"]]},
+{c:"12.8–9",s:"p.164 · Fig. 12-42",q:"Which sequence describes apoptosis triggered through the TNF receptor?",a:2,o:[["Cytochrome c binds the TNF receptor → caspase 3","不是。"],["TNFα → p53 → p21 → caspase 9","不是。"],["TNFα binds its receptor → death domains activate TRADD → initiator caspase-8 → mitochondria release cytochrome c, which with Apaf-1 activates caspase-9 → protein and DNA destruction","正確。"],["Apaf-1 activates caspase-8 directly at the plasma membrane","Apaf-1 與 cytochrome c 活化 caspase-9。"]]},
+{c:"12.8–9",s:"p.150, 147 · Fig. 12-40, 12-39",q:"What allows a cell to pass from G1 into S phase?",a:0,o:[["Cyclin–CDK phosphorylates pRb, releasing E2F to activate the genes needed for DNA synthesis.","正確。未磷酸化的 pRb 抓住 E2F;被磷酸化後放開。"],["p21 binds E2F and carries it into the nucleus.","p21 是 CDK 抑制蛋白,作用是擋住細胞週期。"],["pRb phosphorylates CDK2, activating it.","pRb 不是 kinase,它是 CDK 的受質。"],["Dephosphorylated pRb binds DNA polymerase.","pRb 的作用對象是轉錄因子 E2F。"]]},
+{c:"12.8–9",s:"p.164 · Fig. 12-42",q:"Which event belongs to the intrinsic (mitochondrial) pathway of apoptosis?",a:1,o:[["Cytochrome c binds the Fas receptor and activates caspase 8.","Fas 與 caspase 8 屬於外在路徑,由 death ligand 啟動。"],["Cytochrome c released from mitochondria binds Apaf-1, forming an apoptosome that activates caspase 9.","正確。Caspase 9 再活化 effector caspase。"],["Cytochrome c enters the nucleus and activates p53.","Cytochrome c 留在細胞質作用,不進核。"],["Cytochrome c blocks the respiratory chain, and the cell dies from lack of ATP.","Apoptosis 是 caspase 主動執行的程式性死亡,不是 ATP 耗盡。"]]}
+];
+const MATCH=[
+{t:"訊號傳遞的特徵 → 意思",p:[["Specificity","分子互補,受體只認特定 ligand","p.5","第一個特徵。"],["Sensitivity","高親和力,Kd ≤ 10^-7 M","p.5","所以很低濃度的荷爾蒙就有效。"],["Amplification","酵素串聯,逐級放大","p.5, 32","但 cAMP 結合 PKA 那一步不放大。"],["Desensitization","持續刺激後回饋關閉","p.5, 36","βARK + β-arrestin 是例子。"],["Integration","兩個訊號加總成一個反應","p.5–6","Epinephrine 升 cAMP、PGE2 降 cAMP,看總和。"],["Divergence","一個受體產生兩個以上反應","p.5, 39","GPCR 可走 G protein 或 arrestin 分支。"]]},
+{t:"β-adrenergic 路徑 → 角色",p:[["Occupied receptor","當 GEF,讓 Gsα 換上 GTP","p.18, 26","本課程考題 Q22。"],["Gsα·GTP","離開 βγ,活化 adenylyl cyclase","p.18, 23","本身有 GTPase,會自己關掉。"],["RGS / GAP","加速 GTP 水解,最高 10^5 倍","p.35, 46","讓 G protein 更快關閉。"],["cAMP phosphodiesterase","cAMP → 5′-AMP","p.18, 35","結束訊號的方式之一。"],["βARK","磷酸化受體 C 端的 Ser","p.36","Ser/Thr 全換成 Ala 就無法減敏。"],["β-Arrestin","阻斷 G protein 並促使受體內吞","p.36, 39","也能啟動 MAPK cascade。"]]},
+{t:"第二傳訊者 → 下游",p:[["cAMP","結合 PKA 的 regulatory subunit","p.28","移除自我抑制區,放出 catalytic subunit。"],["cGMP","活化 PKG","p.53","由 ANF 受體或 NO 活化的 guanylyl cyclase 製造。"],["IP3","打開 ER 上的 IP3-gated Ca2+ 通道","p.61, 72","本課程考題 Q25。"],["DAG","與 Ca2+ 一起活化 PKC","p.61","留在膜上。"],["Ca2+","結合 calmodulin 的 4 個 EF hand","p.75","靜止 < 10^-7 M,刺激後約 10^-6 M。"],["PIP3","把帶 PH domain 的 PKB 招到膜上","p.103","由 PI3K 製造,PTEN 移除。"]]},
+{t:"藥物與毒素(GPCR、cGMP)",p:[["Cholera toxin","ADP-ribosylate Gsα,GTPase 失效","p.49","cAMP 持續高 → CFTR 開 → 腹瀉。"],["Isoproterenol","β-adrenergic agonist","p.17","Kd 0.4 µM,比 epinephrine 緊。"],["Propranolol","β-adrenergic antagonist(β blocker)","p.17","Kd 0.0046 µM。"],["Nitroglycerin","慢慢釋放 NO","p.53–54","NO → 可溶性 guanylyl cyclase → cGMP,緩解心絞痛。"],["Sildenafil","抑制 cGMP phosphodiesterase","p.53–54","讓 cGMP 維持高。"],["E. coli heat-stable toxin","作用在 guanylin 受體 → 腹瀉","p.53","Guanylin 正常調控腸道 Cl− 分泌。"]]},
+{t:"感覺系統 → 角色",p:[["Rhodopsin","11-cis-retinal + opsin 的 GPCR","p.80–81","光讓 11-cis 變 all-trans。"],["Transducin","視覺的 G protein","p.80","移除 cGMP PDE 的抑制次單元。"],["cGMP-gated channel","cGMP 下降就關閉 → 過極化","p.80","Na+–Ca2+ exchanger 繼續打出。"],["Rhodopsin kinase + arrestin 1","關閉被活化的 rhodopsin","p.82","與 βARK、β-arrestin 同樣邏輯。"],["Olfactory G protein","升高 cAMP,打開 cAMP-gated 通道","p.88","人類約 800 個嗅覺 GPCR。"],["Gustducin","味覺的 G protein","p.88","甜味:gustducin → adenylyl cyclase → cAMP。"]]},
+{t:"Insulin → 基因表現分支",p:[["INSR","(αβ)2;β 互相磷酸化 3 個 Tyr","p.94","活化環移出活性位。"],["IRS1","被 INSR 磷酸化的 Tyr 停靠點","p.95","有 PTB domain。"],["Grb2","SH2 接 IRS1,SH3 接 Sos","p.95","Adaptor。"],["Sos","Ras 的 GEF","p.95","讓 Ras 換上 GTP。"],["Raf-1","MAPKKK","p.95, 101","磷酸化 Ser 或 Thr。"],["MEK","MAPKK,雙重專一","p.101","磷酸化 ERK 的 Thr 與 Tyr。"]]},
+{t:"Insulin → PI3K 分支與調控",p:[["ERK","進核磷酸化 Elk1","p.95","影響約 100 個基因,細胞分裂。"],["PI3K","PIP2 → PIP3","p.103","由 IRS1-P 經 SH2 活化。"],["PDK1","活化結合在 PIP3 上的 PKB","p.103","PKB 也叫 Akt。"],["PKB","使 GSK3 失活、送 GLUT4 上膜","p.103","Glycogen synthase 因此保持活性。"],["PTEN","移除 PIP3 的 3 位磷酸","p.108","癌症常突變 → PIP3 高 → 分裂。"],["KSR","把 Raf、MEK、ERK 綁在一起的支架","p.121","ERK 回頭磷酸化 KSR,形成負回饋。"]]},
+{t:"蛋白模組 → 結合對象",p:[["SH2","phosphotyrosine(+1 到 +3 決定專一性)","p.117","兩個 Arg 抓住磷酸。"],["PTB","phosphotyrosine(不同序列)","p.117","IRS1 就有 PTB。"],["PH domain","PIP3","p.103, 120","PKB 用它上膜。"],["SH3","富含 Pro 的序列","p.118, 120","Grb2 用 SH3 接 Sos。"],["EF hand","Ca2+","p.75","Calmodulin 有 4 個。"],["AKAP","PKA 的 regulatory subunit","p.44","把 PKA 固定在特定位置。"]]},
+{t:"通道與核受體 → 重點",p:[["Tetrodotoxin","擋 voltage-gated Na+ 通道","p.130","河豚毒。"],["Dendrotoxin","擋 voltage-gated K+ 通道","p.130","黑曼巴蛇毒。"],["Cobrotoxin","讓 acetylcholine 受體通道失效","p.130","眼鏡蛇毒。"],["Tamoxifen","estrogen receptor 拮抗劑","p.135","減緩荷爾蒙依賴型乳癌。"],["RU486","阻斷 progesterone receptor","p.135","阻止著床。"],["HRE","受體二聚體結合的 DNA 序列","p.135","Hormone response element。"]]},
+{t:"細胞週期 → 角色",p:[["Cyclin D–CDK4/6","G1","p.142","依序:D → E → A → B。"],["Cyclin E–CDK2","G1/S,磷酸化 pRb","p.142, 150","pRb 放開 E2F。"],["Cyclin B–CDK1","M 期","p.142","磷酸化 lamin → 核膜崩解。"],["pRb","抓住 E2F","p.150","磷酸化後才放開。"],["p53","DNA 損傷時誘導 p21","p.150","由 ATM、ATR 磷酸化。"],["p21","抑制 CDK2,停在 G1","p.150","給細胞時間修復。"]]},
+{t:"癌症與凋亡 → 重點",p:[["Oncogene","顯性;油門卡住","p.154","Ras、HER2 等。"],["Tumor suppressor","隱性;煞車失靈","p.154","pRb、p53、p21、PTEN、APC、DCC。"],["Stability gene","修復基因損傷,如 ATM、BRCA1","p.154","壞掉讓其他突變累積。"],["Imatinib","抑制 Abl(CML)","p.160","Gleevec。"],["Trastuzumab","抗 HER2 單株抗體","p.160","Herceptin。"],["Apaf-1 + cytochrome c","活化 caspase-9","p.164","內在路徑;外在路徑經 TNF → TRADD → caspase-8。"]]}
+];
+const KEY="biochem-ch12-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

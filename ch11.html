@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch11 考點、連連看與題庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 0 0;font-size:.85rem}
+.site a{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--surface)}
+.site a:hover{border-color:var(--accent);color:var(--ink)}
+.site a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.site a.home{font-weight:600;color:var(--ink)}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+p.src{white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html" aria-current="page">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch11 考點、連連看與題庫</h1>
+  <p class="lede">Biological Membranes and Transport。考點速記 → 連連看 48 對(配對成功會出現解釋)→ 41 題英文單選;每題與每組配對都標講義頁碼。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(41 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<p class="hint">一行一考點,灰色是講義 PDF 頁碼;<span class="hit">國考</span> 是講義國考題出過的點。看完切到「連連看」,再用「題目練習」驗收。</p>
+
+<h2>11.1 膜的組成與架構</h2>
+<ul class="pts">
+<li>三原則:膜 = 脂雙層 + 蛋白,靠疏水作用;內膜系統動態相連;雙層擋住帶電與極性分子 → 需要運輸蛋白與通道 <i>p.3</i></li>
+<li>頭比尾寬(脂肪酸、lysophospholipid、SDS)→ <b>micelle</b>;頭尾相當 → <b>bilayer</b>;雙層封閉 → vesicle <i>p.5</i></li>
+<li>疏水核心約 <b>3 nm(30 Å)</b>;含蛋白的膜 50–80 Å <i>p.6</i></li>
+<li><b>Fluid mosaic</b>:脂質與蛋白在平面上移動;兩層<b>不對稱</b>;可融合、分裂而不漏 <span class="hit">國考</span> <i>p.7</i></li>
+<li>內質網 → cis Golgi → trans Golgi → 細胞膜或內體;蛋白:脂質比例各膜不同(髓鞘多脂質、粒線體多蛋白) <i>p.8</i></li>
+<li><b>細胞膜</b>富含 cholesterol、sphingolipid、<b>沒有 cardiolipin</b>;<b>粒線體內膜</b>幾乎沒有 cholesterol,有大部分 cardiolipin <span class="hit">國考</span> <i>p.9</i></li>
+<li><b>外葉:PC、sphingomyelin、醣脂;內葉:PS、PE、inositol 磷脂</b> <i>p.10</i></li>
+<li>Lipid transfer protein 在膜接觸點運送脂質 <span class="hit">國考</span> <i>p.13–15</i></li>
+<li>Glycophorin:60% 質量是醣、<b>醣一律朝外</b>;殘基 75–93 一個跨膜螺旋 <i>p.16</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>膜蛋白</th><th>結合方式</th><th>怎麼移除</th></tr></thead>
+<tbody>
+<tr><td><b>Integral</b></td><td>疏水作用</td><td><b>只有去污劑或有機溶劑</b> <span class="hit">國考</span></td></tr>
+<tr><td><b>Peripheral</b></td><td>離子鍵、氫鍵;<b>無穿膜結構</b></td><td>pH、螯合劑、urea、carbonate、鹽 <span class="hit">國考</span></td></tr>
+<tr><td>Amphitropic</td><td>可逆,常靠受調控的脂質錨</td><td>在膜與細胞質間移動</td></tr>
+</tbody></table></div>
+<p class="src">p.17–19</p>
+<ul class="pts">
+<li>Monotopic(只插一層)/ <b>bitopic</b>(跨一次,glycophorin)/ <b>polytopic</b>(多次,bacteriorhodopsin 7 個螺旋) <i>p.20</i></li>
+<li>Lipid annulus:磷脂像「油封」包住膜蛋白 <i>p.21</i></li>
+<li><b>Hydropathy plot</b>:7–20 殘基窗口平均疏水指數;<b>&gt; 20 個高疏水殘基 → 跨膜螺旋</b>(α 螺旋每殘基 1.5 Å,20–25 殘基跨 30 Å) <span class="hit">國考</span> <i>p.22</i></li>
+<li><b>β barrel</b>:每股只要 <b>7–9 殘基</b>,殘基交替朝脂質;porin 在革蘭氏陰性菌外膜、粒線體、葉綠體 <i>p.23</i></li>
+<li><b>Tyr、Trp 在脂核與水的交界</b>;<b>positive-inside</b>:Lys、Arg 環朝細胞質 <span class="hit">國考</span> <i>p.24</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>脂質錨</th><th>連結</th><th>面</th></tr></thead>
+<tbody>
+<tr><td><b>Palmitoyl</b>(C16)</td><td>內部 Cys 的 thioester,可逆</td><td>內 <span class="hit">國考</span></td></tr>
+<tr><td>N-Myristoyl(C14)</td><td>N 端 Gly 的 amide</td><td>內</td></tr>
+<tr><td>Farnesyl / geranylgeranyl</td><td>C 端 Cys 的 isoprenoid</td><td>內</td></tr>
+<tr><td><b>GPI</b></td><td>PI + 寡醣 + phosphoethanolamine 接 C 端</td><td><b>一律在外</b> <span class="hit">國考</span></td></tr>
+</tbody></table></div>
+<p class="src">p.27–29</p>
+
+<h2>11.2 膜的動態</h2>
+<ul class="pts">
+<li><b>Lo</b>(液序,長飽和鏈)vs <b>Ld</b>(液態,cis 彎折、短鏈);<b>cholesterol 讓不飽和鏈變硬、飽和鏈變軟</b>;cholesterol + sphingolipid → Lo 小區 <i>p.31</i></li>
+<li><b>側向擴散很快(約 1 µm/s);未催化的 flip-flop 很慢(以天計)</b> <span class="hit">國考</span> <i>p.32, 35</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>酵素</th><th>方向</th><th>能量</th></tr></thead>
+<tbody>
+<tr><td><b>Flippase</b></td><td>PE、PS:外 → 內</td><td>約 1 ATP/脂質,P-type</td></tr>
+<tr><td><b>Floppase</b></td><td>內 → 外</td><td>ATP,ABC transporter</td></tr>
+<tr><td><b>Scramblase</b></td><td>雙向,順梯度</td><td>不耗 ATP;部分被 Ca2+ 活化</td></tr>
+</tbody></table></div>
+<p class="src">p.32(PS 翻到外表面 = 凋亡訊號,巨噬細胞吞噬)</p>
+<ul class="pts">
+<li><b>FRAP</b>:漂白一點 → 看螢光恢復速度 = 側向擴散速率 <i>p.33</i></li>
+<li>Hop diffusion:spectrin 網經 ankyrin 拴住蛋白形成柵欄,脂質被圈在約 250 nm 區內 <i>p.36</i></li>
+<li><b>Raft</b>:sphingolipid + cholesterol(Lo)、抗非離子去污劑、富含 <b>GPI 錨蛋白</b>與雙醯化蛋白(caveolin);長螺旋(24–25)進 raft;約 50 nm <span class="hit">國考</span> <i>p.37, 39</i></li>
+<li><b>Caveolin</b>:髮夾疏水區插在內葉 + 3 個 palmitoyl;二聚體讓膜<b>往內凹</b> = caveolae;膜運輸、訊號傳遞 <i>p.38</i></li>
+<li>彎膜:錐形脂質(cardiolipin)、本身彎曲的蛋白、兩性螺旋楔子(septin)、<b>BAR domain</b>(貼 PIP2/PIP3) <i>p.41</i></li>
+<li>膜融合五步:辨識 → 靠近(去水)→ 局部破壞(hemifusion)→ 融合 → 按訊號時機;<b>葡萄糖經運輸蛋白進細胞不涉及膜融合</b> <span class="hit">國考</span> <i>p.42–44</i></li>
+<li><b>SNARE</b>:v-SNARE(囊泡,synaptobrevin)+ t-SNARE(syntaxin + SNAP25)→ Ca2+ 觸發 → 四螺旋束 → 融合孔;<b>NSF</b> 事後拆開;<b>botulinum、tetanus 毒素切 SNARE</b> <i>p.45</i></li>
+<li>黏附:<b>integrin</b>(αβ、RGD 結合 collagen、fibronectin、雙向訊號);<b>cadherin</b>(同型、Ca2+);<b>selectin</b>(結合他細胞多醣、凝血) <i>p.46</i></li>
+</ul>
+
+<h2>11.3 溶質運輸</h2>
+<ul class="pts">
+<li>被動:簡單擴散、促進性擴散、通道、ionophore;主動:<b>初級(ATP)</b>、<b>次級(另一離子順梯度)</b> <i>p.48</i></li>
+<li>運輸蛋白:結合能抵消去水合能 → 降低活化能;<b>不是酵素</b>(受質不變)但<b>可飽和</b> <span class="hit">國考</span> <i>p.50, 54</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th></th><th>離子通道</th><th>運輸蛋白</th></tr></thead>
+<tbody>
+<tr><td>閘門</td><td>一個,開或關</td><td>兩個,從不同時開</td></tr>
+<tr><td>速度</td><td>10^7–10^8 個/秒</td><td>慢很多</td></tr>
+<tr><td>飽和</td><td><b>不會</b></td><td><b>會</b></td></tr>
+<tr><td>方向</td><td>只能順電化學梯度</td><td>被動或主動</td></tr>
+</tbody></table></div>
+<p class="src">p.51</p>
+<ul class="pts">
+<li><b>GLUT1</b>:V0 = Vmax[S]/(Kt + [S]);快、可飽和、立體專一(L-glucose Kt &gt; 3,000 mM)、可逆;12 個螺旋,alternating access <i>p.53, 56</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>GLUT</th><th>組織</th><th>Kt(mM)</th><th>角色</th></tr></thead>
+<tbody>
+<tr><td>GLUT1</td><td>紅血球、血腦障壁、胎盤</td><td>3</td><td>基礎攝取;紅血球用<b>促進性擴散</b> <span class="hit">國考</span></td></tr>
+<tr><td><b>GLUT2</b></td><td><b>肝、胰島</b>、腸、腎</td><td><b>17</b></td><td>移除多餘血糖、調控 insulin 分泌 <span class="hit">國考</span></td></tr>
+<tr><td>GLUT3</td><td>神經元、精子</td><td>1.4</td><td>基礎攝取,高周轉</td></tr>
+<tr><td><b>GLUT4</b></td><td>肌肉、脂肪、心</td><td>5</td><td><b>insulin 調控</b>;平常 90% 在囊泡,insulin → 上膜,攝取 ≥ 15 倍</td></tr>
+</tbody></table></div>
+<p class="src">p.57–61(講義 p.53 寫 GLUT1 葡萄糖 Kt 約 6 mM,表 11-1 寫 3 mM,以老師說法為準)</p>
+<ul class="pts">
+<li><b>Cl−–HCO3− exchanger</b>(紅血球):<b>電中性反向運輸</b>;沒有 Cl− 就不運 HCO3− <i>p.62</i></li>
+<li>Uniport(GLUT1)/ symport(Na+–glucose)/ antiport(Cl−–HCO3−、Na+K+ ATPase) <i>p.63</i></li>
+<li>ΔGt = RT ln(C2/C1);離子再加 <b>ZFΔψ</b>;10 倍梯度約 5.7 kJ/mol;Ca2+ 例題約 33 kJ/mol <i>p.65, 68</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>幫浦</th><th>重點</th></tr></thead>
+<tbody>
+<tr><td><b>P-type</b></td><td>每循環 <b>Asp 被磷酸化</b>;vanadate 抑制;SERCA、Na+K+、胃 H+K+ <span class="hit">國考</span></td></tr>
+<tr><td>SERCA</td><td>E1 ⇄ E2;每 ATP 送 2 Ca2+ 進 ER;Asp351</td></tr>
+<tr><td><b>Na+K+ ATPase</b></td><td><b>3 Na+ 出、2 K+ 入</b>、electrogenic;−50 至 −70 mV;佔靜息能量 25%;<b>digitalis</b> 抑制 <span class="hit">國考</span></td></tr>
+<tr><td>V-type</td><td>酸化液胞、溶小體、內體、Golgi</td></tr>
+<tr><td>F-type</td><td>可逆 = ATP synthase</td></tr>
+<tr><td>ABC</td><td>2 NBD + 2 TMD;ABCA1 Tangier、<b>ABCB1 = MDR1</b> 多重抗藥 <span class="hit">國考</span></td></tr>
+</tbody></table></div>
+<p class="src">p.69–78</p>
+<ul class="pts">
+<li><b>CFTR = ABCC7,是 Cl− 通道不是幫浦</b>;PKA 磷酸化 R domain + 兩 NBD 結合 ATP 才開;<b>F508del</b>(最多 90%)摺疊錯誤被分解;G551D 能插膜但不通;ivacaftor = potentiator <span class="hit">國考</span> <i>p.79–81</i></li>
+<li>小腸:頂端 <b>Na+–glucose symporter</b>(次級主動)→ 基底 <b>GLUT2</b> 送入血 → 基底 Na+K+ ATPase 維持梯度;<b>gliflozin 抑制腎 SGLT2</b> <span class="hit">國考</span> <i>p.84–85</i></li>
+<li><b>Valinomycin</b> = 環狀胜肽,帶 K+,瓦解梯度殺菌;monensin 帶 Na+ <span class="hit">國考</span> <i>p.89–90</i></li>
+<li><b>Aquaporin</b>:AQP1 每秒 10^9 水分子;<b>AQP2(集尿管)受 vasopressin 調控</b> <i>p.93</i></li>
+<li>通道:不飽和、只開幾毫秒;<b>ligand-gated</b>(配體結合才讓離子過)vs voltage-gated;<b>patch clamp</b> 量單一通道 <span class="hit">國考</span> <i>p.95–96</i></li>
+<li><b>K+ 通道</b>:四個相同次單元;選擇性濾器的<b>骨架羰基氧</b>取代水合殼,Na+ 太小不穩定;K+ 比 Na+ 通過快 10^4 倍,約 10^8/秒 <i>p.98–99</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">8 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 41 題</button>
+    <button class="tab" id="tab-1" data-f="11.1" aria-pressed="false">11.1 膜的組成</button>
+    <button class="tab" id="tab-2" data-f="11.2" aria-pressed="false">11.2 膜的動態</button>
+    <button class="tab" id="tab-3" data-f="11.3" aria-pressed="false">11.3 運輸</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">41</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"11.1",s:"p.5 · Fig. 11-1",q:"Which amphipathic lipids form micelles rather than bilayers in water?",a:1,o:[
+["Glycerophospholipids and sphingolipids","它們頭與尾截面差不多,形成雙層。"],
+["Free fatty acids, lysophospholipids and SDS, whose head is wider than the tail","正確。單尾、頭寬 → 錐形 → 微胞。"],
+["Cholesterol alone","不是講義的例子。"],
+["Triacylglycerols","TAG 不是兩性分子。"]]},
+{c:"11.1",s:"p.6 · Fig. 11-2",q:"How thick is the hydrocarbon core of a bilayer, and how thick are biological membranes?",a:3,o:[
+["About 30 nm core; 300 nm membranes","數量級錯了。"],
+["About 1 nm core; 2 nm membranes","太薄。"],
+["About 10 nm core; membranes 10 nm","不是講義的數值。"],
+["About 3 nm (30 Å) core; with proteins, membranes are 50–80 Å thick","正確。核心像 decane 一樣非極性。"]]},
+{c:"11.1",s:"p.7 · Fig. 11-3",q:"Which statement about the fluid mosaic model is correct?",a:0,o:[
+["Lipids and proteins move in the plane of the membrane, and the two leaflets are asymmetric.","正確。膜有彈性、可自行封閉、可融合或分裂而不漏。"],
+["Proteins are fixed like ceramic tiles.","講義特別說不像瓷磚。"],
+["Both leaflets have identical composition.","兩層不對稱。"],
+["Lipids are held together by covalent bonds.","是非共價的疏水作用。"]]},
+{c:"11.1",s:"p.9–12 · Fig. 11-5",q:"Which lipid is lowest in the plasma membrane of a liver cell?",a:2,o:[
+["Phosphatidylcholine","細胞膜主要成分之一。"],
+["Sphingolipids","細胞膜富含 sphingolipid。"],
+["Cardiolipin","正確。Cardiolipin 幾乎都在粒線體內膜,細胞膜偵測不到。"],
+["Cholesterol","細胞膜富含 cholesterol。"]]},
+{c:"11.1",s:"p.10 · Fig. 11-6",q:"Which lipids are found almost exclusively in the inner (cytoplasmic) leaflet of the plasma membrane?",a:1,o:[
+["Phosphatidylcholine and sphingomyelin","它們在外葉。"],
+["Phosphatidylserine, phosphatidylethanolamine and the inositol phospholipids","正確。帶負電的 PS、PIP 頭基可與周邊蛋白的正電區結合。"],
+["Glycolipids","在外葉。"],
+["Cardiolipin","在粒線體內膜。"]]},
+{c:"11.1",s:"p.13–15 · Fig. 11-7",q:"Which molecule moves newly made membrane lipids between membranes at contact points?",a:0,o:[
+["Lipid transfer protein","正確。有單體(疏水溝)、寡聚(疏水隧道)與耦合 ABC transporter 三種。"],
+["Acyl carrier protein","用於脂肪酸合成。"],
+["Apolipoprotein","血中脂蛋白的蛋白質。"],
+["Carnitine palmitoyltransferase","用於脂肪酸進粒線體。"]]},
+{c:"11.1",s:"p.16 · Fig. 11-8",q:"Which statement about glycophorin of erythrocytes is correct?",a:3,o:[
+["It crosses the membrane seven times.","只跨一次。"],
+["Its sugars face the cytoplasm.","醣鏈一律朝外。"],
+["It contains no carbohydrate.","約 60% 質量是醣。"],
+["About 60% of its mass is carbohydrate on the outer face, and one hydrophobic α helix (residues 75–93) crosses the bilayer.","正確。是 bitopic 蛋白。"]]},
+{c:"11.1",s:"p.17–19 · Fig. 11-9",q:"Which solution can extract an integral membrane protein?",a:2,o:[
+["Acidic or alkaline buffer","這只能移除周邊蛋白。"],
+["A chelating agent","只能移除周邊蛋白。"],
+["A detergent (surfactant) solution","正確。內嵌蛋白靠疏水作用,只有去污劑或有機溶劑能移除。"],
+["High salt","只能移除周邊蛋白。"]]},
+{c:"11.1",s:"p.20 · Figs. 11-10, 11-11",q:"Bacteriorhodopsin crosses the membrane with seven α helices. How is it classified?",a:1,o:[
+["Monotopic","Monotopic 只嵌入一層。"],
+["Polytopic","正確。Glycophorin 跨一次,是 bitopic。"],
+["Bitopic","Bitopic 只跨一次。"],
+["Peripheral","它是內嵌蛋白。"]]},
+{c:"11.1",s:"p.22, 25–26 · Fig. 11-13",q:"What is a hydropathy plot used for?",a:3,o:[
+["Estimating the quaternary structure of a membrane protein","不行。"],
+["Measuring the water content of a native protein","不是。"],
+["Estimating the molecular weight of a membrane protein","不是。"],
+["Predicting membrane-spanning segments from the amino acid sequence","正確。超過約 20 個高疏水指數的殘基 → 可能是跨膜 α 螺旋。"]]},
+{c:"11.1",s:"p.23 · Fig. 11-14",q:"Why can a β barrel span the membrane with only 7–9 residues per strand?",a:0,o:[
+["In β conformation each residue spans more distance, and a closed barrel satisfies every backbone H bond; alternate residues face the lipid.","正確。Porin 在革蘭氏陰性菌外膜、粒線體、葉綠體。"],
+["β strands are more hydrophilic than α helices.","不是理由。"],
+["Each residue in a β strand spans only 1.5 Å.","那是 α 螺旋的數值。"],
+["β barrels lie flat on the membrane surface.","它們橫跨膜。"]]},
+{c:"11.1",s:"p.24–26 · Fig. 11-15",q:"In transmembrane proteins, where are Trp residues most often found?",a:2,o:[
+["Deep in the center of the lipid bilayer","不是最常見位置。"],
+["In the aqueous cytoplasm","不是。"],
+["At the interface between the lipid core and the aqueous phase","正確。Tyr、Trp 錨定介面;Lys、Arg 環朝細胞質(positive-inside rule)。"],
+["Next to glycine","不是。"]]},
+{c:"11.1",s:"p.27–29 · Fig. 11-16",q:"Which lipid anchor is always on the outer face of the plasma membrane?",a:1,o:[
+["Palmitoyl on an internal Cys","在內面,而且可逆。"],
+["GPI (glycosylphosphatidylinositol) anchor","正確。"],
+["N-Myristoyl on the N-terminal Gly","在內面。"],
+["Farnesyl on a C-terminal Cys","在內面。"]]},
+{c:"11.2",s:"p.31 · Fig. 11-17",q:"How does cholesterol affect membrane fluidity?",a:3,o:[
+["It always makes membranes more fluid.","對飽和鏈是如此,但對不飽和鏈相反。"],
+["It always makes membranes more rigid.","對不飽和鏈如此,但會讓飽和鏈變流動。"],
+["It has no effect.","有影響。"],
+["Paradoxically, it rigidifies unsaturated chains and fluidizes saturated ones; with sphingolipids it forms Lo patches.","正確。長鏈飽和脂肪酸偏 Lo,cis 彎折偏 Ld。"]]},
+{c:"11.2",s:"p.32 · Fig. 11-18",q:"Which pairing of a lipid translocator with its properties is correct?",a:0,o:[
+["Flippase — moves PE and PS from the outer to the cytosolic leaflet using ATP (P-type ATPase)","正確。Floppase 反向、屬 ABC transporter;scramblase 不耗 ATP。"],
+["Floppase — moves lipids inward without ATP","Floppase 往外,用 ATP。"],
+["Scramblase — uses ATP to move lipids against their gradient","Scramblase 不用 ATP,順梯度雙向。"],
+["Flippase — an ABC transporter that moves lipids outward","那是 floppase。"]]},
+{c:"11.2",s:"p.32–35 · Fig. 11-19",q:"Which statement is true of the lipid bilayer in all cell membranes?",a:2,o:[
+["Individual lipids flip-flop rapidly from one leaflet to the other.","Flip-flop 很慢(半衰期以天計)。"],
+["Polar uncharged compounds cross easily by diffusion.","極性分子不易穿過。"],
+["Individual lipids diffuse laterally within the plane of the bilayer.","正確。最快約 1 µm/s,可用 FRAP 測量。"],
+["Neighboring phospholipids are joined by covalent bonds.","非共價。"]]},
+{c:"11.2",s:"p.36 · Figs. 11-20, 11-21",q:"What limits long-range lateral diffusion of lipids in the plasma membrane?",a:1,o:[
+["Covalent cross-links between lipids","不是。"],
+["Protein fences tethered to the spectrin network through ankyrin, which corral lipids in ~250 nm zones (hop diffusion)","正確。"],
+["Cholesterol crystals","不是。"],
+["The glycocalyx alone","不是講義的機制。"]]},
+{c:"11.2",s:"p.37, 39–40 · Fig. 11-22",q:"Which statement about lipid rafts is correct?",a:3,o:[
+["They have less cholesterol than the surrounding membrane.","Raft 富含 cholesterol。"],
+["They have less sphingolipid.","富含 sphingolipid。"],
+["They contain no caveolin.","Caveolin 是雙醯化蛋白,富集在 raft。"],
+["They are enriched in sphingolipids, cholesterol and GPI-anchored proteins and resist nonionic detergents.","正確。直徑約 50 nm;長螺旋(24–25 殘基)偏好 raft。"]]},
+{c:"11.2",s:"p.38 · Fig. 11-23",q:"How does caveolin form caveolae?",a:0,o:[
+["Its hairpin hydrophobic domain binds the cytoplasmic leaflet, it carries three palmitoyl groups, and caveolin dimers in cholesterol-rich rafts bend the membrane inward.","正確。功能:膜運輸與訊號傳遞。"],
+["It spans the bilayer seven times.","是髮夾狀,只在內葉。"],
+["It is a GPI-anchored protein on the outer face.","它在內葉。"],
+["It bends the membrane outward.","是往內凹。"]]},
+{c:"11.2",s:"p.41 · Fig. 11-25",q:"Which structure bends membranes by forming crescent-shaped dimers that polymerize on PIP2- and PIP3-rich patches?",a:2,o:[
+["Cardiolipin","它靠錐形分子形狀彎曲。"],
+["Septins","它們是 GTP 結合蛋白,用兩性螺旋。"],
+["BAR-domain proteins","正確。"],
+["Integrins","是黏附蛋白。"]]},
+{c:"11.2",s:"p.43–44 · 國考題",q:"Which process does NOT involve membrane fusion?",a:1,o:[
+["Endocytosis","有膜融合。"],
+["Glucose entering a cell through a transporter","正確。運輸蛋白不需要膜融合。"],
+["Entry of an enveloped virus","有膜融合。"],
+["Exocytosis","有膜融合。"]]},
+{c:"11.2",s:"p.45 · Fig. 11-26",q:"Which statement about SNAREs is correct?",a:3,o:[
+["v-SNAREs are on the target plasma membrane.","v-SNARE 在囊泡上(synaptobrevin)。"],
+["NSF zips the SNAREs together.","NSF 是在事後拆開 SNARE 複合物。"],
+["Botulinum toxin activates SNAREs.","它是切斷 SNARE 的蛋白酶。"],
+["v-SNARE (synaptobrevin) and t-SNARE (syntaxin with SNAP25) zip into a four-helix bundle when Ca2+ rises, driving fusion.","正確。Botulinum、tetanus 毒素切 SNARE → 癱瘓或痙攣。"]]},
+{c:"11.2",s:"p.46 · Adhesion proteins",q:"Which pairing of an adhesion protein with its feature is correct?",a:0,o:[
+["Integrins — αβ heterodimers that bind collagen and fibronectin through Arg–Gly–Asp (RGD) and signal in both directions","正確。"],
+["Cadherins — bind polysaccharides on other cells","那是 selectin。"],
+["Selectins — homophilic binding to the same protein","那是 cadherin。"],
+["Integrins — Ca2+-dependent homophilic binding","那是 cadherin。"]]},
+{c:"11.3",s:"p.50 · Fig. 11-29",q:"How does a transporter speed the passage of a polar solute across a membrane?",a:2,o:[
+["It chemically changes the solute.","運輸蛋白不改變受質。"],
+["It uses ATP for every passive transport.","被動運輸不用 ATP。"],
+["Its binding interactions offset the energy of dehydration and provide a hydrophilic path, lowering the activation energy.","正確。和酵素一樣可飽和,但不是酵素。"],
+["It increases the concentration gradient.","不改變梯度。"]]},
+{c:"11.3",s:"p.51 · Fig. 11-30",q:"Which statement correctly contrasts ion channels with transporters?",a:1,o:[
+["Channels are saturable; transporters are not.","相反。"],
+["Channels have one gate, move 10^7–10^8 ions/s, are not saturable and move ions only down the electrochemical gradient.","正確。運輸蛋白有兩個閘、慢、可飽和、可主動。"],
+["Transporters are faster than channels.","通道快得多。"],
+["Channels can pump ions against their gradient.","通道只能順梯度。"]]},
+{c:"11.3",s:"p.53–55 · Fig. 11-31",q:"Which is a property of facilitated diffusion?",a:3,o:[
+["It requires ATP.","不需要能量。"],
+["It is usually endergonic.","它順梯度進行。"],
+["It is usually irreversible.","完全可逆。"],
+["It is driven by the solute's concentration gradient, and its rate levels off at high solute concentration.","正確。GLUT1 的動力學像酵素:快、可飽和、立體專一。"]]},
+{c:"11.3",s:"p.57–60 · Table 11-1",q:"Which pairing of a glucose transporter with its tissue and role is correct?",a:0,o:[
+["GLUT2 — liver and pancreatic islets; high Kt (17 mM) so it tracks blood glucose","正確。肝腎用來移除多餘血糖,胰臟用來調控 insulin 分泌。"],
+["GLUT4 — erythrocytes; basal uptake","GLUT4 在肌肉、脂肪、心臟,受 insulin 調控。"],
+["GLUT3 — liver; high Kt","GLUT3 在神經元,Kt 約 1.4 mM。"],
+["GLUT1 — muscle; insulin-regulated","GLUT1 負責紅血球等的基礎攝取。"]]},
+{c:"11.3",s:"p.61 · Box 11-1",q:"How does insulin increase glucose uptake into muscle and fat?",a:2,o:[
+["It activates GLUT1 allosterically.","不是講義的機制。"],
+["It increases transcription of GLUT2.","不是。"],
+["About 90% of GLUT4 sits in intracellular vesicles between meals; insulin makes them fuse with the membrane, raising uptake ≥ 15-fold.","正確。Insulin 下降時 GLUT4 經胞吞回收。"],
+["It opens glucose channels.","GLUT 不是通道。"]]},
+{c:"11.3",s:"p.62 · Fig. 11-34",q:"Which statement about the erythrocyte Cl−–HCO3− exchanger is correct?",a:1,o:[
+["It is a P-type ATPase.","是被動的交換運輸蛋白。"],
+["It is an electroneutral antiporter; without Cl− no bicarbonate moves.","正確。提高 HCO3− 運輸百萬倍以上,在組織與肺方向相反。"],
+["It moves Cl− and HCO3− in the same direction.","方向相反。"],
+["It is electrogenic.","一進一出,電中性。"]]},
+{c:"11.3",s:"p.65, 68 · Eqns 11-3, 11-4",q:"Which term must be added to ΔGt = RT ln(C2/C1) when the transported solute is an ion?",a:3,o:[
+["−TΔS","不是。"],
+["RT ln Keq","不是。"],
+["The ATP hydrolysis energy","那是驅動能量,不是方程式的一項。"],
+["ZFΔψ, the electrical term","正確。講義例:Ca2+ 由 10^-7 M 打到 1 mM、37 °C、Δψ 50 mV → 約 33 kJ/mol。"]]},
+{c:"11.3",s:"p.69–72 · Fig. 11-37",q:"Which transport system is a P-type ATPase?",a:0,o:[
+["The Ca2+ pump of the muscle sarcoplasmic/endoplasmic reticulum (SERCA)","正確。P-type 在每次循環中 Asp 被磷酸化,都被 vanadate 抑制。"],
+["The erythrocyte glucose transporter","被動運輸。"],
+["The intestinal Na+–glucose transporter","次級主動運輸。"],
+["The erythrocyte Cl−–HCO3− exchanger","被動交換。"]]},
+{c:"11.3",s:"p.73–75 · Fig. 11-39",q:"Which statement about the Na+K+ ATPase is correct?",a:2,o:[
+["It moves 2 Na+ out and 3 K+ in per ATP.","數字對調了。"],
+["It is electroneutral.","每次淨移出一個正電荷,是 electrogenic。"],
+["It moves 3 Na+ out and 2 K+ in per ATP, is electrogenic, and uses about 25% of a resting person's energy; digitalis inhibits it in heart cells.","正確。膜電位約 −50 至 −70 mV。"],
+["It is an F-type ATPase.","它是 P-type。"]]},
+{c:"11.3",s:"p.76 · Fig. 11-40",q:"Which statement about V-type and F-type ATPases is correct?",a:1,o:[
+["Both are phosphorylated on Asp during each cycle.","那是 P-type。"],
+["V-type pumps acidify vacuoles, lysosomes and endosomes; F-type is reversible and makes ATP as H+ flows down its gradient (ATP synthase).","正確。"],
+["F-type acidifies lysosomes.","那是 V-type。"],
+["V-type synthesizes ATP in mitochondria.","那是 F-type。"]]},
+{c:"11.3",s:"p.77–78 · Fig. 11-41, Table 11-2",q:"Which statement about ABC transporters is correct?",a:3,o:[
+["They have one ATP-binding domain and move only ions.","有兩個 NBD,受質非常廣。"],
+["They are channels that never use ATP.","大多是幫浦。"],
+["ABCA1 causes cystic fibrosis.","ABCA1 缺陷是 Tangier disease。"],
+["They have two nucleotide-binding domains; ABCB1 (MDR1) causes multidrug resistance and ABCA1 defects cause Tangier disease.","正確。人類至少 48 個。"]]},
+{c:"11.3",s:"p.79–82 · Box 11-2",q:"Which statement about CFTR is correct?",a:0,o:[
+["It is an ABC protein that acts as a Cl− channel, opening when PKA phosphorylates its R domain and ATP binds both NBDs; F508del misfolds and is degraded.","正確。Ivacaftor 是 potentiator,corrector 改善摺疊。"],
+["It is a Na+ pump.","是 Cl− 通道。"],
+["F508del inserts normally but cannot open.","那是 G551D;F508del 是摺疊錯誤。"],
+["Cystic fibrosis results from too much Cl− secretion.","是 Cl− 與水分泌不足 → 黏液變稠。"]]},
+{c:"11.3",s:"p.84–86 · Fig. 11-42",q:"How is glucose moved from the intestinal lumen into epithelial cells?",a:2,o:[
+["Facilitated diffusion through GLUT2","GLUT2 在基底側,把葡萄糖送入血液。"],
+["Antiport with Na+","是同向。"],
+["Symport with Na+ (secondary active transport)","正確。2 Na+ + glucose 一起進入;基底側 Na+K+ ATPase 維持梯度。"],
+["Primary active transport by an ATPase","不直接用 ATP。"]]},
+{c:"11.3",s:"p.84 · Fig. 11-42",q:"How do gliflozins treat type 2 diabetes?",a:1,o:[
+["They activate GLUT4.","不是。"],
+["They inhibit SGLT2 in the kidney, blocking glucose reabsorption so glucose is lost in urine.","正確。"],
+["They open K+ channels in β cells.","不是。"],
+["They inhibit the Na+K+ ATPase.","不是。"]]},
+{c:"11.3",s:"p.89–91 · Fig. 11-43",q:"How does valinomycin kill microbes?",a:3,o:[
+["It blocks cell-wall synthesis.","不是。"],
+["It inhibits ribosomes.","不是。"],
+["It is a lipid that carries Na+.","帶 Na+ 的是 monensin。"],
+["As a cyclic peptide ionophore, it carries K+ across membranes down its gradient, collapsing ion gradients.","正確。K+ 由六個羰基氧抓住。"]]},
+{c:"11.3",s:"p.93–94 · Aquaporins",q:"Which statement about aquaporins is correct?",a:0,o:[
+["About 10^9 water molecules per second pass one AQP1 channel, and AQP2 in the collecting duct is regulated by vasopressin.","正確。哺乳類有 11 種。"],
+["They pump water using ATP.","被動通道。"],
+["AQP2 is regulated by insulin.","由 vasopressin(抗利尿激素)調控。"],
+["They are found only in plants.","人類有。"]]},
+{c:"11.3",s:"p.95–97 · Fig. 11-44",q:"Which is a property of a ligand-gated ion channel such as the nicotinic acetylcholine receptor?",a:2,o:[
+["It is a charged lipid that lets ions pass.","它是蛋白質。"],
+["It lets the ligand cross the membrane when a specific ion is present.","讓離子通過的是通道。"],
+["It lets ions cross the membrane only when a specific ligand is bound.","正確。電壓閘控則由膜電位改變打開。"],
+["Ligand binding requires a specific ion.","不是。"]]},
+{c:"11.3",s:"p.98–99 · Fig. 11-45",q:"How does the K+ channel select K+ over Na+?",a:1,o:[
+["Na+ is too large to enter the filter.","Na+(0.95 Å)比 K+(1.33 Å)小。"],
+["Backbone carbonyl oxygens in the selectivity filter replace K+'s water shell exactly; Na+ is too small to contact all the oxygens.","正確。K+ 通過的機率約為 Na+ 的 10^4 倍,速度約 10^8/s。"],
+["K+ is pumped by ATP through the filter.","通道不用 ATP。"],
+["Positive residues repel Na+.","入口的負電殘基濃縮陽離子。"]]}
+];
+const MATCH=[
+{t:"膜蛋白類型 → 特徵",p:[["Integral protein","疏水作用,只能用去污劑移除","p.17","國考:內嵌蛋白用含介面活性劑的溶液萃取。"],["Peripheral protein","離子鍵、氫鍵,改 pH 或鹽就脫落","p.17","沒有穿膜結構;國考陷阱。"],["Amphitropic protein","在膜與細胞質之間來回","p.17","常靠受調控的脂質錨。"],["Monotopic","小疏水區只插入一層","p.20","沒有跨膜。"],["Bitopic","跨膜一次,如 glycophorin","p.16, 20","Glycophorin 殘基 75–93 是唯一的跨膜螺旋。"],["Polytopic","跨膜多次,如 bacteriorhodopsin","p.20","Bacteriorhodopsin 有 7 個 α 螺旋。"]]},
+{t:"脂質錨與定位規則",p:[["Palmitoyl","內面 Cys 的 thioester,可逆","p.27","國考:膜蛋白最常以共價鍵結合 palmitoyl。"],["N-Myristoyl","N 端 Gly 的 amide,內面","p.27","14 碳。"],["Farnesyl / geranylgeranyl","C 端 Cys 的 isoprenoid,內面","p.27","C15 / C20 isoprenoid。"],["GPI anchor","一律在外面","p.27","PI + 寡醣 + phosphoethanolamine 接 C 端;富集在 raft。"],["Tyr、Trp","脂核與水相的交界","p.24","國考:Trp 最常位於交界處。"],["Lys、Arg 環","朝向細胞質","p.24","Positive-inside rule。"]]},
+{t:"膜動態 → 角色",p:[["Flippase","PE、PS 外 → 內,P-type,耗 ATP","p.32","維持 PS 在內葉。"],["Floppase","內 → 外,ABC transporter,耗 ATP","p.32","與 flippase 方向相反。"],["Scramblase","雙向順梯度,不耗 ATP,Ca2+ 活化","p.32","PS 翻到外面 = 凋亡訊號,巨噬細胞來吞。"],["FRAP","測側向擴散速率","p.33","漂白一點,看螢光恢復多快。"],["Caveolin","讓膜往內凹成 caveolae","p.38","髮夾狀疏水區插在內葉,帶三個 palmitoyl。"],["BAR domain","新月形二聚體,貼在 PIP2/PIP3 上彎膜","p.41","另外還有錐形脂質、兩性螺旋等彎膜方式。"]]},
+{t:"膜融合與黏附 → 角色",p:[["v-SNARE","囊泡上的 synaptobrevin","p.45","與 t-SNARE 拉鍊式捲成四螺旋束。"],["t-SNARE","目標膜上的 syntaxin + SNAP25","p.45","Ca2+ 局部升高觸發釋放。"],["NSF","事後拆開 SNARE 複合物","p.45","讓 SNARE 能再用。"],["Botulinum toxin","切斷 SNARE 的蛋白酶","p.45","造成癱瘓;Botox 用於眼、頸部疾病。"],["Integrin","αβ 異二聚體,經 RGD 結合 collagen","p.46","雙向訊號。"],["Cadherin","同型結合,依賴 Ca2+","p.46","Selectin 則結合另一細胞的多醣。"]]},
+{t:"運輸蛋白 → 特徵",p:[["GLUT1","紅血球、血腦障壁的基礎攝取","p.57","Kt 約 3 mM(表 11-1);缺陷 → De Vivo disease。"],["GLUT2","肝、胰島;Kt 17 mM","p.57","國考:高 Km 的 GLUT2 在肝;胰臟 β 細胞用它。"],["GLUT3","神經元;Kt 1.4 mM","p.57","高周轉數。"],["GLUT4","肌肉、脂肪;insulin 調控","p.57, 61","約 90% 平常在細胞內囊泡。"],["SGLT2","腎臟;gliflozin 的標靶","p.84","抑制後葡萄糖從尿排掉。"],["Cl−–HCO3− exchanger","電中性反向運輸","p.62","沒有 Cl− 就不能運 HCO3−。"]]},
+{t:"ATPase → 特徵",p:[["P-type ATPase","每次循環 Asp 被磷酸化;vanadate 抑制","p.69","SERCA、Na+K+、胃 H+K+ 都是。"],["SERCA","每個 ATP 送 2 個 Ca2+ 進 ER","p.70","細胞質 Ca2+ 維持在 1 µM 以下。"],["Na+K+ ATPase","3 Na+ 出、2 K+ 入,electrogenic","p.73","約用掉靜息能量 25%;digitalis 抑制。"],["V-type ATPase","酸化液胞、溶小體","p.76","把 H+ 打進腔內。"],["F-type ATPase","可逆;H+ 順流合成 ATP","p.76","就是 ATP synthase。"],["ABC transporter","兩個 NBD + 兩個 TMD","p.77","受質從胺基酸到藥物都有。"]]},
+{t:"ABC 家族與疾病",p:[["ABCA1","reverse cholesterol transport;缺陷 → Tangier","p.78","HDL 極低。"],["ABCA4","視覺受器回收 all-trans-retinal","p.78","只在感光細胞。"],["ABCB1(MDR1)","多重抗藥性","p.78, 81","把藥物打出細胞;也在血腦障壁。"],["CFTR(ABCC7)","Cl− 通道,不是幫浦","p.79","PKA 磷酸化 R domain + ATP 結合才開。"],["F508del","CFTR 摺疊錯誤,被蛋白酶體分解","p.80","佔病例最多 90%;corrector 改善摺疊。"],["Ivacaftor","CFTR potentiator,把通道打開","p.80","用於 G551D 這類能插膜但不能開的突變。"]]},
+{t:"通道與離子載體 → 特徵",p:[["Valinomycin","環狀胜肽,攜帶 K+","p.89","瓦解離子梯度而殺菌。"],["Monensin","Na+ 離子載體","p.89","抗真菌、抗寄生蟲。"],["AQP1","每秒約 10^9 個水分子","p.93","紅血球、腎、肺都有。"],["AQP2","集尿管;受 vasopressin 調控","p.93","抗利尿激素讓它插到膜上。"],["Patch clamp","量測單一通道的 pA 級電流","p.95","微吸管隔出一個通道。"],["K+ selectivity filter","骨架羰基氧取代水合殼","p.99","Na+ 太小,碰不到所有氧。"]]}
+];
+const KEY="biochem-ch11-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch10 考點、連連看與題庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 0 0;font-size:.85rem}
+.site a{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--surface)}
+.site a:hover{border-color:var(--accent);color:var(--ink)}
+.site a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.site a.home{font-weight:600;color:var(--ink)}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+p.src{white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html" aria-current="page">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch10 考點、連連看與題庫</h1>
+  <p class="lede">Lipids。考點速記 → 連連看 48 對(配對成功會出現解釋)→ 38 題英文單選;每題與每組配對都標講義頁碼,國考出過的點標「國考」。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(38 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<p class="hint">一行一考點,灰色是講義 PDF 頁碼。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+<h2>10.1 儲存脂質</h2>
+<ul class="pts">
+<li>脂肪酸 = 羧基頭 + 碳氫尾;多為偶數 C12–C24;天然雙鍵幾乎都是 <b>cis</b> <i>p.4</i></li>
+<li>寫法 <b>18:1(Δ9)</b>:18 碳、1 個雙鍵,位置從羧基端 C-1 算;單元不飽和通常在 Δ9,PUFA 再加在 Δ12、Δ15 <i>p.4</i></li>
+<li><b>鏈越長 → 熔點越高、越不溶;雙鍵越多 → 熔點越低</b>(18:0 69.6 °C → 18:3 −11 °C;20:4 −49.5 °C) <i>p.5</i></li>
+<li>cis 雙鍵造成彎折 → 排列鬆散、凡得瓦力弱 → 熔點低 <i>p.8</i></li>
+<li><b>ω 編號從甲基端算</b>:C-3/C-4 有雙鍵 = ω-3、C-6/C-7 = ω-6;PUFA 雙鍵被亞甲基隔開(不共軛) <i>p.7</i></li>
+<li>人類做不出 <b>ALA 18:3(Δ9,12,15)</b> → 必需;ALA → EPA 20:5、DHA 22:6;理想 ω-6:ω-3 = 1:1–4:1,北美 10:1–30:1 <i>p.7</i></li>
+<li class="mem">國考:cis,cis-Δ9,Δ12-octadecadienoate = <b>linoleate</b>;血中游離脂肪酸靠 <b>serum albumin</b> 運送 <i>p.14</i></li>
+<li><b>TAG</b>:3 個脂肪酸以酯鍵接 glycerol;多為 mixed;C-1 與 C-3 不同時 C-2 是掌性中心;不帶電、不溶 <i>p.9</i></li>
+<li><b>為何存脂肪不存 glycogen</b>:碳更還原(每克能量 &gt; 2 倍)、不帶水(多醣每克帶 2 g 水);TAG 撐數月,glycogen 不到一天 <i>p.10</i></li>
+<li>橄欖油液態(不飽和多)、奶油軟、牛脂硬(tristearin);<b>酸敗</b> = 空氣氧化切斷雙鍵 → 短鏈醛與酸 <i>p.11</i></li>
+<li><b>部分氫化</b> → 部分 cis 變 <b>trans</b>;反式脂肪:TAG ↑、LDL ↑、HDL ↓、發炎 ↑ <i>p.12</i></li>
+<li><b>Wax</b>:長鏈脂肪酸 + 長鏈醇的酯;熔點 60–100 °C;浮游生物的主要儲能;防水 <i>p.13</i></li>
+</ul>
+
+<h2>10.2 膜脂</h2>
+<ul class="pts">
+<li>骨架二選一:<b>glycerol 或 sphingosine</b>;phospholipid 以 phosphodiester 接頭基,glycolipid 以醣苷鍵接糖 <i>p.17</i></li>
+<li>天然磷脂:<b>sn-glycerol 3-phosphate</b>(磷酸在 C-3);<b>archaea 相反</b> <i>p.19</i></li>
+<li>C-1 通常飽和、C-2 通常不飽和 <i>p.20</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>甘油磷脂</th><th>頭基</th><th>淨電荷(pH 7)</th></tr></thead>
+<tbody>
+<tr><td>Phosphatidic acid</td><td>—</td><td>−2</td></tr>
+<tr><td>PE / PC</td><td>ethanolamine / choline</td><td>0</td></tr>
+<tr><td>PS / PG</td><td>serine / glycerol</td><td>−1</td></tr>
+<tr><td>PIP2</td><td>inositol 4,5-bisphosphate</td><td>−4</td></tr>
+<tr><td><b>Cardiolipin</b></td><td>2 個 PA 共用 glycerol(4 條鏈);細菌、<b>粒線體內膜</b></td><td>−2</td></tr>
+</tbody></table></div>
+<p class="src">p.20</p>
+<ul class="pts">
+<li><b>Plasmalogen</b>:C-1 醚鍵 alkenyl;約佔脊椎動物心臟磷脂一半 <i>p.21</i></li>
+<li><b>PAF</b>:C-1 醚鍵 alkyl + C-2 acetyl 酯 → <b>比 plasmalogen 更溶於水</b>;嗜鹼性球釋放,血小板凝集 <span class="hit">國考</span> <i>p.21–22</i></li>
+<li>植物 <b>galactolipid</b>(thylakoid,不含磷酸,佔維管植物膜脂 70–80%);<b>archaea tetraether</b>(32 碳分支鏈、兩端醚鍵、橫跨整個膜、耐酸耐熱) <i>p.25</i></li>
+<li><b>Sphingolipid</b>:sphingosine + C-2 <b>amide</b> 脂肪酸 = <b>ceramide</b>;C-1 頭基決定類別 <i>p.27</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>亞類</th><th>C-1 頭基</th><th>電荷</th></tr></thead>
+<tbody>
+<tr><td>Sphingomyelin</td><td>phosphocholine / phosphoethanolamine</td><td>無</td></tr>
+<tr><td>Cerebroside</td><td>1 個糖</td><td>中性</td></tr>
+<tr><td>Globoside</td><td>≥ 2 個糖</td><td>中性</td></tr>
+<tr><td><b>Ganglioside</b></td><td>寡醣 + <b>sialic acid</b>(Neu5Ac)</td><td><b>負</b></td></tr>
+</tbody></table></div>
+<p class="src">p.27</p>
+<ul class="pts">
+<li>PC vs sphingomyelin:外形一樣(phosphocholine 頭);PC = glycerol + 2 個酯,SM = sphingosine + 1 個醯胺 <i>p.28</i></li>
+<li>Ganglioside:GM/GD/GT/GQ = 1/2/3/4 個 sialic acid;在膜外表面;<b>cholera toxin</b> 靠它進入;<b>Guillain-Barré</b> 自體抗體攻擊 <i>p.29</i></li>
+<li>ABO 血型:O = 共同核心;<b>A + N-acetylgalactosamine</b>;<b>B + galactose</b> <i>p.30</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>酵素</th><th>切哪裡</th><th>產物</th></tr></thead>
+<tbody>
+<tr><td>PLA1</td><td>C-1 酯</td><td>脂肪酸 + lysophospholipid</td></tr>
+<tr><td><b>PLA2</b></td><td>C-2 酯</td><td>脂肪酸(常是 arachidonate)+ lysophospholipid</td></tr>
+<tr><td><b>PLC</b></td><td>glycerol–phosphate</td><td>DAG + 磷酸化頭基(IP3)</td></tr>
+<tr><td>PLD</td><td>phosphate–head</td><td>phosphatidic acid + 頭基醇</td></tr>
+</tbody></table></div>
+<p class="src">p.31(A 型酵素切不了 plasmalogen 的醚鍵)</p>
+<div class="tbl"><table>
+<thead><tr><th>溶小體儲積症</th><th>缺陷酵素</th><th>堆積</th></tr></thead>
+<tbody>
+<tr><td><b>Tay-Sachs</b></td><td><b>hexosaminidase A</b></td><td><b>GM2</b> <span class="hit">國考</span></td></tr>
+<tr><td>Sandhoff</td><td>hexosaminidase A 和 B</td><td>GM2、globoside</td></tr>
+<tr><td><b>Niemann-Pick</b></td><td>sphingomyelinase</td><td>sphingomyelin <span class="hit">國考</span></td></tr>
+<tr><td><b>Gaucher</b></td><td>glucocerebrosidase</td><td>glucocerebroside <span class="hit">國考</span></td></tr>
+<tr><td>Fabry</td><td>α-galactosidase A</td><td>globoside 衍生物</td></tr>
+<tr><td>Generalized gangliosidosis</td><td>β-galactosidase</td><td>GM1</td></tr>
+</tbody></table></div>
+<p class="src">p.32–36(分解在 lysosome,不是 ER)</p>
+<ul class="pts">
+<li><b>固醇</b>:三個六元環 + 一個五元環,近平面;cholesterol 兩性(C-3 –OH 是極性頭);植物 stigmasterol、真菌 ergosterol、<b>細菌做不出固醇</b>;衍生類固醇荷爾蒙、膽酸 <i>p.38</i></li>
+</ul>
+
+<h2>10.3 訊號、輔因子與色素</h2>
+<ul class="pts">
+<li>荷爾蒙 → <b>PLC 切 PIP2 → IP3(到 ER 放 Ca2+)+ DAG(留膜上,加 Ca2+ 活化 PKC)</b>;PIP3 招募訊號蛋白;ceramide、SM 調控 kinase <i>p.40</i></li>
+<li><b>Eicosanoid</b> = 20 碳(arachidonate、EPA)衍生的 paracrine 訊號 <i>p.41</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>類別</th><th>結構</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td>Prostaglandin</td><td>五元環</td><td>子宮收縮、發燒、發炎、疼痛</td></tr>
+<tr><td><b>Thromboxane</b></td><td>含醚的六元環</td><td>血小板製造,促凝血</td></tr>
+<tr><td><b>Leukotriene</b></td><td>三個共軛雙鍵、無環</td><td>LTD4 收縮呼吸道 → 氣喘(藥:<b>leukotriene receptor</b>) <span class="hit">國考</span></td></tr>
+<tr><td>Lipoxin</td><td>線性多羥基</td><td>抗發炎;低劑量 aspirin 促進合成</td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li><b>NSAIDs(aspirin、ibuprofen)抑制 COX</b> → 只降 PG、TX;<b>prednisone 抑制 PLA2</b> → 四類全降 <span class="hit">國考</span> <i>p.42–43</i></li>
+<li><b>類固醇荷爾蒙</b>:保留四環、移除 D 環側鏈,比 cholesterol 更極性;血中靠蛋白攜帶;核受體;奈莫耳以下有效;cortisol(血糖)、aldosterone(鹽);植物 brassinolide <i>p.45</i></li>
+<li>Isoprene(5 碳)家族:固醇、類固醇、vitamin A/D/E/K、ubiquinone、plastoquinone、dolichol、carotenoid;jasmonate 來自 18:3 <i>p.46</i></li>
+<li><b>Vitamin D</b>:皮膚 7-dehydrocholesterol + UV → D3 → <b>肝 C-25</b> → <b>腎 C-1</b> → <b>calcitriol</b>;缺乏 → rickets;<b>cholesterol 是 vitamin D 前驅物</b> <span class="hit">國考</span> <i>p.47–49</i></li>
+<li><b>Vitamin A</b>:β-carotene → 2 retinal;retinoic acid → 核受體(治痤瘡、部分白血病);<b>11-cis-retinal + opsin = rhodopsin</b>,光 → all-trans;缺乏 → 夜盲 <i>p.50</i></li>
+<li><b>Vitamin E</b> = tocopherol 抗氧化;<b>Vitamin K</b> → 活性 prothrombin,<b>warfarin</b> 阻斷;K 是 isoprenoid 衍生物 <i>p.52, 55</i></li>
+<li>Ubiquinone、plastoquinone = 脂溶性電子載體;<b>dolichol</b> 活化糖並錨在膜上 <i>p.52</i></li>
+<li>共軛雙鍵色素(類胡蘿蔔素);<b>polyketide</b>:erythromycin、amphotericin B、lovastatin <i>p.57</i></li>
+</ul>
+
+<h2>10.4 脂質分析</h2>
+<ul class="pts">
+<li>中性脂質用 ether、chloroform;膜脂要加 ethanol 或 methanol <i>p.59</i></li>
+<li><b>Chloroform/methanol/water 1 : 2 : 0.8</b> → 加水分相:<b>下層 chloroform = 脂質</b>,上層 = 蛋白、糖 <i>p.59</i></li>
+<li>Silica:chloroform 洗中性 → acetone 洗不帶電極性(cerebroside)→ methanol 洗帶電(甘油磷脂);TLC 極性低跑得遠 <i>p.60</i></li>
+<li><b>GC</b> 前先轉成 <b>fatty acyl methyl esters</b>;溫和酸鹼切酯鍵,醯胺鍵需更強條件 <i>p.60</i></li>
+<li><b>質譜</b>:每個 CH2 間隔 14 u,<b>雙鍵處 26 u</b>;分不出 cis/trans <i>p.61</i></li>
+<li>Lipidomics:LIPID MAPS 八大類(FA、GL、GP、SP、ST、PR、SL、PK) <i>p.62</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">8 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 38 題</button>
+    <button class="tab" id="tab-1" data-f="10.1" aria-pressed="false">10.1 儲存脂質</button>
+    <button class="tab" id="tab-2" data-f="10.2" aria-pressed="false">10.2 膜脂</button>
+    <button class="tab" id="tab-3" data-f="10.3" aria-pressed="false">10.3 訊號與維生素</button>
+    <button class="tab" id="tab-4" data-f="10.4" aria-pressed="false">10.4 分析</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">38</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"10.1",s:"p.4 · Key Convention",q:"What does the notation 18:1(Δ9) describe?",a:2,o:[
+["18 carbons, one double bond between C-9 and C-10 counted from the methyl end","Δ 編號從羧基端(C-1)算起,從甲基端算的是 ω 編號。"],
+["18 carbons, nine double bonds","冒號後的 1 才是雙鍵數。"],
+["18 carbons, one double bond between C-9 and C-10 counted from the carboxyl carbon (C-1)","正確。這是 oleic acid;天然雙鍵幾乎都是 cis。"],
+["18 double bonds and one carbon branch at C-9","不是這種寫法。"]]},
+{c:"10.1",s:"p.5 · Table 10-1",q:"Which fatty acid has the lowest melting point?",a:3,o:[
+["Stearic acid, 18:0","69.6 °C,飽和長鏈最高之一。"],
+["Palmitic acid, 16:0","63.1 °C。"],
+["Oleic acid, 18:1(Δ9)","13.4 °C。"],
+["Arachidonic acid, 20:4(Δ5,8,11,14)","正確。−49.5 °C;雙鍵越多,熔點越低。"]]},
+{c:"10.1",s:"p.8 · Fig. 10-1",q:"Why does a cis double bond lower the melting point of a fatty acid?",a:0,o:[
+["It puts a rigid bend in the chain, so chains pack loosely with weaker van der Waals contacts.","正確。需要較少熱能就能打亂排列。"],
+["It makes the chain more polar, so it dissolves in water.","雙鍵不會讓鏈變極性。"],
+["It shortens the chain by two carbons.","鏈長不變。"],
+["It allows free rotation, so the chain straightens.","相反:雙鍵限制旋轉並造成彎折。"]]},
+{c:"10.1",s:"p.7 · Key Convention",q:"Which statement about ω classification is correct?",a:1,o:[
+["Numbering for ω starts at the carboxyl carbon.","ω 編號從離羧基最遠的甲基碳(ω 碳 = 1)算。"],
+["A double bond between C-3 and C-4 from the methyl end makes an ω-3 fatty acid; humans cannot make α-linolenate (ALA), which is converted to EPA and DHA.","正確。理想的 ω-6:ω-3 為 1:1 至 4:1,北美飲食約 10:1 至 30:1。"],
+["EPA and DHA are ω-6 fatty acids.","它們是 ω-3。"],
+["PUFA double bonds are conjugated.","PUFA 的雙鍵被一個亞甲基隔開,不共軛。"]]},
+{c:"10.1",s:"p.14 · 國考題",q:"Which fatty acid is cis,cis-Δ9,Δ12-octadecadienoate?",a:2,o:[
+["Oleate","18:1(Δ9),只有一個雙鍵。"],
+["Palmitoleate","16:1(Δ9)。"],
+["Linoleate","正確。18:2(Δ9,12),必需脂肪酸。"],
+["Arachidonate","20:4(Δ5,8,11,14)。"]]},
+{c:"10.1",s:"p.10 · Fig. 10-3",q:"Why do animals store fuel as triacylglycerols rather than glycogen?",a:3,o:[
+["Triacylglycerols can be mobilized faster than glycogen.","不是講義的理由;glycogen 才是快速可用的儲存。"],
+["Triacylglycerols are water-soluble.","它們不溶於水。"],
+["Glycogen cannot be stored in the liver.","肝可以儲存 glycogen。"],
+["Their carbons are more reduced (over twice the energy per gram) and they are stored without water, whereas polysaccharide carries about 2 g of water per gram.","正確。15–20 kg 的 TAG 可撐數月,glycogen 撐不到一天。"]]},
+{c:"10.1",s:"p.9 · Fig. 10-2",q:"Which statement about triacylglycerols is correct?",a:0,o:[
+["Most natural TAGs are mixed; if C-1 and C-3 carry different fatty acids, C-2 becomes a chiral center.","正確。極性基團都被酯鍵綁住,所以 TAG 不帶電、不溶於水。"],
+["They are amphipathic and form bilayers.","TAG 是中性脂質,不形成雙層。"],
+["Simple TAGs contain three different fatty acids.","Simple TAG 只有一種脂肪酸,例如 tripalmitin。"],
+["They are linked to glycerol by amide bonds.","是酯鍵。"]]},
+{c:"10.1",s:"p.12 · Clinical Connection",q:"What is the health concern with partially hydrogenated vegetable oils?",a:1,o:[
+["They become fully saturated and cannot be digested.","只部分氫化,仍可消化。"],
+["Some cis double bonds isomerize to trans; dietary trans fats raise LDL and TAG, lower HDL and increase inflammation.","正確。各國現在限制或禁止加工食品中的反式脂肪。"],
+["They become rancid faster than the original oil.","氫化反而讓油更穩定、不易酸敗。"],
+["They lower LDL cholesterol too much.","反式脂肪使 LDL 上升。"]]},
+{c:"10.1",s:"p.11 · Fig. 10-4",q:"What causes the rancidity of food fats?",a:3,o:[
+["Bacterial hydrolysis of ester bonds only","講義的機制是氧化。"],
+["Hydrogenation of double bonds","氫化讓油更穩定。"],
+["Conversion of trans to cis double bonds","不是。"],
+["Air oxidizes and cleaves double bonds, producing short, volatile aldehydes and carboxylic acids.","正確。"]]},
+{c:"10.1",s:"p.13 · Fig. 10-5",q:"Which statement about biological waxes is correct?",a:0,o:[
+["They are esters of long-chain fatty acids with long-chain alcohols, melt at 60–100 °C, and are the chief fuel store in plankton.","正確。也用於防水:脊椎動物皮脂腺、水鳥尾脂腺、葉片蠟層。"],
+["They are glycerol triesters with low melting points.","那是 TAG。"],
+["They are found only in plants.","動物也有,如蜂蠟、羊毛脂。"],
+["They are water-soluble.","它們拒水。"]]},
+{c:"10.1",s:"p.14 · 國考題",q:"How are free fatty acids transported in the blood?",a:2,o:[
+["Dissolved freely in plasma","脂肪酸不溶於水。"],
+["Inside red blood cells","不是。"],
+["Bound to serum albumin","正確。"],
+["In bile salt micelles","膽鹽在腸道乳化脂肪,不在血中運送。"]]},
+{c:"10.2",s:"p.19 · Fig. 10-7",q:"Which statement about the glycerol backbone of phospholipids is correct?",a:1,o:[
+["Glycerol itself is chiral.","Glycerol 有對稱面;加上磷酸後才有掌性。"],
+["Natural phospholipids carry the phosphate on C-3 of sn-glycerol 3-phosphate; archaeal lipids use the opposite configuration.","正確。L-glycerol 3-P = D-glycerol 1-P = sn-glycerol 3-P。"],
+["The phosphate is always on C-2.","在 C-3。"],
+["Archaea use the same configuration as bacteria and eukaryotes.","Archaea 用 D-glycerol 3-phosphate。"]]},
+{c:"10.2",s:"p.20 · Fig. 10-8",q:"At pH 7, which glycerophospholipid has a net charge of −1?",a:2,o:[
+["Phosphatidylcholine","淨電荷 0。"],
+["Phosphatidylethanolamine","淨電荷 0。"],
+["Phosphatidylserine","正確。PG 也是 −1;PA 約 −2,PIP2 約 −4。"],
+["Phosphatidylinositol 4,5-bisphosphate","約 −4。"]]},
+{c:"10.2",s:"p.20 · Fig. 10-8",q:"Which statement about cardiolipin is correct?",a:0,o:[
+["It is diphosphatidylglycerol: two phosphatidic acids share one glycerol, giving four acyl chains; it is found in bacteria and the inner mitochondrial membrane.","正確。這反映了粒線體的內共生起源。"],
+["It is a sphingolipid with a phosphocholine head.","那是 sphingomyelin。"],
+["It is abundant in the plasma membrane.","細胞膜幾乎沒有 cardiolipin。"],
+["It has a single acyl chain.","它有四條。"]]},
+{c:"10.2",s:"p.21–22 · Fig. 10-9",q:"Which statement about platelet-activating factor (PAF) is NOT correct?",a:3,o:[
+["It is an ether glycerophospholipid.","這是 PAF 的真實特徵。"],
+["It has an alkyl group ether-linked at C-1 of glycerol.","這是 PAF 的真實特徵。"],
+["It has an acetyl group ester-linked at C-2.","這是 PAF 的真實特徵。"],
+["It is less water-soluble than plasmalogen.","正確(此敘述錯誤)。C-2 只有短短的 acetyl,使 PAF 比 plasmalogen 更溶於水。"]]},
+{c:"10.2",s:"p.25 · Fig. 10-10",q:"Which statement about plant and archaeal membrane lipids is correct?",a:1,o:[
+["Galactolipids contain phosphate.","它們不含磷酸;植物生長常受磷酸限制。"],
+["Archaeal tetraether lipids have branched 32-carbon chains ether-linked to glycerol at both ends, span the membrane, and resist low pH and high temperature.","正確。植物的 galactolipid 佔維管植物膜脂 70–80%。"],
+["Archaeal lipids use ester bonds like bacteria.","用的是醚鍵。"],
+["Galactolipids are found in mitochondria.","在 thylakoid 膜。"]]},
+{c:"10.2",s:"p.27 · Fig. 10-11",q:"Which statement about sphingolipids is correct?",a:2,o:[
+["They have a glycerol backbone.","骨架是 sphingosine,沒有 glycerol。"],
+["The fatty acid is joined to sphingosine by an ester bond.","是 C-2 胺基上的 amide 鍵。"],
+["A fatty acid in amide linkage at C-2 of sphingosine gives ceramide; gangliosides carry sialic acid and are negatively charged.","正確。Sphingomyelin 帶 phosphocholine;cerebroside 一個糖;globoside ≥ 2 個糖。"],
+["Cerebrosides carry sialic acid.","帶 sialic acid 的是 ganglioside。"]]},
+{c:"10.2",s:"p.28 · Fig. 10-12",q:"Phosphatidylcholine and sphingomyelin look alike. How do they differ chemically?",a:0,o:[
+["PC has a glycerol backbone with two ester-linked fatty acids; sphingomyelin has sphingosine with one amide-linked fatty acid.","正確。兩者都有 phosphocholine 頭、不帶淨電荷。"],
+["Only sphingomyelin has a phosphocholine head.","兩者都有。"],
+["PC is charged and sphingomyelin is neutral.","兩者都不帶淨電荷。"],
+["Sphingomyelin has three fatty acids.","只有一個。"]]},
+{c:"10.2",s:"p.29 · Gangliosides",q:"Which statement about gangliosides is correct?",a:3,o:[
+["They are concentrated on the cytoplasmic face of the plasma membrane.","集中在外表面,作為辨識位。"],
+["GM, GD, GT and GQ refer to the number of fatty acids.","是 sialic acid 的數目(1、2、3、4)。"],
+["They are uncharged.","帶負電。"],
+["Cholera toxin binds specific gangliosides on intestinal cells to enter them, and in Guillain-Barré syndrome autoantibodies attack neuronal gangliosides.","正確。"]]},
+{c:"10.2",s:"p.30 · Fig. 10-13",q:"How do the A and B blood-group antigens differ from the O antigen?",a:1,o:[
+["A has an extra glucose; B has an extra fucose.","A 是 N-acetylgalactosamine,B 是 galactose。"],
+["A adds a terminal N-acetylgalactosamine; B adds a terminal galactose to the shared core oligosaccharide.","正確。同樣的 ceramide 與核心,只差一個末端糖。"],
+["They differ in the ceramide fatty acid.","差在末端糖。"],
+["O has the most sugars.","O 是共同核心,沒有額外的糖。"]]},
+{c:"10.2",s:"p.31 · Fig. 10-14",q:"Which pairing of a phospholipase with its products is correct?",a:2,o:[
+["PLA2 — diacylglycerol + phosphorylated head group","那是 PLC。"],
+["PLD — fatty acid + lysophospholipid","那是 A 型酵素。"],
+["PLC — diacylglycerol + phosphorylated head group (for example IP3 from PIP2)","正確。A 型酵素切不了 plasmalogen 的醚鍵。"],
+["PLA1 — phosphatidic acid + head-group alcohol","那是 PLD。"]]},
+{c:"10.2",s:"p.32–34 · Box 10-1",q:"Which statement about Tay-Sachs disease is correct?",a:3,o:[
+["It is caused by β-galactosidase deficiency.","那是 generalized GM1 gangliosidosis。"],
+["Gangliosides fail to be degraded in the endoplasmic reticulum.","分解在 lysosome。"],
+["It causes glycogen accumulation.","堆積的是 ganglioside GM2。"],
+["Lack of lysosomal hexosaminidase A causes ganglioside GM2 to accumulate, with developmental delay, paralysis and blindness.","正確。通常 3–4 歲前死亡。"]]},
+{c:"10.2",s:"p.32, 35–36 · Box 10-1",q:"Which pairing of a lysosomal storage disease with its defective enzyme is correct?",a:0,o:[
+["Gaucher — glucocerebrosidase; Niemann-Pick — sphingomyelinase","正確。Fabry 是 α-galactosidase A。"],
+["Gaucher — sphingomyelinase","Gaucher 堆積的是 glucocerebroside。"],
+["Niemann-Pick — hexosaminidase A","那是 Tay-Sachs。"],
+["Fabry — glucocerebrosidase","Fabry 是 α-galactosidase A。"]]},
+{c:"10.2",s:"p.38 · Fig. 10-15",q:"Which statement about sterols is correct?",a:1,o:[
+["Bacteria make cholesterol.","細菌不能合成固醇。"],
+["The steroid nucleus has four fused rings and is nearly planar; cholesterol's C-3 hydroxyl is its polar head, and plants make stigmasterol while fungi make ergosterol.","正確。全部由五碳 isoprene 組成。"],
+["Cholesterol is fully nonpolar.","C-3 –OH 讓它成為兩性分子。"],
+["Sterols are built from two-carbon acetyl units only, without isoprene.","由 isoprene 單位構成。"]]},
+{c:"10.3",s:"p.40 · Fig. 10-16",q:"Which statement about phosphatidylinositol signaling is correct?",a:2,o:[
+["PIP2 is on the outer face of the plasma membrane.","在細胞質面。"],
+["Diacylglycerol diffuses to the ER and releases Ca2+.","擴散到 ER 的是 IP3。"],
+["A hormone activates PLC, which cleaves PIP2 into soluble IP3 (releases ER Ca2+) and membrane-bound DAG (with Ca2+ activates PKC).","正確。PIP3 則把訊號蛋白招到膜上。"],
+["IP3 activates PKC directly.","活化 PKC 的是 DAG 加 Ca2+。"]]},
+{c:"10.3",s:"p.42 · Four eicosanoid classes",q:"Which pairing of an eicosanoid class with its feature is correct?",a:1,o:[
+["Leukotrienes — five-membered ring; uterine contraction","那是 prostaglandin。"],
+["Thromboxanes — six-membered ring containing an ether; made by platelets and promote clotting","正確。"],
+["Lipoxins — pro-inflammatory; blocked by low-dose aspirin","Lipoxin 是抗發炎,低劑量 aspirin 反而促進其合成。"],
+["Prostaglandins — three conjugated double bonds, no ring; asthma","那是 leukotriene。"]]},
+{c:"10.3",s:"p.42 · Four eicosanoid classes",q:"Why does prednisone lower all four classes of eicosanoids, while NSAIDs lower only some?",a:0,o:[
+["Prednisone inhibits PLA2 release of arachidonate, the shared precursor; NSAIDs inhibit COX, blocking only prostaglandins and thromboxanes.","正確。"],
+["Prednisone inhibits COX more strongly than aspirin.","Prednisone 的作用點在 PLA2。"],
+["NSAIDs inhibit lipoxygenase.","NSAIDs 抑制 COX。"],
+["Prednisone degrades eicosanoids after they are made.","它阻止前驅物釋放。"]]},
+{c:"10.3",s:"p.43–44 · 國考題",q:"To develop a drug that prevents contraction of small airways in asthma, which target is most suitable?",a:1,o:[
+["COX-1/COX-2","抑制 COX 不影響 leukotriene。"],
+["Leukotriene receptor","正確。LTD4 使呼吸道平滑肌收縮。"],
+["PGH2","不是最適合的標靶。"],
+["Phospholipase A2","範圍太廣。"]]},
+{c:"10.3",s:"p.45 · Fig. 10-18",q:"Which statement about steroid hormones is correct?",a:3,o:[
+["They keep cholesterol's side chain and are less polar than cholesterol.","側鏈被移除,比 cholesterol 更極性。"],
+["They act through plasma membrane GPCRs within seconds.","作用在核受體,改變基因表現。"],
+["They are active only at millimolar concentrations.","奈莫耳以下就有作用。"],
+["They are carried in blood on proteins, enter cells, and bind nuclear receptors that change gene expression at nanomolar concentrations.","正確。例:cortisol、aldosterone、testosterone、estradiol。"]]},
+{c:"10.3",s:"p.47–49 · Fig. 10-19",q:"Which sequence for making active vitamin D is correct?",a:2,o:[
+["Cholecalciferol → kidney C-25 → liver C-1 → calcitriol","肝加 C-25、腎加 C-1,順序顛倒。"],
+["Ergosterol in human skin → calcitriol","人類皮膚用的是 7-dehydrocholesterol。"],
+["7-Dehydrocholesterol in skin + UV → cholecalciferol (D3) → liver adds C-25 –OH → kidney adds C-1 –OH → 1α,25-(OH)2D3 (calcitriol)","正確。缺乏造成 rickets;cholesterol 是 vitamin D 的前驅物。"],
+["Retinal → calcitriol","Retinal 是 vitamin A。"]]},
+{c:"10.3",s:"p.50 · Fig. 10-20",q:"Which statement about vitamin A is correct?",a:0,o:[
+["β-Carotene gives two retinal; 11-cis-retinal joined to opsin forms rhodopsin, and light converts it to all-trans; retinoic acid acts through nuclear receptors.","正確。缺乏的早期症狀是夜盲。"],
+["Light converts all-trans-retinal to 11-cis-retinal on rhodopsin.","方向相反。"],
+["Retinoic acid acts on plasma membrane GPCRs.","作用在核受體。"],
+["Vitamin A is water-soluble.","是脂溶性。"]]},
+{c:"10.3",s:"p.52–55 · Fig. 10-22",q:"Which pairing of a lipid vitamin or cofactor with its role is correct?",a:1,o:[
+["Vitamin E — needed to form active prothrombin","那是 vitamin K。"],
+["Vitamin K — needed for active prothrombin; warfarin blocks this and is used as an anticoagulant","正確。Vitamin K 是 isoprenoid 衍生物。"],
+["Ubiquinone — activates sugars for glycoprotein synthesis","那是 dolichol。"],
+["Dolichol — carries electrons in mitochondria","那是 ubiquinone。"]]},
+{c:"10.3",s:"p.46 · Isoprene",q:"Which molecules belong to the isoprenoid family?",a:3,o:[
+["Triacylglycerols and phospholipids","它們由脂肪酸與 glycerol 組成。"],
+["Prostaglandins and leukotrienes","由 arachidonate 衍生。"],
+["Sphingomyelin and ceramide","由 sphingosine 衍生。"],
+["Sterols, vitamins A, D, E and K, ubiquinone, dolichols and carotenoids","正確。都由五碳 isoprene 單位組成。"]]},
+{c:"10.3",s:"p.57 · Fig. 10-24",q:"Which drugs are polyketides?",a:2,o:[
+["Aspirin and ibuprofen","它們是 NSAIDs,不是 polyketide。"],
+["Warfarin and tamoxifen","不是。"],
+["Erythromycin, amphotericin B and lovastatin","正確。Polyketide 像脂肪酸一樣由 Claisen 縮合產生。"],
+["Prednisone and cortisol","類固醇。"]]},
+{c:"10.4",s:"p.59 · Fig. 10-25",q:"In the chloroform/methanol/water extraction, where do the lipids end up?",a:0,o:[
+["In the lower chloroform layer; proteins and sugars go to the upper methanol/water layer","正確。比例 1 : 2 : 0.8,加水後分成兩相。"],
+["In the upper methanol/water layer","那裡是極性分子。"],
+["In the precipitate with proteins","不是。"],
+["Lipids stay in one phase with the proteins.","加水後分相。"]]},
+{c:"10.4",s:"p.60 · Separating lipids",q:"Lipids are separated on a silica column. In what order are they eluted?",a:3,o:[
+["Charged lipids first with chloroform","帶電脂質最後才用 methanol 洗出。"],
+["All at once with acetone","不是。"],
+["Uncharged polar lipids first with methanol","中性脂質最先。"],
+["Neutral lipids with chloroform, then uncharged polar lipids (cerebrosides) with acetone, then charged lipids (glycerophospholipids) with methanol","正確。極性越高,與 silica 結合越緊。"]]},
+{c:"10.4",s:"p.60 · Separating lipids",q:"What must be done to most lipids before gas chromatography?",a:1,o:[
+["Bind them to silica","那是吸附層析。"],
+["Convert them to volatile fatty acyl methyl esters by transesterification","正確。用 methanol/HCl 或 methanol/NaOH。"],
+["Stain them with iodine vapor","那是 TLC 的偵測方法。"],
+["Hydrolyze the amide bonds with mild acid","醯胺鍵需要更強的條件。"]]},
+{c:"10.4",s:"p.61 · Fig. 10-26",q:"In mass spectrometry of a fatty acid derivative, what reveals the position of a double bond?",a:2,o:[
+["A gap of 14 u between peaks","14 u 是每個 CH2 的規則間距。"],
+["The molecular ion alone","分子離子只給總質量。"],
+["A gap of 26 u instead of the regular 14 u","正確。但質譜無法區分 cis 與 trans。"],
+["The color of the spot","那是 TLC。"]]}
+];
+const MATCH=[
+{t:"脂肪酸 → 寫法",p:[["Palmitic acid","16:0","p.5","最常見的飽和脂肪酸,脂肪酸合成酶的產物;熔點 63.1 °C。"],["Stearic acid","18:0","p.5","18 碳飽和,熔點 69.6 °C;牛脂(tristearin)很硬就是因為它。"],["Oleic acid","18:1(Δ9)","p.5","一個 cis 雙鍵讓熔點降到 13.4 °C;橄欖油主要成分。"],["Linoleic acid","18:2(Δ9,12)","p.5, 14","ω-6 必需脂肪酸;國考寫成 cis,cis-Δ9,Δ12-octadecadienoate。"],["α-Linolenic acid","18:3(Δ9,12,15)","p.5, 7","ω-3 必需脂肪酸,人類做不出,可轉成 EPA、DHA。"],["Arachidonic acid","20:4(Δ5,8,11,14)","p.5, 41","ω-6;eicosanoid 的前驅物,熔點 −49.5 °C。"]]},
+{t:"甘油磷脂與醚脂 → 特徵",p:[["Phosphatidylcholine","choline 頭,淨電荷 0","p.20","與 sphingomyelin 同樣是 phosphocholine 頭,但骨架是 glycerol。"],["Phosphatidylserine","serine 頭,淨電荷 −1","p.20","帶負電;Ch11 講它主要在膜的內葉。"],["PIP2","inositol 4,5-bisphosphate,約 −4","p.20, 40","PLC 把它切成 IP3 與 DAG。"],["Cardiolipin","兩個 PA 共用一個 glycerol,4 條鏈","p.20","在細菌與粒線體內膜,反映內共生起源。"],["Plasmalogen","C-1 是醚鍵連的 alkenyl","p.21","約佔脊椎動物心臟磷脂一半,可能較能抵抗 phospholipase。"],["Platelet-activating factor","C-1 醚鍵 alkyl、C-2 acetyl","p.21","比 plasmalogen 更溶於水;由嗜鹼性球釋放,引起血小板凝集。"]]},
+{t:"Sphingolipid → 頭基",p:[["Sphingosine","長鏈胺基醇骨架,沒有 glycerol","p.27","C-1 到 C-3 結構上對應 glycerol 的三個碳。"],["Ceramide","sphingosine + C-2 amide 脂肪酸","p.27","所有 sphingolipid 的母體。"],["Sphingomyelin","phosphocholine 或 phosphoethanolamine","p.27","唯一含磷酸的 sphingolipid 亞類;Niemann-Pick 時堆積。"],["Cerebroside","一個糖,中性","p.27","中性醣脂;Gaucher 堆積的是 glucocerebroside。"],["Globoside","兩個以上的糖,中性","p.27","中性醣脂;Fabry 堆積其衍生物。"],["Ganglioside","寡醣 + sialic acid,帶負電","p.27, 29","細胞表面辨識;cholera toxin 靠它進入腸細胞。"]]},
+{t:"溶小體儲積症 → 缺陷酵素",p:[["Tay-Sachs","hexosaminidase A → GM2 堆積","p.32","發育遲緩、癱瘓、失明,3–4 歲前死亡;分解在 lysosome。"],["Sandhoff","hexosaminidase A 和 B","p.32","GM2 和 globoside 都堆積。"],["Niemann-Pick","sphingomyelinase","p.32, 35","Sphingomyelin 堆積,神經退化。"],["Gaucher","glucocerebrosidase","p.32, 36","Glucocerebroside 堆積,屬 sphingolipid 代謝異常。"],["Fabry","α-galactosidase A","p.32","Globoside 衍生物堆積。"],["Generalized gangliosidosis","β-galactosidase → GM1","p.32","國考陷阱:Tay-Sachs 不是 β-galactosidase。"]]},
+{t:"磷脂酶與藥物 → 作用點",p:[["PLA1","切 C-1 酯鍵","p.31","產物:脂肪酸 + lysophospholipid。"],["PLA2","切 C-2 酯鍵","p.31, 42","常釋出 arachidonate,是 eicosanoid 的起點。"],["PLC","切 glycerol–phosphate","p.31, 40","產物 DAG + 磷酸化頭基(PIP2 → IP3)。"],["PLD","切 phosphate–head group","p.31","產物 phosphatidic acid + 頭基醇。"],["Aspirin、ibuprofen","抑制 COX","p.41–43","只減少 prostaglandin 與 thromboxane。"],["Prednisone","抑制 PLA2 釋放 arachidonate","p.42","前驅物沒了,四類 eicosanoid 都下降。"]]},
+{t:"Eicosanoid 與植物訊號 → 特徵",p:[["Prostaglandin","五元環;子宮收縮、發燒、疼痛","p.42","C-8 與 C-12 相連成五元環。"],["Thromboxane","含醚的六元環;血小板,促凝血","p.42","低劑量 aspirin 降低 thromboxane A2。"],["Leukotriene","三個共軛雙鍵、無環;氣喘","p.42–43","LTD4 讓呼吸道收縮;抗氣喘藥打 leukotriene receptor。"],["Lipoxin","線性多羥基;強力抗發炎","p.42","低劑量(81 mg)aspirin 促進其合成。"],["Jasmonate","由 18:3 衍生;植物受蟲咬後啟動防禦","p.46","其甲酯就是茉莉花香。"],["Brassinolide","植物的類固醇荷爾蒙,莖生長","p.45","類固醇荷爾蒙在植物中的例子。"]]},
+{t:"脂溶性維生素與輔因子 → 功能",p:[["Vitamin A","retinal 視覺、retinoic acid 調控基因","p.50","缺乏早期症狀是夜盲;β-carotene 切成兩個 retinal。"],["Vitamin D","calcitriol 調控 Ca2+;缺乏 → rickets","p.47","皮膚 UV → 肝加 C-25 → 腎加 C-1。"],["Vitamin E","tocopherol 抗氧化,保護不飽和脂肪酸","p.52","缺乏 → 紅血球脆弱。"],["Vitamin K","形成活性 prothrombin","p.52, 55","Warfarin 阻斷它;新生兒補 1 mg。"],["Ubiquinone","粒線體中的脂溶性電子載體","p.52","可接受 1 或 2 個電子與 H+。"],["Dolichol","活化糖並錨在膜上","p.52","用於細胞壁、醣蛋白、醣脂合成。"]]},
+{t:"脂質分析 → 原理",p:[["Chloroform 下層","脂質","p.59","Chloroform/methanol/water 1 : 2 : 0.8,加水分相。"],["Methanol/water 上層","蛋白質、糖等極性分子","p.59","極性分子留在水相。"],["Silica column 的 methanol","洗出帶電脂質(甘油磷脂)","p.60","順序:chloroform 中性 → acetone 不帶電極性 → methanol 帶電。"],["TLC","極性越低跑越遠","p.60","Iodine 蒸氣讓不飽和脂質變黃褐色。"],["Gas chromatography","先轉成 fatty acyl methyl esters","p.60","讓脂質能揮發。"],["Mass spectrometry 間隔 26 u","雙鍵位置","p.61","一般 CH2 間隔 14 u;但分不出 cis 與 trans。"]]}
+];
+const KEY="biochem-ch10-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

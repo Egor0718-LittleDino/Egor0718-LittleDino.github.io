@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch23 考點、連連看與題庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 0 0;font-size:.85rem}
+.site a{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--surface)}
+.site a:hover{border-color:var(--accent);color:var(--ink)}
+.site a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.site a.home{font-weight:600;color:var(--ink)}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+p.src{white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html" aria-current="page">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch23 考點、連連看與題庫</h1>
+  <p class="lede">Hormonal Regulation and Integration of Mammalian Metabolism。考點速記 → 連連看 102 組 → 55 題英文單選;每題與每組配對都標講義 PDF 頁碼。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(55 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<p class="hint">一行一考點,灰色是講義 PDF 頁碼。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+<h2>23.1 荷爾蒙的結構與作用</h2>
+<ul class="pts">
+<li>荷爾蒙:一個組織製造 → 經血液 → 調控遠處組織 <i>p.3</i></li>
+<li>Epinephrine 同時是神經傳導物質與荷爾蒙 <i>p.4</i></li>
+<li>受體親和力高 → 極低濃度就有效;第二傳訊者放大:1 個 epinephrine → 數百萬個 glucose 1-P <i>p.5</i></li>
+<li><b>不溶於水(steroid、thyroid)→ 進細胞 → 核受體 → 改基因表現,慢(小時到天)</b>;水溶性 → 膜受體 → 快 <i>p.5–6</i></li>
+<li>膜受體:<b>metabotropic</b> 調控酵素;<b>ionotropic</b> 開關離子通道 <i>p.5</i></li>
+<li><b>Endocrine</b> 進血液(insulin、glucagon);<b>paracrine</b> 鄰近細胞(eicosanoid);<b>autocrine</b> 作用在自己 <i>p.7</i></li>
+<li>胜肽荷爾蒙常先做成無活性 prohormone,再切割活化(TRH 很小、hCG 很大) <i>p.8</i></li>
+<li><b>Insulin</b>:MW 5,800,A、B 兩鏈;preproinsulin →(去 signal sequence、形成 3 個 disulfide)proinsulin(存在 β 細胞顆粒)→(切 2 個胜肽鍵)<b>insulin + C peptide</b> 一起 exocytosis <i>p.9</i></li>
+<li><b>POMC</b>:一個前驅蛋白含 ≥ 9 個活性胜肽;各組織蛋白酶不同 → 切出不同荷爾蒙 <i>p.10</i></li>
+<li><b>Top-down</b>:下視丘 <b>CRH</b> → 腦下垂體 <b>ACTH</b> → 腎上腺皮質 <b>cortisol</b>;逐級放大約百萬倍,每級回饋抑制 <i>p.11–12</i></li>
+<li><b>Bottom-up</b>:脂肪(leptin 抑食、adiponectin)、胃(<b>ghrelin 促食</b>)、腸(<b>GLP-1 促 insulin 分泌</b>、GIP 抑 glucagon) <i>p.13</i></li>
+</ul>
+
+<h2>23.2 各組織的代謝分工</h2>
+<div class="tbl"><table>
+<thead><tr><th>組織</th><th>燃料與特徵</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td><b>肝</b></td><td>經門脈第一站;<b>GLUT2 + glucokinase(Km 高、不被 G6P 抑制)</b>;有 glucose 6-phosphatase 可輸出 glucose;<b>主要燃料 = 脂肪酸</b>;做酮體但不用;合成多數血漿蛋白;P-450 解毒;酵素周轉快</td><td><i>p.15–22</i></td></tr>
+<tr><td><b>白色脂肪</b></td><td>一個大油滴;epinephrine 促進脂解、insulin 抑制</td><td><i>p.23</i></td></tr>
+<tr><td><b>棕色、米色脂肪</b></td><td>多個小油滴、大量粒線體;<b>UCP1</b> 讓 H+ 繞過 ATP synthase → 產熱;<b>irisin</b>(運動肌肉分泌)促成米色脂肪</td><td><i>p.24–25</i></td></tr>
+<tr><td><b>骨骼肌</b></td><td>慢縮(紅、有氧、耐疲勞)/快縮(白、力大易疲勞);靜止用脂肪酸;全力時 glycogen → lactate,<b>每葡萄糖單位 3 ATP</b></td><td><i>p.26–27, 36</i></td></tr>
+<tr><td><b>心肌</b></td><td>完全有氧,粒線體約佔一半體積;主要用游離脂肪酸;phosphocreatine 少 → 缺血就梗塞</td><td><i>p.32</i></td></tr>
+<tr><td><b>腦</b></td><td>佔體重 2%、用掉約 20% 靜息耗氧;平常只用 glucose,glycogen 極少;<b>不能用脂肪酸</b>;長期禁食最多 60% 能量來自 <b>β-hydroxybutyrate</b></td><td><i>p.33</i></td></tr>
+<tr><td><b>紅血球</b></td><td>沒有細胞核、粒線體 → 只靠糖解,lactate 回肝</td><td><i>p.34</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li>肝內 G6P 五條路:去磷酸輸出 glucose、做 glycogen、糖解成 acetyl-CoA、合成脂質、PPP(NADPH + ribose 5-P) <i>p.17</i></li>
+<li>肝處理胺基酸:合成蛋白 → 多的轉胺或脫胺 → pyruvate / TCA 中間物 → 糖質新生;NH3 → urea <i>p.18–19</i></li>
+<li><b>Glucose–alanine cycle</b>:肌肉胺基 + pyruvate → alanine → 肝:pyruvate 做糖、NH3 做 urea <i>p.20</i></li>
+<li>血中脂質:脂蛋白送到脂肪;<b>游離脂肪酸靠 albumin</b> 送到心、肌肉 <i>p.22</i></li>
+<li><b>Creatine kinase</b>:mCK 把 ATP 當量以 phosphocreatine 送出粒線體;cCK 在用 ATP 的地方再生 ATP <i>p.28–29</i></li>
+<li>臨床:<b>creatinine ↑ = 腎功能差</b>;<b>CK-MB(心肌獨有)出現在血中 = 心肌受損</b> <i>p.30</i></li>
+<li><b>Cori cycle</b>:肌肉 lactate → 肝糖質新生 → glucose 回肌肉補 glycogen;運動後喘氣是在給肝氧 <i>p.31</i></li>
+<li>Shivering thermogenesis:肌肉快速收縮維持 37°C <i>p.31</i></li>
+<li>血糖正常 <b>60–90 mg/100 mL(約 4.5 mM)</b>;約 70 開始低血糖 → 混亂 → 昏迷 <i>p.35, 37</i></li>
+<li class="mem">算:從 glucose 糖解淨 2 ATP;從 glycogen 淨 3 ATP(少花一個 ATP) <i>p.36</i></li>
+</ul>
+
+<h2>23.3 燃料代謝的荷爾蒙調控</h2>
+<div class="tbl"><table>
+<thead><tr><th>荷爾蒙</th><th>訊號</th><th>主要作用</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td><b>Insulin</b>(β)</td><td>血糖高</td><td><b>GLUT4 上膜</b>(肌肉、脂肪);肝 glycogen synthase ↑、phosphorylase ↓;多餘 glucose → 脂肪酸 → TAG → VLDL → 脂肪儲存</td><td><i>p.38–39</i></td></tr>
+<tr><td><b>Glucagon</b>(α)</td><td>血糖低</td><td>肝:cAMP → <b>fructose 2,6-bisphosphate ↓</b>、pyruvate kinase ↓ → 糖解 ↓、糖質新生 ↑、glycogen 分解 ↑;脂肪:perilipin、HSL 磷酸化 → 脂解</td><td><i>p.43</i></td></tr>
+<tr><td><b>Epinephrine</b>(腎上腺髓質)</td><td>即將劇烈活動</td><td>肌肉 glycogen 分解與糖解 ↑、脂肪動員;glucagon ↑、insulin ↓;心跳、血壓、呼吸道擴張</td><td><i>p.47</i></td></tr>
+<tr><td><b>Cortisol</b>(腎上腺皮質)</td><td>長期壓力、低血糖</td><td>慢,改酵素合成;肌肉蛋白分解 → 肝糖質新生;脂肪酸釋出</td><td><i>p.48</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li>胰島:<b>α = glucagon、β = insulin、δ = somatostatin</b> <i>p.40</i></li>
+<li><b>Insulin 分泌</b>:glucose → GLUT2 → glucokinase → <b>ATP ↑ → ATP-gated K+ 通道關 → 去極化 → voltage-gated Ca2+ 開 → exocytosis</b> <i>p.41</i></li>
+<li>副交感促進、交感抑制;血糖降 → glucokinase 活性降 → 分泌減少(自我回饋) <i>p.41</i></li>
+<li>K+ 通道 = <b>Kir6.2 + SUR1</b> 八聚體;<b>sulfonylurea 結合 SUR1 → 關通道 → 分泌 insulin</b> <i>p.42</i></li>
+<li><b>Kir6.2 突變、通道一直開 → neonatal diabetes</b>(要打 insulin);通道永遠關 → 持續分泌 → 嚴重低血糖 → 部分胰臟切除 <i>p.42</i></li>
+<li>三種儲備:肝與肌肉 glycogen、脂肪 TAG、組織蛋白;正常體重成人 TAG 撐約 <b>3 個月</b>,肥胖者超過 1 年 <i>p.44</i></li>
+<li>禁食時程:2 小時用肝 glycogen → 4 小時 glucagon ↑、TAG 動員 → 長期:蛋白分解、生糖胺基酸做糖給腦 → <b>oxaloacetate 用光 → acetyl-CoA 變酮體</b> → 數天後心、肌肉、腦用酮體 <i>p.45</i></li>
+<li><b>Cushing</b> = 腦下垂體腫瘤 → cortisol 過多;<b>Addison</b> = cortisol 不足 → hydrocortisone <i>p.48</i></li>
+</ul>
+
+<h2>23.4 肥胖與體重調控</h2>
+<ul class="pts">
+<li>BMI <b>&gt; 30 肥胖、&gt; 40 嚴重肥胖</b>;美國 &gt; 40% 成人肥胖 <i>p.49</i></li>
+<li>Adiposity negative-feedback:超過 set point → 抑食、增加消耗;<b>leptin(1994)是第一個找到的 adipokine</b> <i>p.50</i></li>
+<li><b>OB 基因 = leptin;DB 基因 = leptin receptor</b>。ob/ob 打 leptin 有效;db/db 無效 <i>p.51–52</i></li>
+<li>Leptin → 交感神經 → 血壓、心跳 ↑;norepinephrine → <b>UCP1</b> 轉錄、粒線體增加 → 產熱 <i>p.52, 54</i></li>
+<li>弓狀核:<b>NPY = 促食慾</b>(饑餓、ob/ob、db/db 時高);<b>α-MSH = 抑食慾</b>(來自 POMC) <i>p.53</i></li>
+<li>減重 → leptin ↓ → NPY ↑、產熱 ↓ → 想吃回來 <i>p.53</i></li>
+<li>人類肥胖多半 <b>leptin 很高 = leptin resistance</b>;打 leptin 只對少數基因缺陷者有效 <i>p.54</i></li>
+<li><b>Adiponectin</b> → 經 <b>AMPK</b>:肌肉脂肪酸攝取與 β 氧化 ↑;肝脂肪酸合成、糖質新生 ↓;insulin 敏感性 ↑ <i>p.55</i></li>
+<li><b>AMPK</b>:[AMP]/[ATP] 高就開;LKB1 磷酸化放大;關脂肪酸、膽固醇合成;<b>metformin</b>;在下視丘整合 ghrelin、adiponectin、leptin <i>p.56</i></li>
+<li><b>mTORC1</b>:Rag G 蛋白感應胺基酸 → 招到 lysosome;<b>Rheb-GTP 活化</b> → 合成蛋白、脂質、粒線體;禁食時被 AMPK 關掉;長期過度活化 → insulin resistance、癌症 <i>p.57</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>PPAR(與 RXR 配對)</th><th>作用</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td><b>PPARγ</b></td><td>纖維母細胞 → 脂肪細胞分化、脂質儲存;<b>TZD 標靶</b></td><td><i>p.59</i></td></tr>
+<tr><td><b>PPARα</b></td><td>肝、腎、心、肌肉、棕色脂肪;<b>禁食時</b>脂肪酸攝取、β 氧化、酮體</td><td><i>p.59</i></td></tr>
+<tr><td><b>PPARδ</b></td><td>肝、肌肉 β 氧化與粒線體 uncoupling → 減重、產熱</td><td><i>p.59</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li><b>Ghrelin</b>:胃、餐前高、GPCR;<b>Prader-Willi</b> ghrelin 很高 → 食慾失控 <i>p.61</i></li>
+<li><b>PYY3–36</b>:小腸結腸、餐後高、抑制 NPY,效果最長 12 小時 <i>p.61</i></li>
+<li><b>Endocannabinoid</b>:eicosanoid 類、GPCR、增加食慾(尤其脂肪)、促進脂肪堆積;THC 作用在同受體 <i>p.62</i></li>
+</ul>
+
+<h2>23.5 糖尿病</h2>
+<div class="tbl"><table>
+<thead><tr><th></th><th>Type 1(IDDM)</th><th>Type 2(NIDDM)</th></tr></thead>
+<tbody>
+<tr><td>原因</td><td>自體免疫破壞 β 細胞 → insulin 不足</td><td><b>insulin resistance</b>;早期 β 細胞多分泌代償,後來衰退</td></tr>
+<tr><td>發病</td><td>早、症狀重</td><td>慢、常見於肥胖成人</td></tr>
+<tr><td>治療</td><td>insulin + 終身管理</td><td>飲食、運動、藥物、手術</td></tr>
+</tbody></table></div>
+<p class="src">p.63–64, 67</p>
+<ul class="pts">
+<li>兩型共同點:GLUT4 無法有效上膜 → glucose 進不了肌肉、脂肪 <i>p.65</i></li>
+<li>診斷:<b>HbA1c</b>(平均血糖);<b>glucose tolerance test</b>(空腹喝 100 g)→ 糖尿病:升很高、降很慢、超過腎閾值 → 尿糖 <i>p.65</i></li>
+<li><b>Ketoacidosis</b>:脂肪酸變主燃料 → [NADH]/[NAD+] 高 → acetyl-CoA 進不了 TCA → 酮體 ↑(ketonemia、ketonuria)→ 酸超過 bicarbonate 緩衝 <i>p.66</i></li>
+<li><b>Metabolic syndrome</b>:腹部肥胖、高血壓、TAG 與 LDL 高、HDL 低、空腹血糖略高、fibrinogen 與 CRP 高;美國約 30% 成人 <i>p.67</i></li>
+<li><b>Lipid toxicity</b>:脂肪細胞裝滿 → <b>MCP-1</b> 招巨噬細胞(可達 50%)→ <b>TNFα</b> → 儲存能力壞掉 → 脂肪酸進血 → 肝、肌肉異位脂肪 → GLUT4 上不了膜 → insulin resistance <i>p.68</i></li>
+<li>80% 第二型患者肥胖,但多數肥胖者不會得 → 基因(diabetogenes)× 環境;adiponectin 肥胖時降、減重時升 <i>p.69</i></li>
+<li>運動:燃熱量、<b>irisin → 白色脂肪 UCP1 → 米色脂肪</b>、活化 AMPK;藥物標靶 AMPK、β 細胞 K+ 通道、PPAR、GLP 受體 <i>p.70</i></li>
+<li><b>Roux-en-Y gastric bypass</b>:胃縮成小囊接空腸;除減重外,改變 <b>GLP-1、PYY3–36</b> → 飽足,常逆轉第二型糖尿病 <i>p.71</i></li>
+</ul>
+<p class="hint">講義前後不一致:p.13 寫 adiponectin「stimulates feeding」,p.55 則說它經 AMPK 提高 insulin 敏感性;題目只考 p.55 的說法。</p>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線並顯示講義頁碼,錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">17 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 55 題</button>
+    <button class="tab" id="tab-1" data-f="23.1" aria-pressed="false">23.1 荷爾蒙</button>
+    <button class="tab" id="tab-2" data-f="23.2" aria-pressed="false">23.2 組織</button>
+    <button class="tab" id="tab-3" data-f="23.3" aria-pressed="false">23.3 調控</button>
+    <button class="tab" id="tab-4" data-f="23.4" aria-pressed="false">23.4 肥胖</button>
+    <button class="tab" id="tab-5" data-f="23.5" aria-pressed="false">23.5 糖尿病</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">40</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"23.1",s:"p.5–6 · Receptors and timing",q:"Thyroid and steroid hormones act over hours to days, whereas epinephrine acts within seconds. Which statement explains this?",a:2,o:[
+["Thyroid and steroid hormones bind GPCRs coupled to slow G proteins.","它們不作用在細胞膜受體。"],
+["Thyroid and steroid hormones must first be converted to cAMP.","它們不經 cAMP。"],
+["Being water-insoluble, they cross the membrane, bind nuclear receptors and change gene expression, so enzyme content changes slowly.","正確。Epinephrine 等水溶性荷爾蒙作用在細胞膜受體,透過 allosteric 或共價修飾立即改變酵素活性。"],
+["They are degraded within seconds and must be released repeatedly.","與降解速度無關。"]]},
+{c:"23.1",s:"p.5 · Receptor classes",q:"How does an ionotropic cell-surface receptor differ from a metabotropic one?",a:0,o:[
+["It changes membrane potential or ion concentration by opening or closing an ion channel.","正確。Metabotropic 受體則活化或抑制酵素。"],
+["It activates or inhibits an enzyme that makes a second messenger.","這是 metabotropic receptor。"],
+["It is located in the nucleus and binds DNA.","那是 nuclear receptor。"],
+["It binds only steroid hormones.","Steroid 主要作用在核受體。"]]},
+{c:"23.1",s:"p.5 · Amplification",q:"Why can a hormone such as epinephrine act at very low concentrations?",a:3,o:[
+["It is stored inside target cells in high concentration.","不是講義所說的原因。"],
+["It is covalently attached to its receptor.","結合是可逆的。"],
+["Each molecule directly phosphorylates millions of enzymes.","荷爾蒙本身不是 kinase。"],
+["Receptors bind it with high affinity, and the receptor activates catalysts that make many second-messenger molecules.","正確。一個 epinephrine 分子可讓 glycogen 分解出數百萬個 glucose 1-phosphate。"]]},
+{c:"23.1",s:"p.7 · Release pathways",q:"Eicosanoids act on cells near the cell that released them. What kind of hormone action is this?",a:1,o:[
+["Endocrine","Endocrine 是經血液送到遠處,例如 insulin、glucagon。"],
+["Paracrine","正確。"],
+["Autocrine","Autocrine 是作用在分泌它的細胞本身。"],
+["Neuroendocrine relay through the pituitary","不是講義的分類。"]]},
+{c:"23.1",s:"p.9 · Insulin",q:"Which sequence of insulin maturation is correct?",a:2,o:[
+["Proinsulin → removal of the signal sequence → preproinsulin → insulin","Preproinsulin 在前;去掉 signal sequence 才得到 proinsulin。"],
+["Preproinsulin → insulin, which is then cleaved to release C peptide inside the cell","C peptide 是 proinsulin 被切時產生的,並與 insulin 一起分泌。"],
+["Preproinsulin → (signal sequence removed, three disulfide bonds formed) proinsulin stored in β-cell granules → (two peptide bonds cut) insulin + C peptide, both released by exocytosis","正確。成熟 insulin 由 A、B 兩條鏈組成,分子量約 5,800。"],
+["Insulin is made as a single chain and folds without proteolysis.","需要蛋白酶切割。"]]},
+{c:"23.1",s:"p.10 · POMC",q:"Why do different tissues produce different hormones from the same POMC gene product?",a:0,o:[
+["Each tissue expresses different proteases, so the large precursor is cut at different sites.","正確。POMC 至少含 9 個有活性的胜肽。"],
+["Each tissue splices the POMC mRNA differently.","講義說的是蛋白酶切割的差異。"],
+["POMC is phosphorylated differently in each tissue.","不是講義所說的機制。"],
+["Each tissue has its own POMC gene.","只有一個 POMC 基因。"]]},
+{c:"23.1",s:"p.11–12 · Top-down hierarchy",q:"Which top-down cascade for cortisol release is correct?",a:1,o:[
+["Adrenal cortex → ACTH → pituitary → CRH → cortisol","方向顛倒。"],
+["Hypothalamus releases CRH → pituitary releases ACTH → adrenal cortex releases cortisol; each level amplifies the signal and is subject to feedback inhibition","正確。整串約放大百萬倍。"],
+["Pituitary releases CRH → hypothalamus releases ACTH → adrenal medulla releases cortisol","CRH 來自下視丘;cortisol 來自腎上腺皮質。"],
+["Hypothalamus releases ACTH directly onto the adrenal medulla","中間要經過腦下垂體;medulla 分泌的是 epinephrine。"]]},
+{c:"23.1",s:"p.13 · Bottom-up signals",q:"Which statement about bottom-up hormones from the gut is correct according to the slides?",a:3,o:[
+["Ghrelin is made by adipose tissue and inhibits feeding.","Ghrelin 來自胃,刺激進食。"],
+["Leptin is made by the stomach and stimulates feeding.","Leptin 來自脂肪,抑制進食。"],
+["GLP-1 is made by the liver and inhibits insulin secretion.","GLP-1 是腸道的 incretin,刺激 insulin 分泌。"],
+["GLP-1, an incretin from the intestine, stimulates insulin secretion.","正確。同頁:GIP 抑制 glucagon 分泌。"]]},
+{c:"23.2",s:"p.15 · Liver",q:"Which statement about how absorbed nutrients reach the tissues is correct?",a:2,o:[
+["All absorbed triacylglycerols go directly to the liver through the portal vein.","部分 TAG 經淋巴到脂肪組織。"],
+["Amino acids bypass the liver and go straight to muscle.","大多數先經肝。"],
+["Most sugars and amino acids enter the blood and reach the liver first through the portal vein; some triacylglycerols reach adipose tissue through the lymph.","正確。肝酵素周轉快,可快速依飲食調整。"],
+["The liver receives nutrients only after the brain has taken what it needs.","肝是第一站。"]]},
+{c:"23.2",s:"p.16 · Glucokinase",q:"Why is glucokinase (hexokinase IV) suited to the liver?",a:0,o:[
+["Its high Km lets it keep phosphorylating glucose at high blood glucose without being inhibited by glucose 6-phosphate, while sparing glucose for other tissues when blood glucose is low.","正確。搭配 GLUT2,讓肝內外 glucose 濃度相等。"],
+["Its low Km lets the liver take up glucose even during fasting.","低 Km 是其他 hexokinase 的特性。"],
+["It is strongly inhibited by glucose 6-phosphate, preventing glycogen synthesis.","它不被 G6P 抑制。"],
+["It works only in the presence of insulin-stimulated GLUT4.","肝用的是 GLUT2。"]]},
+{c:"23.2",s:"p.17 · Fates of glucose 6-phosphate",q:"In the liver, which fate of glucose 6-phosphate directly maintains blood glucose for the brain?",a:3,o:[
+["Conversion to glycogen","這是儲存,不是輸出。"],
+["Oxidation in the pentose phosphate pathway","產生 NADPH 與 ribose 5-phosphate。"],
+["Glycolysis to acetyl-CoA","用於產能或合成脂質。"],
+["Dephosphorylation by glucose 6-phosphatase to free glucose that is exported","正確。"]]},
+{c:"23.2",s:"p.20 · Glucose–alanine cycle",q:"During fasting, how does muscle protein help maintain blood glucose?",a:1,o:[
+["Muscle exports glucose made from its own amino acids.","肌肉沒有 glucose 6-phosphatase,不輸出 glucose。"],
+["Amino groups are transferred to pyruvate to form alanine, which goes to the liver; there pyruvate is used for gluconeogenesis and the ammonia becomes urea.","正確。這是 glucose–alanine cycle。"],
+["Muscle converts amino acids to ketone bodies for the brain.","酮體由肝製造。"],
+["Muscle releases lactate made from amino acids.","Lactate 是 Cori cycle 的部分。"]]},
+{c:"23.2",s:"p.21–22 · Liver lipids",q:"Which statement about fatty acids in the liver is correct?",a:2,o:[
+["The liver uses glucose, not fatty acids, as its main fuel.","肝主要燃料是脂肪酸。"],
+["Free fatty acids leave the liver packaged in chylomicrons.","Chylomicron 由小腸製造。"],
+["Fatty acids are the liver's main fuel; excess acetyl-CoA becomes ketone bodies, lipoproteins carry lipids to adipose tissue, and albumin carries free fatty acids to heart and muscle.","正確。肝也用 cytochrome P-450 解毒外來物。"],
+["The liver uses ketone bodies as its main fuel.","肝製造酮體但自己不用。"]]},
+{c:"23.2",s:"p.23 · White adipose tissue",q:"Which statement about white adipose tissue is correct?",a:0,o:[
+["Each adipocyte holds a single large lipid droplet; lipolysis is enhanced by epinephrine and opposed by insulin.","正確。"],
+["Each adipocyte has many small droplets and many mitochondria.","這是棕色脂肪。"],
+["It is metabolically inert and only insulates.","它對荷爾蒙反應活躍。"],
+["It generates heat through UCP1.","UCP1 在棕色、米色脂肪。"]]},
+{c:"23.2",s:"p.24 · Brown adipose tissue",q:"How does brown adipose tissue generate heat?",a:3,o:[
+["By shivering contractions","Shivering 是骨骼肌的產熱方式。"],
+["By hydrolyzing ATP in futile cycles only","不是講義的機制。"],
+["By converting fatty acids directly into heat without oxidation","需要氧化脂肪酸。"],
+["UCP1 lets protons bypass ATP synthase, so the energy of the proton gradient is released as heat.","正確。棕色脂肪有許多小油滴、大量粒線體與微血管。"]]},
+{c:"23.2",s:"p.25 · Irisin",q:"What is irisin, and what does it do?",a:1,o:[
+["A hormone from adipose tissue that suppresses appetite","那是 leptin。"],
+["A peptide hormone made by muscle during exercise that promotes beige adipose tissue","正確。米色脂肪讓燃脂效果延續到運動之後。"],
+["A stomach hormone that rises before meals","那是 ghrelin。"],
+["A pancreatic hormone that inhibits insulin release","不是。"]]},
+{c:"23.2",s:"p.27, 36 · Fast-twitch muscle",q:"In maximally active fast-twitch muscle, glycogen is broken down to lactate. How many ATP are made per glucose unit, and why?",a:2,o:[
+["2, because each glucose unit is phosphorylated twice","從 glucose 開始才是淨 2 ATP。"],
+["32, because the lactate is oxidized in mitochondria","這裡是發酵。"],
+["3, because the glucose 1-phosphate from glycogen needs only one ATP-consuming step","正確。從 glycogen 開始只花 1 ATP、得 4 ATP。"],
+["4, because no ATP is consumed","仍要花 1 ATP。"]]},
+{c:"23.2",s:"p.28–29 · Creatine kinase",q:"What do the two creatine kinase isozymes of muscle do?",a:0,o:[
+["Mitochondrial CK moves ATP equivalents out as phosphocreatine; cytosolic CK regenerates ATP from ADP where ATP is used.","正確。缺 mCK 的小鼠會在肌原纖維旁多長粒線體,但耐力下降。"],
+["Both make creatine from amino acids.","Creatine 由肝、腎合成。"],
+["Cytosolic CK makes phosphocreatine during contraction; mitochondrial CK uses it.","角色對調了。"],
+["They convert creatine to creatinine for excretion.","Creatinine 是自然分解產物。"]]},
+{c:"23.2",s:"p.30 · Clinical markers",q:"Which pair of clinical markers is correct?",a:3,o:[
+["Blood creatinine indicates heart damage; the MB isozyme of creatine kinase indicates kidney function.","兩者對調了。"],
+["Blood creatine indicates liver function.","不是講義所說的用途。"],
+["The MB isozyme of creatine kinase comes from skeletal muscle.","MB 是心肌獨有。"],
+["A rise in blood creatinine indicates poor kidney function; the MB isozyme of creatine kinase in blood indicates heart damage.","正確。"]]},
+{c:"23.2",s:"p.31 · Cori cycle",q:"What happens in the Cori cycle after intense exercise?",a:1,o:[
+["Muscle converts lactate back to glycogen directly.","肌肉不做 gluconeogenesis。"],
+["Lactate from muscle goes to the liver, where it is made into glucose with ATP from extra oxygen; the glucose returns to restore muscle glycogen.","正確。運動後喘氣就是在供應肝這段所需的氧。"],
+["Alanine from muscle is converted to urea in the liver.","那是 glucose–alanine cycle 的另一半。"],
+["The brain takes up lactate and converts it to glucose.","不是。"]]},
+{c:"23.2",s:"p.32 · Heart",q:"Why is the heart especially vulnerable when its blood flow is blocked?",a:0,o:[
+["It is fully aerobic, with mitochondria filling nearly half its cell volume, and it has small phosphocreatine reserves.","正確。主要燃料是游離脂肪酸。"],
+["It depends entirely on anaerobic glycolysis.","心臟是完全有氧代謝。"],
+["It stores large amounts of glycogen that become toxic.","不是講義的原因。"],
+["It can use only ketone bodies.","主要用脂肪酸。"]]},
+{c:"23.2",s:"p.33 · Brain",q:"Which statement about brain energy metabolism is correct?",a:3,o:[
+["Neurons oxidize fatty acids directly during fasting.","神經元不能直接用脂肪酸。"],
+["The brain stores enough glycogen for a day.","腦的 glycogen 極少。"],
+["The brain uses about 2% of resting oxygen.","它佔體重約 2%,卻用掉約 20% 的靜息耗氧。"],
+["During prolonged fasting, neurons can meet up to 60% of their energy needs by oxidizing β-hydroxybutyrate.","正確。這讓腦能用到體脂,保住肌肉蛋白。"]]},
+{c:"23.2",s:"p.34 · Erythrocytes",q:"How do erythrocytes obtain ATP?",a:2,o:[
+["Oxidative phosphorylation in their mitochondria","紅血球沒有粒線體。"],
+["β Oxidation of fatty acids","沒有粒線體就無法 β 氧化。"],
+["Glycolysis only; the lactate goes to the liver to be made into glucose","正確。紅血球也沒有細胞核。"],
+["Phosphocreatine stores","不是。"]]},
+{c:"23.2",s:"p.35 · Blood glucose",q:"What is the normal range of blood glucose maintained by the liver, and what happens below it?",a:1,o:[
+["200–300 mg/100 mL; below it the kidney excretes glucose","數值錯誤。"],
+["60–90 mg/100 mL; hypoglycemia beginning around 70 mg/100 mL causes confusion and can progress to coma","正確。約等於 4.5 mM。"],
+["10–20 mg/100 mL; below it muscle stops contracting","數值錯誤。"],
+["120–180 mg/100 mL; below it the brain switches to fatty acids","數值錯誤;腦也不能用脂肪酸。"]]},
+{c:"23.3",s:"p.37 · Four hormones",q:"Which pairing of hormone and the signal it carries is correct?",a:2,o:[
+["Cortisol — prepares the body for sudden activity","這是 epinephrine。"],
+["Glucagon — high blood glucose","Glucagon 代表血糖低。"],
+["Cortisol — long-term stress; epinephrine — impending sudden activity","正確。Insulin 代表血糖高。"],
+["Insulin — low blood glucose","Insulin 代表血糖高。"]]},
+{c:"23.3",s:"p.38–39 · Insulin",q:"Which set of effects does insulin produce after a carbohydrate-rich meal?",a:0,o:[
+["GLUT4 moves to the plasma membrane of muscle and fat; glycogen synthase is activated and glycogen phosphorylase inhibited; excess glucose becomes fatty acids, exported from liver as VLDL and stored as TAG in adipose tissue","正確。兩種儲存形式:glycogen(肝、肌肉)與 TAG(脂肪)。"],
+["Glycogen phosphorylase is activated in liver.","那是 glucagon 的效果。"],
+["Hormone-sensitive lipase is activated in adipose tissue.","那是 glucagon 與 epinephrine 的效果。"],
+["Gluconeogenesis is stimulated in liver.","Insulin 抑制 gluconeogenesis。"]]},
+{c:"23.3",s:"p.40 · Islet cells",q:"Which pairing of pancreatic islet cells with their hormones is correct?",a:3,o:[
+["α — insulin; β — glucagon; δ — somatostatin","α、β 對調了。"],
+["α — somatostatin; β — insulin; δ — glucagon","α、δ 對調了。"],
+["α — glucagon; β — somatostatin; δ — insulin","β、δ 對調了。"],
+["α — glucagon; β — insulin; δ — somatostatin","正確。"]]},
+{c:"23.3",s:"p.41 · Insulin secretion",q:"Consider these events in a β cell: (1) voltage-gated Ca2+ channels open; (2) ATP-gated K+ channels close; (3) glucose enters through GLUT2 and is phosphorylated by glucokinase; (4) [ATP] rises; (5) insulin is released by exocytosis; (6) the membrane depolarizes. Which order is correct?",a:1,o:[
+["3 → 4 → 1 → 6 → 2 → 5","K+ 通道要先關、膜去極化,Ca2+ 通道才會開。"],
+["3 → 4 → 2 → 6 → 1 → 5","正確。"],
+["4 → 3 → 2 → 1 → 6 → 5","ATP 是 glucose 代謝後才升高。"],
+["3 → 2 → 4 → 6 → 1 → 5","是 ATP 升高才關閉 K+ 通道。"]]},
+{c:"23.3",s:"p.41 · Control of insulin release",q:"Which statement about the control of insulin release is correct?",a:2,o:[
+["Sympathetic signals stimulate insulin release.","交感神經抑制。"],
+["Insulin release keeps rising as blood glucose falls.","血糖下降時分泌減少。"],
+["Parasympathetic signals stimulate it, sympathetic signals inhibit it, and falling blood glucose lowers β-cell glucokinase activity, slowing release.","正確。這是自我回饋,讓血糖穩定。"],
+["Glucagon from α cells is required for every insulin release.","不是講義所說。"]]},
+{c:"23.3",s:"p.42 · KATP channel mutations",q:"A newborn has severe hyperglycemia that requires insulin. A mutation keeps the β-cell ATP-gated K+ channel permanently open. Which subunit is most likely mutated?",a:0,o:[
+["Kir6.2","正確。通道一直開 → 膜無法去極化 → 不分泌 insulin → neonatal diabetes。"],
+["GLUT4","GLUT4 在肌肉與脂肪,與 β 細胞分泌無關。"],
+["The insulin receptor","受體缺陷不會讓 β 細胞通道一直開。"],
+["Glucagon receptor","與此無關。"]]},
+{c:"23.3",s:"p.42 · Sulfonylureas",q:"How do sulfonylurea drugs treat type 2 diabetes?",a:3,o:[
+["They activate PPARγ in adipose tissue.","那是 thiazolidinedione。"],
+["They activate AMPK.","那是 metformin。"],
+["They open β-cell K+ channels, hyperpolarizing the cell.","方向相反。"],
+["They bind SUR1 and close ATP-gated K+ channels, depolarizing β cells and stimulating insulin secretion.","正確。通道是 Kir6.2 與 SUR1 的八聚體。"]]},
+{c:"23.3",s:"p.43 · Glucagon",q:"How does glucagon raise blood glucose through the liver?",a:1,o:[
+["It moves GLUT4 into the hepatocyte membrane.","肝用 GLUT2;GLUT4 由 insulin 調控。"],
+["Through cAMP-dependent phosphorylation it lowers fructose 2,6-bisphosphate and inhibits pyruvate kinase, so glycolysis falls and gluconeogenesis and glycogen breakdown rise.","正確。在脂肪則磷酸化 perilipin 與 hormone-sensitive lipase。"],
+["It activates glycogen synthase.","那是 insulin。"],
+["It inhibits glucose 6-phosphatase.","會使 glucose 釋放減少,方向相反。"]]},
+{c:"23.3",s:"p.44–45 · Fasting",q:"Which description of prolonged fasting is correct?",a:2,o:[
+["Liver glycogen lasts about three months.","三個月是正常體重成人 TAG 能撐的時間。"],
+["Ketone bodies stay low because oxaloacetate accumulates.","Oxaloacetate 被 gluconeogenesis 用掉,才使酮體增加。"],
+["Glucogenic amino acids feed gluconeogenesis for the brain; as oxaloacetate is depleted, acetyl-CoA forms ketone bodies, which after several days fuel heart, muscle and brain.","正確。脂肪耗盡後才開始分解必要蛋白,最後導致死亡。"],
+["The brain switches to fatty acids within hours.","腦不能用脂肪酸。"]]},
+{c:"23.3",s:"p.47 · Epinephrine",q:"Which set of effects does epinephrine produce?",a:0,o:[
+["Released from the adrenal medulla; it increases muscle glycogen breakdown and glycolysis, mobilizes fat, raises glucagon and lowers insulin secretion","正確。同時擴張呼吸道、提高心跳與血壓。"],
+["Released from the adrenal cortex; it slowly changes enzyme synthesis","那是 cortisol。"],
+["It promotes glycogen storage in muscle.","它促進分解。"],
+["It raises insulin and lowers glucagon secretion.","方向相反。"]]},
+{c:"23.3",s:"p.48 · Cortisol",q:"Which statement about cortisol is correct?",a:3,o:[
+["It acts within seconds through cAMP.","Cortisol 作用慢,改變酵素合成。"],
+["Cushing disease results from cortisol underproduction.","Cushing 是腦下垂體腫瘤造成 cortisol 過多。"],
+["It promotes protein synthesis in muscle.","它促進肌肉蛋白分解。"],
+["It promotes muscle protein breakdown for hepatic gluconeogenesis; Addison disease, cortisol underproduction, is treated with hydrocortisone.","正確。長期過多會傷害肌肉、骨骼、內分泌與免疫。"]]},
+{c:"23.4",s:"p.49 · Obesity",q:"According to the slides, which BMI values define obesity and severe obesity?",a:1,o:[
+["Over 25 and over 30","25 以上在講義中未被定義為肥胖。"],
+["Over 30 and over 40","正確。美國超過 40% 成人肥胖。"],
+["Over 35 and over 50","數值錯誤。"],
+["Over 40 and over 60","數值錯誤。"]]},
+{c:"23.4",s:"p.50 · Adiposity feedback",q:"What does the adiposity negative-feedback model propose?",a:2,o:[
+["Body weight rises without limit until diabetes develops.","不是模型的內容。"],
+["The stomach measures fat stores.","回饋訊號來自脂肪組織。"],
+["Above a set point, signals from adipose tissue suppress eating and raise energy expenditure; below it, the inhibition is lifted.","正確。1994 年發現的 leptin 是第一個被找到的訊號。"],
+["The liver alone sets body weight through glycogen.","不是。"]]},
+{c:"23.4",s:"p.51–52 · ob/ob and db/db",q:"Leptin is injected into ob/ob mice and into db/db mice. What is expected?",a:0,o:[
+["ob/ob mice eat less and lose weight; db/db mice do not respond, because they lack the leptin receptor.","正確。OB 基因編碼 leptin,DB 基因編碼 leptin receptor。"],
+["Both lose weight equally.","db/db 缺受體,打 leptin 無效。"],
+["db/db mice lose weight; ob/ob mice do not.","兩者對調了。"],
+["Neither responds, because leptin cannot reach the brain.","Leptin 作用在下視丘受體。"]]},
+{c:"23.4",s:"p.52, 54 · Leptin and thermogenesis",q:"How does leptin increase energy expenditure?",a:3,o:[
+["It inhibits UCP1 in brown fat.","方向相反。"],
+["It blocks the sympathetic nervous system.","Leptin 活化交感神經。"],
+["It increases glycogen synthesis in muscle.","不是講義所說的機制。"],
+["It activates the sympathetic nervous system; norepinephrine stimulates UCP1 transcription and mitochondrial synthesis in brown and beige adipocytes.","正確。同時提高血壓與心跳。"]]},
+{c:"23.4",s:"p.53 · Arcuate nucleus",q:"After weight loss, leptin levels fall. What happens in the arcuate nucleus?",a:1,o:[
+["Anorexigenic neurons release more α-MSH.","Leptin 下降時 α-MSH 減少。"],
+["Orexigenic neurons release more neuropeptide Y, increasing hunger and reducing thermogenesis.","正確。這就是減重後容易復胖的原因;ob/ob、db/db 小鼠的 NPY 也偏高。"],
+["Ghrelin production in the hypothalamus stops.","Ghrelin 由胃製造。"],
+["Insulin secretion rises.","不是講義所述。"]]},
+{c:"23.4",s:"p.54 · Leptin resistance",q:"Why do leptin injections help few obese humans?",a:2,o:[
+["Most obese people make no leptin.","多數肥胖者 leptin 偏高。"],
+["Leptin is destroyed in the stomach.","注射不經消化道。"],
+["Most obese people already have high leptin, indicating leptin resistance; only rare leptin-gene defects respond well.","正確。"],
+["Leptin causes hypoglycemia.","不是講義的原因。"]]},
+{c:"23.4",s:"p.55 · Adiponectin",q:"Which set of effects does adiponectin produce, largely through AMPK?",a:0,o:[
+["More fatty acid uptake and β oxidation in muscle; less fatty acid synthesis and gluconeogenesis in liver; greater insulin sensitivity","正確。肥胖時 adiponectin 降低,減重後回升。"],
+["More fatty acid synthesis in liver","方向相反。"],
+["Lower glucose uptake by muscle","它促進 glucose 攝取。"],
+["Inhibition of AMPK","它透過活化 AMPK 作用。"]]},
+{c:"23.4",s:"p.56 · AMPK",q:"Which statement about AMPK is correct?",a:3,o:[
+["It is activated when [ATP] is high relative to [AMP].","它在能量低時活化。"],
+["It promotes cholesterol and fatty acid synthesis.","它抑制這些合成。"],
+["It is inhibited by metformin.","Metformin 透過 AMPK 作用(活化)。"],
+["It senses a high [AMP]/[ATP] ratio, is amplified by LKB1 phosphorylation, inhibits lipid and cholesterol synthesis and promotes fat use; in the hypothalamus it integrates ghrelin, adiponectin and leptin signals.","正確。"]]},
+{c:"23.4",s:"p.57 · mTORC1",q:"Which statement about mTORC1 is correct?",a:1,o:[
+["It is activated by fasting through AMPK.","AMPK 使 mTORC1 失活。"],
+["Rag G proteins recruit it to the lysosome when amino acids are sufficient, and GTP-bound Rheb activates it to promote protein and lipid synthesis.","正確。長期過度活化與 insulin resistance、癌症有關。"],
+["It promotes protein and glycogen breakdown.","那是 mTORC1 被關掉時的結果。"],
+["It is located in the nucleus.","在 lysosome 表面。"]]},
+{c:"23.4",s:"p.58–59 · PPARs",q:"Which pairing of a PPAR with its role is correct?",a:2,o:[
+["PPARα — adipocyte differentiation; target of thiazolidinediones","那是 PPARγ。"],
+["PPARγ — fatty acid oxidation and ketone body formation during fasting","那是 PPARα。"],
+["PPARα — fatty acid uptake, β oxidation and ketone body formation during fasting; PPARγ — adipocyte differentiation and lipid storage, target of thiazolidinediones","正確。PPAR 與 RXR 形成 heterodimer;PPARδ 促進 β 氧化與粒線體 uncoupling。"],
+["PPARδ — inhibits β oxidation in muscle","PPARδ 促進 β 氧化。"]]},
+{c:"23.4",s:"p.61 · Ghrelin and PYY3–36",q:"Which statement about short-term appetite signals is correct?",a:0,o:[
+["Ghrelin from the stomach peaks before meals and acts through a GPCR; PYY3–36 from the intestine rises after meals and inhibits NPY neurons.","正確。Prader-Willi syndrome 的 ghrelin 很高,食慾無法控制。"],
+["Ghrelin falls before meals and rises after eating.","方向相反。"],
+["PYY3–36 stimulates hunger for 12 hours.","它抑制食慾,效果可達 12 小時。"],
+["Ghrelin is made by adipose tissue.","Ghrelin 來自胃。"]]},
+{c:"23.4",s:"p.62 · Endocannabinoids",q:"What do endocannabinoids do?",a:3,o:[
+["They suppress appetite through nuclear receptors.","它們增加食慾,經由 GPCR。"],
+["They increase thermogenesis and energy loss.","它們減少能量消耗。"],
+["They are peptide hormones made in the stomach.","它們是 eicosanoid 類的脂質訊號。"],
+["They are eicosanoid messengers that act on GPCRs to increase appetite, especially for fat, and promote fat accumulation; THC acts on the same receptors.","正確。"]]},
+{c:"23.5",s:"p.64 · Type 1 vs type 2",q:"Which comparison of the two types of diabetes is correct?",a:1,o:[
+["Type 1 is insulin resistance in obese adults; type 2 is autoimmune destruction of β cells.","兩者對調了。"],
+["Type 1 results from autoimmune destruction of β cells and needs insulin; type 2 develops gradually, often in obese adults, with insulin made but a defective response.","正確。未治療症狀:口渴、多尿、尿糖。"],
+["Both result from lack of GLUT2.","不是。"],
+["Type 2 always needs insulin injection from diagnosis.","第二型先從飲食、運動、藥物開始。"]]},
+{c:"23.5",s:"p.65 · Diagnosis",q:"In a glucose-tolerance test (100 g glucose after fasting), what result suggests diabetes?",a:2,o:[
+["Blood glucose rises modestly and returns to normal quickly.","這是正常人。"],
+["Blood glucose does not rise at all.","不是糖尿病的表現。"],
+["Blood glucose rises sharply, falls slowly and often exceeds the kidney threshold, so glucose appears in urine.","正確。HbA1c 反映一段時間的平均血糖。"],
+["Blood glucose falls below 60 mg/100 mL.","那是低血糖。"]]},
+{c:"23.5",s:"p.66 · Ketoacidosis",q:"According to the slides, why do ketone bodies accumulate in untreated diabetes, and why are they dangerous?",a:0,o:[
+["A high [NADH]/[NAD+] ratio keeps acetyl-CoA from β oxidation out of the citric acid cycle, so ketone bodies form faster than tissues use them; as carboxylic acids they lower blood pH beyond bicarbonate buffering.","正確。血中為 ketonemia,尿中為 ketonuria。"],
+["Excess insulin drives acetyl-CoA into ketone bodies.","是缺乏 insulin 作用。"],
+["Ketone bodies are bases that raise blood pH.","它們是酸。"],
+["The brain releases ketone bodies into blood.","酮體由肝製造。"]]},
+{c:"23.5",s:"p.67 · Metabolic syndrome",q:"Which set of findings fits metabolic syndrome?",a:3,o:[
+["Low blood pressure, low triacylglycerol, high HDL","方向都相反。"],
+["Weight loss, low fasting glucose","不是。"],
+["Absence of insulin from birth","那較像第一型或新生兒糖尿病。"],
+["Abdominal obesity, hypertension, high triacylglycerol and LDL, low HDL, slightly raised fasting glucose, high fibrinogen and C-reactive protein","正確。早期 β 細胞以多分泌 insulin 代償,之後功能衰退。"]]},
+{c:"23.5",s:"p.68 · Lipid toxicity",q:"Which order of events describes the lipid toxicity hypothesis?",a:1,o:[
+["Insulin resistance → adipocytes fill → macrophages leave → fatty acids are stored safely","順序與方向都錯。"],
+["Adipocytes reach their storage limit → MCP-1 recruits macrophages → TNFα impairs storage → fatty acids enter blood → ectopic fat in liver and muscle blocks GLUT4 movement → insulin resistance","正確。巨噬細胞可佔脂肪組織質量的一半。"],
+["TNFα increases adipocyte storage → fatty acids fall → insulin resistance","TNFα 使儲存能力下降。"],
+["Ectopic fat in liver → MCP-1 → adipocytes enlarge","順序錯誤。"]]},
+{c:"23.5",s:"p.69 · Genetics",q:"About 80% of type 2 diabetics are obese, yet most obese people do not develop type 2 diabetes. What does this suggest?",a:2,o:[
+["Obesity protects against diabetes.","不是。"],
+["Type 2 diabetes is purely autoimmune.","那是第一型。"],
+["Genetic predisposition (diabetogenes) interacts with diet and lifestyle.","正確。"],
+["Diabetes is caused only by leptin deficiency.","不是。"]]},
+{c:"23.5",s:"p.70 · Exercise and drugs",q:"How does exercise help in type 2 diabetes?",a:0,o:[
+["It burns calories, activates AMPK toward fat oxidation, and releases irisin, which induces UCP1 in white fat and forms beige adipocytes.","正確。藥物則針對 AMPK、β 細胞 K+ 通道、PPAR 與 GLP 受體。"],
+["It inhibits AMPK and promotes fat synthesis.","方向相反。"],
+["It lowers irisin and UCP1.","方向相反。"],
+["It works only by increasing insulin secretion.","不是唯一機制。"]]},
+{c:"23.5",s:"p.71 · Gastric bypass",q:"Why can Roux-en-Y gastric bypass reverse type 2 diabetes beyond the weight loss itself?",a:3,o:[
+["It removes the pancreas.","手術不切除胰臟。"],
+["It increases ghrelin secretion.","不是講義所說的機制。"],
+["It prevents absorption of all fat.","不是講義所說的機制。"],
+["It changes gut–brain communication and the secretion of GLP-1 and PYY3–36, which signal satiety.","正確。胃縮成小囊直接接空腸,繞過大部分胃與十二指腸。"]]}
+];
+const MATCH=[
+{t:"荷爾蒙 → 誰分泌",p:[["Insulin","胰島 β 細胞","p.40"],["Glucagon","胰島 α 細胞","p.40"],["Somatostatin","胰島 δ 細胞","p.40"],["Cortisol","腎上腺皮質","p.11, 48"],["Epinephrine","腎上腺髓質","p.47"],["ACTH","腦下垂體","p.11"]]},
+{t:"食慾與代謝訊號 → 來源",p:[["Leptin","脂肪細胞","p.13, 51"],["Ghrelin","胃","p.61"],["PYY3–36","小腸與結腸","p.61"],["Irisin","運動中的肌肉","p.25"],["GLP-1","腸道(incretin)","p.13"],["CRH","下視丘","p.11"]]},
+{t:"組織 → 燃料特徵",p:[["腦","glucose;長期禁食最多 60% 用 β-hydroxybutyrate","p.33"],["心肌","完全有氧,主要用游離脂肪酸","p.32"],["靜止骨骼肌","主要用游離脂肪酸","p.27"],["全力收縮的快縮肌","glycogen → lactate,每單位 3 ATP","p.27"],["紅血球","只靠糖解,lactate 回肝","p.34"],["肝","主要燃料是脂肪酸;做酮體但不用","p.21"]]},
+{t:"疾病、基因 → 原因",p:[["ob/ob 小鼠","缺 leptin,打 leptin 有效","p.51"],["db/db 小鼠","缺 leptin receptor,打 leptin 無效","p.52"],["Cushing disease","腦下垂體腫瘤,cortisol 過多","p.48"],["Addison disease","cortisol 不足","p.48"],["Prader-Willi syndrome","ghrelin 很高,食慾失控","p.61"],["Neonatal diabetes","Kir6.2 突變,K+ 通道一直開","p.42"]]},
+{t:"藥物、處置 → 機轉",p:[["Sulfonylurea","結合 SUR1,關 K+ 通道","p.42"],["Thiazolidinedione","活化 PPARγ","p.59"],["Metformin","經 AMPK 作用","p.56"],["Roux-en-Y gastric bypass","改變 GLP-1、PYY3–36 分泌","p.71"],["Hydrocortisone","治療 Addison disease","p.48"],["部分胰臟切除","治療 K+ 通道永遠關閉的低血糖","p.42"]]},
+{t:"分子 → 角色",p:[["NPY","促食慾,饑餓時升高","p.53"],["α-MSH","抑食慾(來自 POMC)","p.53"],["AMPK","能量低時開分解、關合成","p.56"],["mTORC1","營養充足時促進合成與生長","p.57"],["UCP1","讓 H+ 繞過 ATP synthase 產熱","p.24"],["Adiponectin","經 AMPK 提高 insulin 敏感性","p.55"]]},
+{t:"PPAR 與通道 → 角色",p:[["PPARα","禁食時 β 氧化與酮體生成","p.59"],["PPARγ","脂肪細胞分化、TZD 標靶","p.59"],["PPARδ","β 氧化與粒線體 uncoupling","p.59"],["RXR","與 PPAR 形成 heterodimer","p.58"],["Kir6.2","K+ 通道的孔與 ATP gate","p.42"],["SUR1","sulfonylurea 結合處","p.42"]]},
+{t:"檢查、指標 → 意義",p:[["血中 creatinine 升高","腎功能變差","p.30"],["血中出現 CK-MB","心肌受損","p.30"],["HbA1c","一段時間的平均血糖","p.65"],["Glucose tolerance test","喝 100 g 葡萄糖後追蹤血糖","p.65"],["Ketonuria","尿中出現酮體","p.66"],["C-reactive protein 升高","metabolic syndrome 的發炎指標","p.67"]]},
+{t:"名詞:荷爾蒙基礎",p:[["Endocrine","經血液送到遠處組織","p.7"],["Paracrine","作用在鄰近細胞(如 eicosanoid)","p.7"],["Autocrine","作用在分泌它的細胞本身","p.7"],["Metabotropic receptor","活化或抑制酵素的膜受體","p.5"],["Ionotropic receptor","開關離子通道的膜受體","p.5"],["Prohormone","無活性前驅物,切割後才活化","p.8"]]},
+{t:"名詞:胜肽荷爾蒙與前驅物",p:[["Preproinsulin","帶 signal sequence 的 insulin 前驅物","p.9"],["Proinsulin","存在 β 細胞顆粒中、尚未切割","p.9"],["C peptide","從 proinsulin 切下,與 insulin 一起分泌","p.9"],["POMC","一個前驅蛋白含 ≥ 9 個活性胜肽","p.10"],["TRH","很小的胜肽荷爾蒙","p.8"],["Human chorionic gonadotropin","很大的蛋白質荷爾蒙","p.8"]]},
+{t:"中英對照:荷爾蒙",p:[["Somatostatin","生長抑素","p.8"],["Calcitonin","降血鈣素","p.8"],["Ghrelin","饑餓肽","p.13"],["Adiponectin","脂聯素","p.13"],["Leptin","瘦素","p.13"],["Irisin","鳶尾素","p.25"]]},
+{t:"中英對照:腦與食慾",p:[["Hypothalamus","下視丘","p.11"],["Pituitary","腦下垂體","p.11"],["Arcuate nucleus","弓狀核","p.53"],["Orexigenic","促食慾","p.53"],["Anorexigenic","抑食慾","p.53"],["Endocannabinoid","內源性大麻素","p.62"]]},
+{t:"名詞:代謝循環與酵素",p:[["Cori cycle","肌肉 lactate → 肝做 glucose → 回肌肉","p.31"],["Glucose–alanine cycle","肌肉以 alanine 把胺基與碳送到肝","p.20"],["Shivering thermogenesis","肌肉快速收縮產熱","p.31"],["Glucokinase(hexokinase IV)","Km 高、不被 G6P 抑制","p.16"],["Glucose 6-phosphatase","肝把 G6P 變成 glucose 輸出","p.17"],["Phosphocreatine","肌肉的 ATP 緩衝,經 creatine kinase 再生 ATP","p.28"]]},
+{t:"名詞:組織類型",p:[["White adipose tissue","單一大油滴,儲存 TAG","p.23"],["Brown adipose tissue","多個小油滴、大量粒線體、UCP1","p.24"],["Beige adipocyte","irisin 誘導,運動後持續燃脂","p.25"],["Slow-twitch(red)muscle","耐疲勞,靠氧化磷酸化","p.26"],["Fast-twitch(white)muscle","力量大、容易疲勞","p.26"],["Portal vein","吸收的養分先經此到肝","p.15"]]},
+{t:"名詞:臨床狀態",p:[["Hypoglycemia","約 70 mg/100 mL 以下,混亂到昏迷","p.35"],["Ketosis","血與尿中酮體高(ketonemia、ketonuria)","p.66"],["Ketoacidosis","酮體使血液 pH 下降、超過緩衝","p.66"],["Metabolic syndrome","第二型糖尿病之前的中間階段","p.67"],["Insulin resistance","要更多 insulin 才有相同效果","p.67"],["BMI > 30","肥胖","p.49"]]},
+{t:"名詞:第二型糖尿病機制",p:[["Lipid toxicity hypothesis","異位堆積的脂質造成 insulin resistance","p.68"],["MCP-1","招募巨噬細胞進入脂肪組織","p.68"],["TNFα","損害脂肪細胞儲存 TAG 的能力","p.68"],["Ectopic fat","堆在肝與肌肉的脂滴","p.68"],["Diabetogenes","第二型糖尿病的易感基因","p.69"],["Adiposity negative-feedback","超過 set point 就抑食並增加消耗","p.50"]]},
+{t:"名詞:調控分子",p:[["LKB1","磷酸化並放大 AMPK","p.56"],["Raptor","與 mTOR 組成 mTORC1","p.57"],["Rag G proteins","感應胺基酸,把 mTORC1 招到 lysosome","p.57"],["Rheb-GTP","活化 mTORC1","p.57"],["Incretin","腸道分泌、促進 insulin 分泌的荷爾蒙","p.13"],["GIP","抑制 glucagon 分泌(講義 p.13)","p.13"]]}
+];
+const KEY="biochem-ch23-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip",item.c+" · 講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]];b.append(el("span","pg","講義 "+p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length%MCOL.length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

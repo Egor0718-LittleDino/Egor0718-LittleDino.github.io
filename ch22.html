@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch22 考點、連連看與題庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 0 0;font-size:.85rem}
+.site a{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--surface)}
+.site a:hover{border-color:var(--accent);color:var(--ink)}
+.site a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.site a.home{font-weight:600;color:var(--ink)}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+p.src{white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html" aria-current="page">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch22 考點、連連看與題庫</h1>
+  <p class="lede">Biosynthesis of Amino Acids, Nucleotides, and Related Molecules。考點速記 → 連連看 60 對(配對成功會出現解釋)→ 64 題英文單選;每題與每組配對都標講義頁碼。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(64 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<p class="hint">一行一考點。灰色是講義 PDF 頁碼;<span class="hit">考過</span> 是小考五出過的點。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+<h2>22.1 氮的入口</h2>
+<ul class="pts">
+<li>NH4+ 進入生物分子只有兩扇門:<b>glutamate、glutamine</b> <i>p.3</i></li>
+<li>主要:<b>glutamine synthetase</b>:Glu + NH4+ + ATP → Gln <span class="hit">考過</span> <i>p.3</i></li>
+<li>次要:glutamate dehydrogenase(α-KG + NH4+ + NADPH → Glu),Km 約 1 mM 太高,哺乳類同化不靠它 <i>p.3</i></li>
+<li>細菌 GS 被 <b>8 種</b>抑制劑 cumulative feedback:Gly、Ala、AMP、CTP、Trp、His、carbamoyl-P、glucosamine 6-P;單獨只部分抑制,全部一起幾乎全關 <i>p.4, 47</i></li>
+<li>GS 共價調控:<b>Tyr397 被 adenylylation = 關</b>。PII + AT → 加 AMP(關);PII-UMP + AT → 去 AMP(開)。UT 被 <b>α-KG、ATP 活化</b>,被 <b>Gln 抑制</b> <i>p.5</i></li>
+<li class="mem">背法:α-KG 多 = 缺氮 → 開 GS;Gln 多 → 關 GS</li>
+<li>Glutamine amidotransferase:保守 <b>Cys</b> 切 Gln 的 amide,NH3 走 <b>ammonia channel</b> 到第二活性位;被 <b>azaserine</b> 抑制 <span class="hit">考過</span> <i>p.6</i></li>
+<li>一碳載體:THF 弱(–CHO、–CH2OH);<b>adoMet 強(–CH3)</b>;PLP 管 transamination <i>p.6</i></li>
+</ul>
+
+<h2>22.2 胺基酸合成</h2>
+<div class="tbl"><table>
+<thead><tr><th>前驅物</th><th>胺基酸(粗體 = 人類必需)</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>α-Ketoglutarate</td><td>Glu → Gln、Pro、Arg</td><td><i>p.9</i></td></tr>
+<tr><td>Oxaloacetate</td><td>Asp → Asn、<b>Lys、Met、Thr</b>、<b>Ile</b></td><td><i>p.9</i></td></tr>
+<tr><td>3-Phosphoglycerate</td><td>Ser → Gly、Cys</td><td><i>p.9</i></td></tr>
+<tr><td>Pyruvate</td><td>Ala、<b>Val、Leu、Ile</b></td><td><i>p.9</i></td></tr>
+<tr><td>PEP + erythrose 4-P</td><td><b>Trp、Phe</b>、Tyr</td><td><i>p.9</i></td></tr>
+<tr><td>Ribose 5-P(PRPP)</td><td><b>His</b></td><td><i>p.9</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li><b>Pro</b>:Glu 的 γ-COOH 被 ATP 磷酸化 → NAD(P)H 還原成 glutamate γ-semialdehyde → <b>自發環化</b> → 再還原 <i>p.12–15</i></li>
+<li><b>Arg</b>:Glu → ornithine → urea cycle → Arg。哺乳類<b>沒有 de novo Arg 路徑</b>;ornithine δ-aminotransferase 只在 Arg 不足時往 ornithine 方向走 <i>p.16–18</i></li>
+<li><b>Ser</b>:3-PG →(氧化,NAD+)3-phosphohydroxypyruvate →(Glu 轉胺)3-phosphoserine →(phosphatase)Ser <i>p.21–23</i></li>
+<li><b>Ser → Gly</b>:serine hydroxymethyltransferase,<b>PLP</b>,β 碳給 THF → N5,N10-methylene-THF;可逆。肝的 glycine cleavage enzyme 反向也能做 Gly <i>p.24–25</i></li>
+<li><b>Cys</b>:<b>S 來自 Met</b>(Met → adoMet → adoHcy → homocysteine),<b>碳骨架來自 Ser</b>;homocysteine + Ser → cystathionine β-synthase → cystathionine γ-lyase → Cys <span class="hit">考過</span> <i>p.19, 26</i></li>
+<li>Ala、Asp:轉胺;Asn:asparagine synthetase(N 來自 Gln) <i>p.27</i></li>
+<li><b>ALL 白血病</b>:癌細胞幾乎沒有 asparagine synthetase → 給 <b>L-asparaginase</b> 降血中 Asn;緩解率 40–60% → 95% <i>p.28</i></li>
+<li>芳香族:PEP + E4P → <b>shikimate</b>(7C,前 4 步)→ 再加一個 PEP → <b>chorismate = 分歧點</b>(Trp / Phe、Tyr) <i>p.32, 37, 40</i></li>
+<li><b>Glyphosate(Roundup)</b>競爭抑制 chorismate 路徑的一步(EPSP synthase);動物沒這條路,所以低毒 <span class="hit">考過</span> <i>p.39</i></li>
+<li><b>Trp</b>:chorismate + Gln 的 N → anthranilate → + PRPP → indole-3-glycerol P → tryptophan synthase α 切出 indole → <b>隧道</b>送到 β → + Ser(PLP,作用在 Ser 的 β 碳) <i>p.41–42</i></li>
+<li>Phe、Tyr:chorismate mutase → prephenate → 轉胺。動物:<b>Phe hydroxylase → Tyr</b>,所以 Tyr = 條件性必需 <i>p.43</i></li>
+<li><b>His</b>:PRPP 給 5 個碳 + <b>ATP 嘌呤環給 N-1、C-2</b> + Gln 給一個 N。ATP 在這裡當<b>原料</b>不是能量;殘骸 AICAR 回收進 purine 合成 <i>p.44–45</i></li>
+<li>調控:回饋抑制第一步。<b>Ile 抑制 threonine dehydratase(deaminase)</b> <span class="hit">考過</span> <i>p.46</i></li>
+<li>Sequential feedback:各分支終產物抑制自己分支第一步 → 共同路徑最後產物堆積 → 再抑制最前面 <i>p.48</i></li>
+<li>Enzyme multiplicity:aspartate β-phosphate 由 3 個 isozyme 做,各被不同終產物抑制 → 一個多了不會全關 <i>p.48</i></li>
+</ul>
+
+<h2>22.3 胺基酸衍生物</h2>
+<ul class="pts">
+<li><b>Heme</b>:<b>Gly + succinyl-CoA</b> →(<b>ALA synthase,速率決定,粒線體</b>)δ-aminolevulinate <i>p.51</i></li>
+<li>2 ALA → porphobilinogen;4 PBG → protoporphyrin;<b>ferrochelatase</b> 塞 Fe2+ → heme;<b>heme 回饋抑制前段</b> <i>p.52</i></li>
+<li class="mem">算:1 heme = 4 PBG = 8 ALA = <b>8 Gly</b></li>
+<li>Porphyria:<b>AIP</b> 最常見(雜合子、ALA + PBG 堆積、腹痛 + 神經症狀、George III);<b>ferrochelatase 缺乏</b> → protoporphyrin 堆積 → 光照產生自由基 → 極度怕光 <i>p.53</i></li>
+<li>Heme 分解:heme →(<b>heme oxygenase</b>)biliverdin + Fe2+(ferritin)+ <b>CO</b> →(biliverdin reductase)<b>bilirubin</b>(黃、不溶,靠 albumin)→ 肝:bilirubin diglucuronide → 膽汁 <i>p.54–55</i></li>
+<li>腸道菌:bilirubin → urobilinogen → <b>urobilin(尿黃)</b>/ <b>stercobilin(糞棕)</b> <i>p.55</i></li>
+<li>CO 低量 = 訊號分子(血管擴張,像 NO);<b>bilirubin = 最多的抗氧化劑</b> <i>p.56</i></li>
+<li>新生兒黃疸:<b>glucuronyl bilirubin transferase 不足</b> → 光療 <i>p.57</i></li>
+<li>HO-1 可誘導(缺氧、氧化壓力等);HO-2 恆定(腦、睪丸);HO-3 無活性 <i>p.58</i></li>
+<li><b>Creatine = Gly + Arg + Met(adoMet)</b>;<b>Glutathione = Glu + Cys + Gly</b> <i>p.59–60</i></li>
+<li>GSH 功能:redox buffer(SH、Fe2+ 保持還原)、給 glutaredoxin 做 dNDP、glutathione peroxidase 還原過氧化物 <i>p.60</i></li>
+<li>D-胺基酸:細菌細胞壁 D-Ala、D-Glu;racemase(PLP)。<b>Cycloserine(結核)</b>、L-fluoroalanine 抑制 alanine racemase,也會打到人類 PLP 酵素 <i>p.61</i></li>
+<li><b>PLP 三招:transamination、racemization、decarboxylation</b> <i>p.62</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>胺(脫羧,PLP)</th><th>來源</th><th>重點</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>Dopamine、NE、Epi</td><td>Tyr</td><td>Parkinson = dopamine 不足 → L-dopa</td><td><i>p.63</i></td></tr>
+<tr><td>GABA</td><td>Glu</td><td>抑制性;不足 → 癲癇</td><td><i>p.64</i></td></tr>
+<tr><td>Serotonin</td><td>Trp</td><td>兩步(tryptophan hydroxylase 再脫羧)<span class="hit">考過</span></td><td><i>p.64</i></td></tr>
+<tr><td>Histamine</td><td>His</td><td>過敏、血管擴張;H2 受體刺激胃酸(cimetidine)</td><td><i>p.64</i></td></tr>
+<tr><td>Spermidine、spermine</td><td>Ornithine + Met</td><td>ornithine decarboxylase;包裝 DNA</td><td><i>p.65</i></td></tr>
+<tr><td>NO</td><td><b>Arg</b></td><td>NO synthase:NADPH;Ca2+–calmodulin 活化 <span class="hit">考過</span></td><td><i>p.66</i></td></tr>
+</tbody></table></div>
+
+<h2>22.4 核苷酸</h2>
+<ul class="pts">
+<li>Purine:<b>在 ribose 上一個原子一個原子蓋環</b>;Pyrimidine:<b>先做好環(orotate)再接 PRPP</b> <i>p.69</i></li>
+<li>兩者都用 <b>PRPP</b>;Gly、Asp 是主原料,Gln 到處給胺基 <i>p.70</i></li>
+<li>Purine committed step:<b>Gln-PRPP amidotransferase</b> → 5-phosphoribosylamine(t½ 30 秒) <i>p.73</i></li>
+</ul>
+<div class="tbl"><table class="atoms">
+<thead><tr><th>Purine 環原子</th><th>來源</th><th>步驟(頁)</th></tr></thead>
+<tbody>
+<tr><td>N-9</td><td>Gln</td><td>1(p.73)</td></tr>
+<tr><td><b>C-4、C-5、N-7</b></td><td><b>Gly(整個三原子)</b> <span class="hit">考過</span></td><td>2,ATP(p.74)</td></tr>
+<tr><td>C-8</td><td>N10-formyl-THF</td><td>3(p.75)</td></tr>
+<tr><td>N-3</td><td>Gln</td><td>4(p.76)</td></tr>
+<tr><td>C-6</td><td>HCO3−(<b>不用 biotin</b>)</td><td>6(p.78)</td></tr>
+<tr><td>N-1</td><td>Asp(骨架以 <b>fumarate</b> 離開)</td><td>7–8(p.80–81)</td></tr>
+<tr><td>C-2</td><td>N10-formyl-THF</td><td>9(p.82)</td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li class="mem">口訣:Gln 給 3、9;formyl 給 2、8;Gly 給 4、5、7;Asp 給 1;CO2 給 6</li>
+<li>第一個完整 purine = <b>IMP</b> <i>p.83</i></li>
+<li>IMP → AMP:Asp 給胺基,<b>GTP 供能</b>(adenylosuccinate synthetase) <span class="hit">考過</span> <i>p.85</i></li>
+<li>IMP → GMP:<b>NAD+</b> 氧化(IMP dehydrogenase → XMP)→ <b>Gln</b> 給胺基,<b>ATP</b> → AMP + PPi <i>p.86</i></li>
+<li>調控:Gln-PRPP amidotransferase 被 <b>IMP、AMP、GMP</b> 抑制(AMP + GMP 協同) <i>p.87</i></li>
+<li>GMP 抑制 IMP dehydrogenase;AMP 抑制 adenylosuccinate synthetase;都夠 → IMP 堆積抑制前段 <i>p.88</i></li>
+<li>交叉用能:做 AMP 用 GTP、做 GMP 用 ATP → 自動平衡 <i>p.89</i></li>
+<li>PRPP synthetase(ribose phosphate pyrophosphokinase)被 <b>ADP、GDP</b> 抑制 <i>p.90</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th></th><th>CPS I</th><th>CPS II</th></tr></thead>
+<tbody>
+<tr><td>位置</td><td>粒線體</td><td><b>細胞質</b> <span class="hit">考過</span></td></tr>
+<tr><td>用途</td><td>urea cycle</td><td>pyrimidine</td></tr>
+<tr><td>其他</td><td>N-acetylglutamate 活化</td><td>屬於 <b>CAD</b>(CPS II + ATCase + dihydroorotase 三合一)</td></tr>
+</tbody></table></div>
+<p class="src">p.92, 95</p>
+<ul class="pts">
+<li>Pyrimidine:carbamoyl-P + Asp →(<b>ATCase,committed</b>)N-carbamoylaspartate →(dihydroorotase)dihydroorotate →(NAD+)<b>orotate</b> → + PRPP → orotidylate →(脫羧)<b>UMP</b> <i>p.93–97</i></li>
+<li>UTP → <b>CTP</b>:cytidylate synthetase,ATP,N 來自 Gln <i>p.98</i></li>
+<li>細菌 ATCase:6 catalytic + 6 regulatory;<b>CTP 抑制、ATP 活化</b>(平衡 purine / pyrimidine) <i>p.99–100</i></li>
+<li>NMP kinase:挑鹼基不挑糖;NDP kinase:都不挑,供體幾乎都是 ATP;adenylate kinase:ATP + AMP → 2 ADP <i>p.101</i></li>
+<li><b>Ribonucleotide reductase(RNR)</b>:NDP → dNDP(2′ 還原);受質 ADP、CDP、UDP、GDP <i>p.102, 104</i></li>
+<li>還原力:<b>NADPH</b> → thioredoxin reductase → thioredoxin → RNR;或 GSH → glutaredoxin <span class="hit">考過</span> <i>p.103</i></li>
+<li>結構 α2β2:β2 有 <b>tyrosyl radical(Fe3+ 穩定)</b>,α2 給兩個 SH;自由基機制 <i>p.104–105</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>RNR 結合物</th><th>位置</th><th>結果</th></tr></thead>
+<tbody>
+<tr><td>ATP</td><td>activity site</td><td>開</td></tr>
+<tr><td><b>dATP</b></td><td>activity site</td><td><b>全關</b>(形成 α4β4 環,自由基路徑斷)</td></tr>
+<tr><td>ATP 或 dATP</td><td>specificity site</td><td>還原 UDP、CDP</td></tr>
+<tr><td>dTTP</td><td>specificity site</td><td>還原 GDP</td></tr>
+<tr><td>dGTP</td><td>specificity site</td><td>還原 ADP</td></tr>
+</tbody></table></div>
+<p class="src">p.106–108</p>
+<ul class="pts">
+<li>dTMP:dCTP →(deaminase)dUTP →(<b>dUTPase</b>,防 U 進 DNA)dUMP →(<b>thymidylate synthase</b>,N5,N10-methylene-THF)<b>dTMP + DHF</b> <span class="hit">考過</span> <i>p.109–110</i></li>
+<li>TS 把 THF 氧化成 DHF(罕見)→ <b>DHFR + NADPH</b> 還原回 THF <i>p.110</i></li>
+<li>葉酸缺乏:巨母紅血球貧血、神經管缺陷、高 homocysteine <i>p.111</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>藥物</th><th>標靶</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td>5-Fluorouracil(→ FdUMP)</td><td>thymidylate synthase</td><td><i>p.112</i></td></tr>
+<tr><td>Methotrexate</td><td>DHFR(競爭)</td><td><i>p.112</i></td></tr>
+<tr><td>Trimethoprim</td><td>細菌 DHFR(親和力約人類 10⁵ 倍)</td><td><i>p.112</i></td></tr>
+<tr><td>Azaserine</td><td>glutamine amidotransferase</td><td><i>p.6</i></td></tr>
+<tr><td>Allopurinol</td><td>xanthine oxidase</td><td><i>p.116</i></td></tr>
+<tr><td>Glyphosate</td><td>chorismate 路徑(植物)</td><td><i>p.39</i></td></tr>
+<tr><td>Cycloserine</td><td>alanine racemase(細菌)</td><td><i>p.61</i></td></tr>
+<tr><td>L-Asparaginase</td><td>分解血中 Asn(ALL)</td><td><i>p.28</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li>AMP 分解:AMP →(5′-nucleotidase)adenosine →(<b>ADA</b>)inosine → hypoxanthine →(<b>xanthine oxidase</b>)xanthine →(XO)<b>uric acid</b> <i>p.113</i></li>
+<li>GMP 分解:GMP → guanosine → guanine →(脫胺)xanthine →(XO)uric acid <i>p.113</i></li>
+<li>人類每天排約 0.6 g uric acid <i>p.114</i></li>
+<li><b>ADA 缺乏</b>:dATP ↑ 100 倍 → 抑制 RNR → T、B 細胞都做不出 DNA → SCID;1990 首批基因治療 <span class="hit">考過</span> <i>p.115</i></li>
+<li><b>痛風</b>:sodium urate 結晶;allopurinol(hypoxanthine 類似物)抑制 XO → 改排較易溶的 hypoxanthine、xanthine <i>p.116</i></li>
+<li>Pyrimidine 分解:N → NH4+ → urea;<b>T → β-aminoisobutyrate → methylmalonyl-CoA → succinyl-CoA</b>;C、U → β-alanine → acetyl-CoA <i>p.117</i></li>
+<li>Salvage:<b>APRT</b>:adenine + PRPP → AMP;<b>HGPRT</b>:hypoxanthine → IMP、guanine → GMP <i>p.118</i></li>
+<li><b>Lesch-Nyhan</b>:HGPRT 缺乏,X-linked;PRPP 堆積 → <b>de novo purine ↑</b> → 尿酸 ↑;自殘行為 <span class="hit">考過</span> <i>p.119</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">10 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 64 題</button>
+    <button class="tab" id="tab-1" data-f="22.1" aria-pressed="false">22.1 氮</button>
+    <button class="tab" id="tab-2" data-f="22.2" aria-pressed="false">22.2 胺基酸</button>
+    <button class="tab" id="tab-3" data-f="22.3" aria-pressed="false">22.3 衍生物</button>
+    <button class="tab" id="tab-4" data-f="22.4" aria-pressed="false">22.4 核苷酸</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">64</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"22.1",s:"p.3 · Glutamate and glutamine",q:"In mammals, which reaction is the main route by which NH4+ is assimilated into amino acids?",a:1,o:[
+["α-Ketoglutarate + NH4+ + NADPH → glutamate, by glutamate dehydrogenase","此酵素對 NH4+ 的 Km 約 1 mM,太高,在哺乳類不是主要的同化途徑。"],
+["Glutamate + NH4+ + ATP → glutamine, by glutamine synthetase","正確。Glutamate 與 glutamine 是氮進入生物分子的兩扇門,glutamine synthetase 是主要反應。"],
+["NH4+ + HCO3− + 2 ATP → carbamoyl phosphate, by carbamoyl phosphate synthetase I","這是 urea cycle 的第一步,目的是排氮。"],
+["Aspartate + NH4+ → asparagine, by asparagine synthetase","Asparagine synthetase 的氮來自 glutamine。"]]},
+{c:"22.1",s:"p.4, 47 · GS cumulative feedback",q:"Bacterial glutamine synthetase is inhibited by glycine, alanine, AMP, CTP, tryptophan, histidine, carbamoyl phosphate and glucosamine 6-phosphate. How do these inhibitors act together?",a:0,o:[
+["Each alone inhibits only partially; together their effects are more than additive, and all eight nearly shut the enzyme down.","正確。這叫 cumulative(concerted)feedback inhibition,讓 glutamine 量隨時配合需求。"],
+["Any one of them alone shuts the enzyme down completely.","單一抑制劑只造成部分抑制。"],
+["They all compete with glutamate at the active site.","它們是 allosteric inhibitor,大多是 glutamine 的代謝產物。"],
+["They act by adenylylating Tyr397.","Adenylylation 由 adenylyltransferase 執行,是另一層共價調控。"]]},
+{c:"22.1",s:"p.5 · Adenylylation of GS",q:"In E. coli, [α-ketoglutarate] and [ATP] are high and [glutamine] is low. What happens to glutamine synthetase (GS)?",a:2,o:[
+["Adenylyltransferase adds AMP to Tyr397, inactivating GS.","這是 glutamine 多、PII 未被修飾時的情形。"],
+["Glutamine activates uridylyltransferase, which inactivates GS.","Glutamine 抑制 uridylyltransferase。"],
+["Uridylyltransferase converts PII to PII-UMP, which directs adenylyltransferase to remove AMP from GS, activating it.","正確。α-KG 多代表缺氮,所以打開 GS;PII-UMP 也增加 GS 的轉錄。"],
+["PII-UMP binds GS directly and blocks the glutamate site.","PII-UMP 作用在 adenylyltransferase,不直接結合 GS 的活性位。"]]},
+{c:"22.1",s:"p.6 · Glutamine amidotransferase",q:"In a glutamine amidotransferase, which residue cleaves the amide bond of glutamine, and which drug inhibits this enzyme class?",a:3,o:[
+["Ser; methotrexate","Methotrexate 抑制 dihydrofolate reductase。"],
+["His; allopurinol","Allopurinol 抑制 xanthine oxidase。"],
+["Lys that forms a Schiff base with PLP; cycloserine","Schiff base 是 PLP 酵素的特徵;cycloserine 抑制 alanine racemase。"],
+["A conserved Cys; azaserine","正確。釋出的 NH3 經 ammonia channel 送到第二個活性位。"]]},
+{c:"22.1",s:"p.6 · One-carbon carriers",q:"Which pairing of a one-carbon carrier with its role is correct?",a:1,o:[
+["Tetrahydrofolate carries methyl groups with high transfer potential for most biosynthetic methylations.","N5-methyl-THF 的甲基轉移能力弱,大多數甲基化用 adoMet。"],
+["S-Adenosylmethionine carries methyl groups with high transfer potential; tetrahydrofolate carries more oxidized units such as –CHO and –CH2OH.","正確。講義記法:THF 弱、adoMet 強。"],
+["Biotin carries methyl groups from methionine.","Biotin 攜帶的是 CO2。"],
+["PLP carries formyl groups for purine synthesis.","Purine 合成的 formyl 來自 N10-formyl-THF。"]]},
+{c:"22.2",s:"p.9 · Precursor families",q:"Which pairing of a metabolic precursor with the amino acids derived from it is correct?",a:0,o:[
+["3-Phosphoglycerate → serine, glycine, cysteine","正確。"],
+["Pyruvate → aspartate, asparagine","Asp、Asn 來自 oxaloacetate;pyruvate 給 Ala、Val、Leu、Ile。"],
+["α-Ketoglutarate → alanine, valine","α-KG 給 Glu、Gln、Pro、Arg。"],
+["Oxaloacetate → phenylalanine, tyrosine","芳香族來自 PEP + erythrose 4-phosphate。"]]},
+{c:"22.2",s:"p.9, 44 · Histidine",q:"Which amino acid is derived from ribose 5-phosphate of the pentose phosphate pathway?",a:2,o:[
+["Proline","來自 α-ketoglutarate(經 glutamate)。"],
+["Threonine","來自 oxaloacetate(經 aspartate)。"],
+["Histidine","正確。Ribose 5-phosphate 先變成 PRPP,提供 histidine 的 5 個碳。"],
+["Serine","來自 3-phosphoglycerate。"]]},
+{c:"22.2",s:"p.12–15 · Glutamate to proline",q:"Which step in the synthesis of proline from glutamate occurs spontaneously, without an enzyme?",a:2,o:[
+["Phosphorylation of the γ-carboxyl group by ATP","這一步由 kinase 催化,形成 acyl phosphate。"],
+["Reduction of the acyl phosphate to glutamate γ-semialdehyde","由 NADPH 或 NADH 還原,有酵素催化。"],
+["Cyclization of glutamate γ-semialdehyde","正確。環化自發發生,之後再還原成 proline。"],
+["The final reduction to proline","最後的還原也需要酵素與 NAD(P)H。"]]},
+{c:"22.2",s:"p.16–18 · Arginine in mammals",q:"Which statement about arginine synthesis in mammals is correct?",a:3,o:[
+["Mammals make arginine de novo from glutamate by a pathway independent of the urea cycle.","講義明講哺乳類沒有 de novo arginine 合成路徑。"],
+["Arginine is made by direct deamination of proline.","Proline 與 arginine 經 ornithine 相連,不是直接脫胺。"],
+["Arginine is made from histidine.","兩者無合成關係。"],
+["Ornithine δ-aminotransferase shifts toward ornithine formation only when arginine is insufficient; ornithine then becomes arginine through the urea cycle.","正確。平時 ornithine 是往 glutamate γ-semialdehyde、proline 的方向。"]]},
+{c:"22.2",s:"p.21–23 · 3-PG to serine",q:"Which sequence for serine synthesis is correct?",a:0,o:[
+["3-Phosphoglycerate → (oxidation, NAD+) 3-phosphohydroxypyruvate → (transamination from glutamate) 3-phosphoserine → (phosphatase) serine","正確。先氧化、再轉胺、最後去磷酸。"],
+["3-Phosphoglycerate → (dephosphorylation) glycerate → (transamination) serine","磷酸是在最後一步才移除。"],
+["3-Phosphoglycerate → (transamination) 3-phosphoserine → (oxidation) serine","要先氧化成 keto acid 才能接受胺基。"],
+["3-Phosphoglycerate → pyruvate → alanine → serine","Alanine 不轉成 serine。"]]},
+{c:"22.2",s:"p.24–25 · Serine to glycine",q:"Serine hydroxymethyltransferase converts serine to glycine. What happens to the β carbon of serine?",a:1,o:[
+["It is released as CO2.","沒有脫羧。"],
+["It is transferred to tetrahydrofolate, forming N5,N10-methylene-THF; the reaction requires PLP and is reversible.","正確。這是 THF 一碳單位的主要來源;肝裡的 glycine cleavage enzyme 也可反向合成 glycine。"],
+["It is transferred to S-adenosylmethionine.","接受者是 tetrahydrofolate。"],
+["It becomes formate and is excreted.","一碳單位被 THF 保留下來再利用。"]]},
+{c:"22.2",s:"p.19, 26 · Serine to cysteine",q:"A patient lacks cystathionine β-synthase. Which compound accumulates, and which amino acid becomes a dietary requirement?",a:2,o:[
+["Serine; glycine","Serine 只是受質之一;glycine 可由 serine 合成。"],
+["Methionine; serine","堆積的是緊接在受阻步驟前的 homocysteine。"],
+["Homocysteine; cysteine","正確。Homocysteine + serine 無法形成 cystathionine,cysteine 只能靠飲食。"],
+["Cystathionine; methionine","Cystathionine 是這個酵素的產物,不會堆積。"]]},
+{c:"22.2",s:"p.28 · Asparaginase and ALL",q:"Why is L-asparaginase used in treating childhood acute lymphoblastic leukemia (ALL)?",a:3,o:[
+["It degrades glutamine needed for purine synthesis.","它分解的是 asparagine。"],
+["It inhibits dihydrofolate reductase.","那是 methotrexate。"],
+["It converts aspartate into asparagine, overloading the cells.","方向相反:asparaginase 把 Asn 水解成 Asp。"],
+["Leukemic lymphoblasts make little or no asparagine synthetase, so lowering serum asparagine starves them.","正確。緩解率由 40–60% 提高到約 95%。"]]},
+{c:"22.2",s:"p.27, 9 · Essential amino acids",q:"Which set lists only amino acids that humans cannot synthesize?",a:0,o:[
+["Methionine, threonine, lysine, isoleucine, valine, leucine","正確。這六個由 oxaloacetate、pyruvate 衍生,人類無法自行合成。"],
+["Alanine, aspartate, asparagine, serine","四個都是非必需胺基酸。"],
+["Glutamate, glutamine, proline, glycine","四個都可自行合成。"],
+["Tyrosine, cysteine, alanine, aspartate","Tyr、Cys 屬於條件性必需,其餘可合成。"]]},
+{c:"22.2",s:"p.32, 37, 40 · Chorismate",q:"Which statement about chorismate is correct?",a:1,o:[
+["It is made from pyruvate and acetyl-CoA and is the precursor of the branched-chain amino acids.","BCAA 來自 pyruvate(與 threonine)。"],
+["It is made from PEP and erythrose 4-phosphate (via shikimate, with a second PEP) and is the branch point between tryptophan and phenylalanine/tyrosine.","正確。前四步得到七碳的 shikimate,再加三碳成 chorismate。"],
+["It is made in human liver and is the precursor of serotonin.","動物沒有 chorismate 途徑;serotonin 直接由 tryptophan 合成。"],
+["It is made from ribose 5-phosphate and ATP and is the precursor of histidine.","那是 histidine 的前驅物。"]]},
+{c:"22.2",s:"p.39 · Glyphosate",q:"Why is the herbicide glyphosate (Roundup) relatively nontoxic to mammals?",a:2,o:[
+["Mammals degrade it rapidly in the liver.","講義的理由與代謝速度無關。"],
+["It cannot cross mammalian plasma membranes.","不是講義提到的原因。"],
+["Mammals lack the shikimate–chorismate pathway, so the enzyme it inhibits is absent.","正確。它競爭性抑制 chorismate 合成的一步(EPSP synthase)。"],
+["It inhibits only bacterial glutamine synthetase.","它的標靶在芳香族胺基酸路徑。"]]},
+{c:"22.2",s:"p.41–42 · Tryptophan synthase",q:"In tryptophan synthase, what happens to the indole formed at the α subunit?",a:3,o:[
+["It is released into the cytosol and later captured by the β subunit.","Indole 不會離開酵素。"],
+["It condenses with glycine at the α subunit.","與 indole 縮合的是 serine,發生在 β subunit。"],
+["It is joined to PRPP to form indole-3-glycerol phosphate.","PRPP 參與的是更早的步驟。"],
+["It moves through an internal tunnel to the β subunit, where it condenses with serine in a PLP-dependent reaction at serine's β carbon.","正確。這是 substrate channeling 的例子。"]]},
+{c:"22.2",s:"p.43 · Phe and Tyr",q:"Why is tyrosine considered a conditionally essential amino acid in humans?",a:0,o:[
+["Humans make tyrosine only by hydroxylating phenylalanine, which is essential.","正確。由 phenylalanine hydroxylase 在 C-4 加羥基;PKU 病人因此需要補充 tyrosine。"],
+["Humans make tyrosine from chorismate only when phenylalanine is scarce.","動物沒有 chorismate。"],
+["Tyrosine is made from tryptophan.","兩者無合成關係。"],
+["Tyrosine is made only in the kidney from homogentisate.","Homogentisate 是 tyrosine 分解的中間物。"]]},
+{c:"22.2",s:"p.44–45 · Histidine",q:"In histidine biosynthesis, what role does ATP play?",a:1,o:[
+["It is only an energy source for phosphorylating intermediates.","講義特別強調這裡 ATP 不是當能量用。"],
+["It is a metabolic precursor: its purine ring contributes N-1 and C-2, and the remnant AICAR is recycled through purine synthesis.","正確。PRPP 給 5 個碳,glutamine 給另一個環氮。"],
+["It donates the ribose of PRPP.","Ribose 來自 PRPP。"],
+["It is cleaved to cAMP, which activates the pathway.","與 cAMP 無關。"]]},
+{c:"22.2",s:"p.48 · Enzyme multiplicity",q:"In E. coli, formation of aspartate β-phosphate, the first step toward lysine, methionine, threonine and isoleucine, is catalyzed by three isozymes, each inhibited by a different end product. What is the advantage?",a:3,o:[
+["The three isozymes make the reaction run faster than one enzyme could.","重點在調控,不在速度。"],
+["It lets the reaction be reversed when end products accumulate.","與可逆性無關。"],
+["It allows the pathway to run without ATP.","此步驟仍需 ATP。"],
+["An excess of one end product does not shut down synthesis of the others.","正確。叫 enzyme multiplicity;同頁的 sequential feedback inhibition 則是各分支終產物抑制自己分支的第一步。"]]},
+{c:"22.3",s:"p.51 · Glycine to ALA",q:"Which reaction is the rate-limiting step of porphyrin synthesis in higher eukaryotes, and where does it occur?",a:0,o:[
+["Glycine + succinyl-CoA → δ-aminolevulinate, by δ-aminolevulinate synthase, in mitochondria","正確。中間物 α-amino-β-ketoadipate 脫羧得 ALA。"],
+["2 δ-Aminolevulinate → porphobilinogen, in the nucleus","這是下一步,也不在細胞核。"],
+["Insertion of Fe2+ into protoporphyrin by ferrochelatase, in the cytosol","這是最後一步。"],
+["4 Porphobilinogen → protoporphyrin, in lysosomes","這是中間步驟,不在 lysosome。"]]},
+{c:"22.3",s:"p.51–52 · Porphyrin synthesis",q:"How many glycine molecules are needed to make one heme?",a:2,o:[
+["1","一個 ALA 就要一個 glycine。"],
+["4","4 是 porphobilinogen 的數目。"],
+["8","正確。4 個 porphobilinogen × 每個 2 個 ALA = 8 個 ALA,每個 ALA 用 1 個 glycine。"],
+["2","2 是一個 porphobilinogen 所需的 ALA 數。"]]},
+{c:"22.3",s:"p.52 · Porphyrin synthesis",q:"Which enzyme inserts iron into protoporphyrin, and what feedback-inhibits the early steps of the pathway?",a:1,o:[
+["Heme oxygenase; bilirubin","Heme oxygenase 是分解 heme 的酵素。"],
+["Ferrochelatase; heme","正確。"],
+["δ-Aminolevulinate synthase; Fe2+","ALA synthase 是第一步。"],
+["Biliverdin reductase; carbon monoxide","這是分解路徑的酵素。"]]},
+{c:"22.3",s:"p.53 · Porphyrias",q:"A heterozygous patient has attacks of abdominal pain and neurological dysfunction triggered by diet or drugs, with excess δ-aminolevulinate and porphobilinogen. Which disorder is most likely?",a:3,o:[
+["Ferrochelatase deficiency","堆積的是 protoporphyrin,主要症狀是對陽光極度敏感。"],
+["Lesch-Nyhan syndrome","那是 HGPRT 缺乏。"],
+["Neonatal jaundice","那是 bilirubin 代謝的問題。"],
+["Acute intermittent porphyria","正確。最常見的 porphyria;講義提到英王 George III 可能患此病。"]]},
+{c:"22.3",s:"p.54–55 · Heme degradation",q:"Which sequence of heme degradation is correct?",a:0,o:[
+["Heme → (heme oxygenase) biliverdin + Fe2+ + CO → (biliverdin reductase) bilirubin, carried by albumin → bilirubin diglucuronide in liver → bile","正確。"],
+["Heme → bilirubin → biliverdin → urobilin in liver","Biliverdin 在 bilirubin 之前;urobilin 在腎生成。"],
+["Heme → (ferrochelatase) protoporphyrin → bilirubin","Ferrochelatase 是合成酵素。"],
+["Heme → (biliverdin reductase) biliverdin → (heme oxygenase) bilirubin","兩個酵素的順序顛倒了。"]]},
+{c:"22.3",s:"p.55 · Bile pigments",q:"Which pigments give urine and feces their colors?",a:2,o:[
+["Bilirubin colors urine; biliverdin colors feces.","兩者都不是。"],
+["Stercobilin colors urine; urobilin colors feces.","兩者對調了。"],
+["Urobilin (from urobilinogen in the kidney) colors urine yellow; stercobilin in the intestine colors feces red-brown.","正確。腸道菌先把 bilirubin 轉成 urobilinogen。"],
+["Bilirubin diglucuronide colors both.","它分泌到膽汁,之後被腸道菌轉換。"]]},
+{c:"22.3",s:"p.57 · Jaundice",q:"Why is jaundice common in newborns, and how is it treated?",a:1,o:[
+["Heme oxygenase is overactive; treatment is iron chelation.","不是講義所說的原因。"],
+["Glucuronyl bilirubin transferase activity is low; phototherapy converts bilirubin into more soluble forms.","正確。"],
+["Newborns lack serum albumin; treatment is albumin infusion.","不是講義所說的原因。"],
+["Ferrochelatase is absent; treatment is avoiding light.","那是 ferrochelatase deficiency,需要避光;黃疸反而用光療。"]]},
+{c:"22.3",s:"p.56 · Heme degradation products",q:"Which statement about the products of heme degradation is correct?",a:3,o:[
+["Bilirubin is water-soluble and travels free in plasma.","Bilirubin 不溶於水,靠 serum albumin 攜帶。"],
+["The Fe2+ released is excreted in urine.","Fe2+ 由 ferritin 結合儲存。"],
+["Biliverdin is the main antioxidant of serum.","最主要的抗氧化劑是 bilirubin。"],
+["At low levels, the CO made by heme oxygenase is a signaling molecule that dilates blood vessels, like NO.","正確。因此即使沒有外來暴露,約 1% 的 hemoglobin 仍與 CO 結合。"]]},
+{c:"22.3",s:"p.59–60 · Creatine and glutathione",q:"Which pairing of a molecule with its amino acid precursors is correct?",a:0,o:[
+["Creatine: glycine, arginine, methionine (as adoMet); glutathione: glutamate, cysteine, glycine","正確。"],
+["Creatine: glycine, serine, cysteine; glutathione: glutamate, glutamine, glycine","兩組都錯。"],
+["Creatine: arginine, ornithine, proline; glutathione: cysteine, methionine, serine","兩組都錯。"],
+["Creatine: glutamate, cysteine, glycine; glutathione: glycine, arginine, methionine","兩組對調了。"]]},
+{c:"22.3",s:"p.60 · Glutathione",q:"Which of the following is NOT a function of glutathione?",a:2,o:[
+["Keeping protein sulfhydryl groups and heme iron reduced","這是它的功能:redox buffer。"],
+["Supplying reducing power to glutaredoxin for deoxyribonucleotide synthesis","這是它的功能。"],
+["Donating methyl groups for creatine synthesis","正確(此敘述錯)。甲基供體是 S-adenosylmethionine。"],
+["Serving as the substrate of glutathione peroxidase to reduce peroxides","這是它的功能。"]]},
+{c:"22.3",s:"p.61 · D-Amino acids",q:"Cycloserine, used to treat tuberculosis, inhibits which enzyme, and why may it cause side effects?",a:1,o:[
+["Glutamine synthetase; humans have the same enzyme","不是講義所說的標靶。"],
+["Alanine racemase, a PLP enzyme needed for D-alanine in the cell wall; it can also affect human PLP-dependent enzymes","正確。L-fluoroalanine 是同類的實驗性藥物。"],
+["Dihydrofolate reductase; it also binds the human enzyme","那是 trimethoprim 與 methotrexate 的標靶。"],
+["Transpeptidase; it causes allergies","那是 penicillin 的作用方式。"]]},
+{c:"22.3",s:"p.62 · PLP reactions",q:"Which set of reactions does pyridoxal phosphate promote?",a:3,o:[
+["Carboxylation, transamination and methyl transfer","羧化用 biotin,甲基轉移用 adoMet。"],
+["Oxidative decarboxylation, hydroxylation and carboxylation","不是 PLP 的反應類型。"],
+["Formyl transfer, racemization and hydrolysis","Formyl 轉移用 THF。"],
+["Transamination, racemization and decarboxylation","正確。"]]},
+{c:"22.3",s:"p.63–64 · Biological amines",q:"Which set of amine–precursor pairs is entirely correct?",a:2,o:[
+["GABA–glutamine; histamine–histidine; dopamine–tryptophan","GABA 來自 glutamate;dopamine 來自 tyrosine。"],
+["Serotonin–tyrosine; dopamine–phenylalanine; GABA–aspartate","Serotonin 來自 tryptophan;GABA 來自 glutamate。"],
+["GABA–glutamate; histamine–histidine; dopamine–tyrosine; serotonin–tryptophan","正確。都經 PLP 依賴的脫羧;Parkinson 病是 dopamine 不足,用 L-dopa。"],
+["Histamine–arginine; serotonin–tryptophan; GABA–glutamate","Histamine 來自 histidine。"]]},
+{c:"22.3",s:"p.64 · Histamine",q:"Cimetidine lowers gastric acid secretion by blocking the receptor for which amine, and from which amino acid is that amine made?",a:0,o:[
+["Histamine (H2 receptors on parietal cells); histidine","正確。Histamine 也是過敏反應的介質與血管擴張劑。"],
+["Serotonin; tryptophan","Serotonin 調控情緒、睡眠、食慾。"],
+["Dopamine; tyrosine","Dopamine 不刺激胃酸。"],
+["GABA; glutamate","GABA 是抑制性神經傳導物質。"]]},
+{c:"22.3",s:"p.65 · Polyamines",q:"Spermidine and spermine, which help package DNA, are made from which precursors?",a:1,o:[
+["Lysine and arginine","不是講義列出的前驅物。"],
+["Ornithine and methionine; the first step is decarboxylation of ornithine by ornithine decarboxylase, a PLP enzyme","正確。"],
+["Glutamate and glycine","不是講義列出的前驅物。"],
+["Histidine and serine","不是講義列出的前驅物。"]]},
+{c:"22.3",s:"p.66 · Nitric oxide",q:"Nitric oxide synthase makes NO from arginine. Which cofactor does it use, and what activates it?",a:3,o:[
+["NADH; cAMP","還原劑是 NADPH;活化因子不是 cAMP。"],
+["FADH2; PKA","不是講義所列。"],
+["ATP; insulin","不是講義所列。"],
+["NADPH; Ca2+–calmodulin","正確。另一個產物是 citrulline。"]]},
+{c:"22.4",s:"p.69 · De novo vs salvage",q:"Which statement correctly contrasts de novo purine and pyrimidine synthesis?",a:1,o:[
+["Both rings are made as free bases and then attached to ribose.","講義特別說明:兩者都不是先做出游離鹼基再接糖。"],
+["The purine ring is built atom by atom on ribose 5-phosphate (from PRPP); the pyrimidine ring is made first as orotate and then attached to PRPP.","正確。"],
+["The pyrimidine ring is built on ribose; the purine ring is made first and then attached.","兩者對調了。"],
+["Only purine synthesis uses PRPP.","兩者都需要 PRPP。"]]},
+{c:"22.4",s:"p.73 · Committed step",q:"What is the first committed step of de novo purine synthesis?",a:2,o:[
+["Ribose 5-phosphate + ATP → PRPP","PRPP 還有很多其他用途,所以不是 committed step。"],
+["Carbamoyl phosphate + aspartate → N-carbamoylaspartate","這是 pyrimidine 的 committed step(ATCase)。"],
+["Glutamine donates an amino group to C-1 of PRPP, forming 5-phosphoribosylamine (glutamine-PRPP amidotransferase).","正確。產物 t½ 只有約 30 秒,所以靠 metabolon 直接傳遞。"],
+["IMP → AMP","這是分支後的步驟。"]]},
+{c:"22.4",s:"p.75, 82 · Purine atoms",q:"Which atoms of the purine ring come from N10-formyltetrahydrofolate?",a:0,o:[
+["C-2 and C-8","正確。第 3 步(C-8)與第 9 步(C-2)。"],
+["C-4 and C-5","這兩個碳連同 N-7 來自 glycine。"],
+["N-1","來自 aspartate。"],
+["C-6","來自 HCO3−。"]]},
+{c:"22.4",s:"p.73, 76 · Purine atoms",q:"Which atoms of the purine ring come from the amide nitrogen of glutamine?",a:3,o:[
+["N-1 and N-7","N-1 來自 aspartate,N-7 來自 glycine。"],
+["N-7 only","N-7 來自 glycine。"],
+["N-1 only","N-1 來自 aspartate。"],
+["N-3 and N-9","正確。N-9 在第一步加到 PRPP 上,N-3 在第 4 步。"]]},
+{c:"22.4",s:"p.78 · AIR carboxylase",q:"In humans, the carboxylation that adds C-6 of the purine ring is unusual. Why?",a:1,o:[
+["It uses N10-formyl-THF instead of CO2.","Formyl 給的是 C-2、C-8。"],
+["It uses bicarbonate directly and does not require biotin.","正確。人類由 AIR carboxylase 一步完成;細菌與真菌則先加在環外胺基再重排。"],
+["It requires vitamin B12.","不需要 B12。"],
+["It is the only step that consumes GTP.","這一步不用 GTP。"]]},
+{c:"22.4",s:"p.80–81 · Aspartate steps",q:"In de novo purine synthesis, aspartate donates N-1. What happens to the rest of the aspartate molecule?",a:2,o:[
+["It becomes C-4 and C-5 of the ring.","C-4、C-5 來自 glycine。"],
+["It is released as oxaloacetate.","不是 oxaloacetate。"],
+["It is eliminated as fumarate, just as in the urea cycle.","正確。Urea cycle 中 argininosuccinate 也是這樣放出 fumarate。"],
+["It is released as alanine after transamination.","不是 alanine。"]]},
+{c:"22.4",s:"p.83 · IMP",q:"What is the first intermediate in de novo purine synthesis that contains a complete purine ring?",a:0,o:[
+["Inosinate (IMP)","正確。IMP 再分支成 AMP 與 GMP。"],
+["Adenylate (AMP)","由 IMP 衍生。"],
+["Xanthylate (XMP)","是 IMP → GMP 途中的中間物。"],
+["5-Aminoimidazole ribonucleotide (AIR)","只有五元的 imidazole 環。"]]},
+{c:"22.4",s:"p.86 · IMP to GMP",q:"Which set of events converts IMP to GMP?",a:3,o:[
+["Aspartate adds an amino group, with GTP as the energy source","這是 IMP → AMP。"],
+["Direct transamination from glutamate","不是講義的路徑。"],
+["Methylation by S-adenosylmethionine","不涉及甲基化。"],
+["NAD+-dependent oxidation at C-2 (IMP dehydrogenase) gives XMP; glutamine then donates an amino group, with ATP cleaved to AMP + PPi","正確。所以 GMP 用 ATP、AMP 用 GTP。"]]},
+{c:"22.4",s:"p.88–89 · Purine feedback",q:"A cell has excess GMP but little AMP. What happens?",a:1,o:[
+["Both branches from IMP stop.","GMP 只抑制自己的分支。"],
+["GMP inhibits IMP dehydrogenase, so xanthylate formation slows, while AMP synthesis from IMP continues, helped by the GTP supply.","正確。這就是 sequential feedback 與 reciprocal 使用 NTP 的平衡作用。"],
+["GMP activates adenylosuccinate synthetase directly.","GMP 不直接活化它;是 GTP 作為受質推動 AMP 合成。"],
+["GMP inhibits adenylosuccinate synthetase.","抑制 adenylosuccinate synthetase 的是 AMP。"]]},
+{c:"22.4",s:"p.87, 90, 99, 106 · Allosteric inhibitors",q:"Which pairing of an enzyme with its allosteric inhibitors is correct?",a:2,o:[
+["Glutamine-PRPP amidotransferase — CTP and UTP","它被 IMP、AMP、GMP 抑制。"],
+["Aspartate transcarbamoylase — ATP","ATP 是 ATCase 的活化劑。"],
+["Ribose phosphate pyrophosphokinase (PRPP synthetase) — ADP and GDP","正確。避免 PRPP 生產過量。"],
+["Ribonucleotide reductase — ATP at the activity site","ATP 在 activity site 是活化;抑制的是 dATP。"]]},
+{c:"22.4",s:"p.92, 95 · CPS II and CAD",q:"Which statement about carbamoyl phosphate synthetase II is correct?",a:0,o:[
+["It works in the cytosol for pyrimidine synthesis and, in eukaryotes, is part of the trifunctional protein CAD with aspartate transcarbamoylase and dihydroorotase.","正確。"],
+["It works in the mitochondrial matrix for the urea cycle.","這是 CPS I。"],
+["It is activated by N-acetylglutamate.","N-acetylglutamate 活化的是 CPS I。"],
+["It is the enzyme of the committed step of pyrimidine synthesis.","Committed step 是 aspartate transcarbamoylase。"]]},
+{c:"22.4",s:"p.93–97 · Pyrimidine pathway",q:"Which sequence of de novo pyrimidine synthesis is correct?",a:3,o:[
+["PRPP + aspartate → orotate → carbamoylaspartate → UMP","PRPP 是在 orotate 形成後才接上。"],
+["Carbamoyl phosphate + PRPP → orotidylate → dihydroorotate → UMP","順序錯誤。"],
+["Orotate → dihydroorotate → carbamoylaspartate → UMP","方向顛倒。"],
+["Carbamoyl phosphate + aspartate → N-carbamoylaspartate → dihydroorotate → orotate (NAD+) → + PRPP → orotidylate → decarboxylation → UMP","正確。"]]},
+{c:"22.4",s:"p.98 · UTP to CTP",q:"How is CTP made?",a:1,o:[
+["UMP is aminated by aspartate.","CTP 由 UTP 合成。"],
+["Cytidylate synthetase aminates UTP, using ATP and usually the amide nitrogen of glutamine.","正確。有些物種可直接用 NH4+。"],
+["CDP is phosphorylated after ribonucleotide reductase.","CTP 本身是核糖核苷酸。"],
+["Cytosine is attached to PRPP by a salvage enzyme.","不是 de novo 的路徑。"]]},
+{c:"22.4",s:"p.99–100 · ATCase",q:"How does a high [ATP] affect bacterial aspartate transcarbamoylase, and why is this useful?",a:2,o:[
+["ATP inhibits the enzyme, saving energy.","ATP 是活化劑。"],
+["ATP binds the catalytic subunits and becomes a substrate.","ATP 結合在 regulatory subunit。"],
+["ATP binds the regulatory subunits and counteracts CTP inhibition, helping balance purine and pyrimidine nucleotide pools.","正確。ATCase 由 6 個 catalytic 與 6 個 regulatory subunit 組成。"],
+["ATP has no effect; only UTP regulates the enzyme.","終產物抑制劑是 CTP。"]]},
+{c:"22.4",s:"p.101 · NMP and NDP kinases",q:"Which statement about the kinases that convert NMPs to NTPs is correct?",a:0,o:[
+["Nucleoside monophosphate kinases are specific for the base but not the sugar; nucleoside diphosphate kinase is nonspecific for both, and its donor is almost always ATP.","正確。Adenylate kinase:ATP + AMP → 2 ADP。"],
+["Nucleoside diphosphate kinase is specific for purines.","它對鹼基與糖都不挑。"],
+["Nucleoside monophosphate kinases act only on deoxyribonucleotides.","它們不挑糖。"],
+["GTP is the usual phosphoryl donor because it is most abundant.","在有氧情況下濃度最高的是 ATP。"]]},
+{c:"22.4",s:"p.103 · Reductants for RNR",q:"Besides the thioredoxin system, what else can supply reducing power to ribonucleotide reductase?",a:3,o:[
+["NADH through cytochrome b5","不是講義所列。"],
+["FADH2 from β oxidation","不是講義所列。"],
+["Tetrahydrofolate","THF 傳遞的是一碳單位。"],
+["Glutathione, through glutaredoxin","正確。兩條路的最終還原力都來自 NADPH。"]]},
+{c:"22.4",s:"p.104 · RNR structure",q:"In E. coli ribonucleotide reductase (α2β2), what does each subunit pair contribute?",a:1,o:[
+["α2 carries a tyrosyl radical; β2 binds the substrate.","兩者對調了。"],
+["β2 carries a stable tyrosyl radical stabilized by a binuclear Fe3+ center; α2 contributes two sulfhydryl groups at the active site.","正確。自由基經一串芳香族殘基長距離傳到活性位。"],
+["Both contribute NADPH-binding sites.","NADPH 不直接與這個酵素結合。"],
+["β2 binds dATP to activate the enzyme.","dATP 是抑制劑。"]]},
+{c:"22.4",s:"p.106–108 · RNR regulation",q:"dTTP binds the specificity site of ribonucleotide reductase. Which substrate reduction is favored?",a:2,o:[
+["UDP and CDP","這是 ATP 或 dATP 結合時。"],
+["ADP","這是 dGTP 結合時。"],
+["GDP → dGDP","正確。這套接力讓四種 dNTP 保持平衡;高 dATP 則誘導 α4β4 環狀結構,阻斷自由基傳遞,整個酵素失活。"],
+["None; dTTP shuts down the enzyme","整體抑制劑是 dATP。"]]},
+{c:"22.4",s:"p.109 · dUTPase",q:"Why do cells keep dUTP levels low by using dUTPase?",a:0,o:[
+["To prevent uracil from being incorporated into DNA, while producing dUMP for thymidylate synthesis","正確。"],
+["Because dUTP inhibits thymidylate synthase","不是講義所列的原因。"],
+["Because dUTP is the activator of ribonucleotide reductase","不是。"],
+["To supply UTP for RNA synthesis","dUTP 是 deoxy 形式,不用於 RNA。"]]},
+{c:"22.4",s:"p.110 · TS and DHFR",q:"Why is dihydrofolate reductase essential for continued dTMP synthesis?",a:3,o:[
+["It directly converts dUMP to dTMP.","那是 thymidylate synthase。"],
+["It supplies the methyl group from S-adenosylmethionine.","一碳單位來自 N5,N10-methylene-THF。"],
+["It removes the fluoride from FdUMP.","與此無關。"],
+["Thymidylate synthase oxidizes tetrahydrofolate to dihydrofolate, an unusual step; DHFR reduces it back with NADPH.","正確。所以抑制 DHFR(methotrexate)也會停掉 dTMP 合成。"]]},
+{c:"22.4",s:"p.112 · Chemotherapy",q:"Why is trimethoprim useful as an antibiotic?",a:1,o:[
+["It inhibits bacterial thymidylate synthase only.","不是它的標靶。"],
+["It binds bacterial dihydrofolate reductase about 100,000 times more tightly than the mammalian enzyme.","正確。"],
+["It inhibits xanthine oxidase.","那是 allopurinol。"],
+["It inhibits alanine racemase.","那是 cycloserine。"]]},
+{c:"22.4",s:"p.112 · Fluorouracil",q:"A tumor is treated with 5-fluorouracil. Which enzyme is inhibited, and by which metabolite?",a:2,o:[
+["Dihydrofolate reductase, by fluorouracil itself","DHFR 是 methotrexate 的標靶。"],
+["Ribonucleotide reductase, by FdUTP","不是講義所列。"],
+["Thymidylate synthase, by FdUMP","正確。"],
+["Glutamine amidotransferase, by FUMP","那是 azaserine 的標靶。"]]},
+{c:"22.4",s:"p.113–114 · Purine degradation",q:"Which sequence for degradation of AMP is correct?",a:0,o:[
+["AMP → (5′-nucleotidase) adenosine → (adenosine deaminase) inosine → hypoxanthine → (xanthine oxidase) xanthine → (xanthine oxidase) uric acid","正確。GMP 則經 guanosine → guanine → 脫胺成 xanthine,再到 uric acid。"],
+["AMP → IMP → GMP → uric acid","不是分解路徑。"],
+["AMP → adenine → (xanthine oxidase) adenosine → uric acid","順序與酵素都錯。"],
+["AMP → adenosine → xanthine → hypoxanthine → uric acid","Hypoxanthine 在 xanthine 之前。"]]},
+{c:"22.4",s:"p.115 · ADA deficiency",q:"In adenosine deaminase deficiency, why do lymphocytes fail to develop?",a:3,o:[
+["Uric acid crystals destroy lymphoid tissue.","ADA 缺乏時尿酸不會上升。"],
+["PRPP accumulates and drives de novo purine synthesis.","這是 Lesch-Nyhan syndrome 的機制。"],
+["Adenosine is converted to inosine too quickly.","缺 ADA 就無法轉成 inosine。"],
+["dATP rises about 100-fold and inhibits ribonucleotide reductase, so dNTP imbalance blocks DNA synthesis.","正確。T 與 B 細胞都受影響,造成 SCID;1990 年成為最早的基因治療標靶之一。"]]},
+{c:"22.4",s:"p.116 · Gout",q:"How does allopurinol relieve gout?",a:1,o:[
+["It increases uric acid excretion by the kidney.","不是講義所說的機制。"],
+["As a hypoxanthine analog, it inhibits xanthine oxidase, so hypoxanthine and xanthine, which are more soluble than uric acid, are excreted instead.","正確。痛風是 sodium urate 結晶沉積在關節。"],
+["It inhibits adenosine deaminase.","那會造成免疫缺陷。"],
+["It inhibits HGPRT, lowering purine salvage.","會使尿酸更高。"]]},
+{c:"22.4",s:"p.117 · Pyrimidine catabolism",q:"Which statement about pyrimidine catabolism is correct?",a:2,o:[
+["Pyrimidines are degraded to uric acid.","Uric acid 是 purine 的終產物。"],
+["Thymine carbons become β-alanine and then acetyl-CoA.","那是 cytosine 與 uracil 的路徑。"],
+["Thymine carbons go through β-aminoisobutyrate and methylmalonyl-CoA to succinyl-CoA; the nitrogen becomes NH4+ and then urea.","正確。Cytosine、uracil 則 → β-alanine → acetyl-CoA。"],
+["Pyrimidines are excreted unchanged.","它們會被分解。"]]},
+{c:"22.4",s:"p.118 · Salvage",q:"Which salvage reaction is correct?",a:0,o:[
+["Hypoxanthine + PRPP → IMP + PPi, by HGPRT","正確。HGPRT 也把 guanine 變成 GMP;adenine 由 APRT 變成 AMP。"],
+["Adenine + PRPP → AMP, by HGPRT","Adenine 由 APRT 處理。"],
+["Guanine + ribose 1-phosphate → GMP, by APRT","Salvage 用的是 PRPP,酵素是 HGPRT。"],
+["Hypoxanthine + ATP → IMP, by xanthine oxidase","Xanthine oxidase 是分解酵素。"]]},
+{c:"22.4",s:"p.119 · Lesch-Nyhan syndrome",q:"Why does HGPRT deficiency raise uric acid production?",a:3,o:[
+["Xanthine oxidase is induced by the mutation.","不是講義所說的原因。"],
+["dATP accumulates and inhibits ribonucleotide reductase.","這是 ADA 缺乏。"],
+["Uric acid excretion by the kidney stops.","問題在生成過多。"],
+["PRPP is no longer used for salvage, so it accumulates and drives de novo purine synthesis; the excess purines are degraded to uric acid.","正確。X-linked,主要影響男性;腦依賴 salvage,可能是神經症狀的原因。"]]}
+];
+const MATCH=[
+{t:"胺基酸 → 前驅物家族",p:[["Glu、Gln、Pro、Arg","α-Ketoglutarate","p.9","Pro 由 Glu 的 γ-semialdehyde 自發環化;Arg 經 ornithine 與 urea cycle。"],["Ser、Gly、Cys","3-Phosphoglycerate","p.9","Ser:氧化 → 轉胺 → 去磷酸;Cys 的碳來自 Ser。"],["Asp、Asn、Met、Thr、Lys","Oxaloacetate","p.9","Met、Thr、Lys 人類不能合成。"],["Ala、Val、Leu、Ile","Pyruvate","p.9","Ala 一步轉胺;BCAA 是必需胺基酸。"],["Phe、Tyr、Trp","PEP + erythrose 4-phosphate","p.9, 32","經 shikimate → chorismate。"],["His","Ribose 5-phosphate(PRPP)","p.9, 44","PRPP 給 5 個碳,ATP 給 N-1、C-2。"]]},
+{t:"氮的入口與一碳 → 角色",p:[["Glutamine synthetase","Glu + NH4+ + ATP → Gln,主要入口","p.3","小考考過。"],["Glutamate dehydrogenase","對 NH4+ 的 Km 太高,哺乳類同化不靠它","p.3","Km 約 1 mM。"],["Tyr397 adenylylation","GS 被關掉","p.5","Gln 多時,PII 與 AT 加上 AMP。"],["PII-UMP","讓 AT 移除 AMP,GS 打開","p.5","α-KG、ATP 多代表缺氮,活化 UT。"],["Glutamine amidotransferase","Cys 切 Gln,NH3 走 ammonia channel","p.6","被 azaserine 抑制;小考考過。"],["S-Adenosylmethionine","甲基轉移能力強","p.6","THF 只帶 –CHO、–CH2OH 等較氧化的一碳。"]]},
+{t:"胺基酸合成 → 關鍵步驟",p:[["Serine hydroxymethyltransferase","Ser → Gly,β 碳給 THF(PLP)","p.24","產生 N5,N10-methylene-THF,可逆。"],["Cystathionine β-synthase","homocysteine + Ser → cystathionine","p.26","Cys 的 S 來自 Met、碳來自 Ser(小考考過)。"],["Asparagine synthetase","Asp → Asn,N 來自 Gln","p.27–28","ALL 癌細胞缺它,所以用 L-asparaginase 治療。"],["Chorismate","Trp 與 Phe/Tyr 的分歧點","p.37, 40","Shikimate(7C)再加一個 PEP。"],["Tryptophan synthase","indole 走隧道到 β 次單元接 Ser","p.41–42","Substrate channeling;β 用 PLP。"],["Phenylalanine hydroxylase","Phe → Tyr","p.43","所以 Tyr 是條件性必需。"]]},
+{t:"衍生物 → 由誰做",p:[["Heme","Gly + succinyl-CoA","p.51","1 heme = 8 ALA = 8 Gly。"],["Creatine","Gly + Arg + Met(adoMet)","p.59","肌肉的能量緩衝 phosphocreatine 由它而來。"],["Glutathione","Glu + Cys + Gly","p.60","Redox buffer,也供 glutaredoxin 做 dNDP。"],["Serotonin","Trp(兩步)","p.64","Tryptophan hydroxylase 再脫羧;小考考過。"],["GABA","Glu 脫羧","p.64","抑制性神經傳導物質,不足 → 癲癇。"],["NO","Arg(NO synthase)","p.66","NADPH;Ca2+–calmodulin 活化;小考考過。"]]},
+{t:"Heme 合成、分解與疾病",p:[["ALA synthase","速率決定步驟,在粒線體","p.51","Gly + succinyl-CoA → δ-aminolevulinate。"],["Ferrochelatase","把 Fe2+ 塞進 protoporphyrin","p.52","缺乏 → protoporphyrin 堆積、怕光。"],["Heme oxygenase","heme → biliverdin + Fe2+ + CO","p.54, 56","CO 低量是訊號分子(血管擴張)。"],["Acute intermittent porphyria","ALA + PBG 堆積,腹痛與神經症狀","p.53","最常見的 porphyria。"],["Urobilin","讓尿呈黃色","p.55","腎由 urobilinogen 轉成。"],["Stercobilin","讓糞便呈紅棕色","p.55","腸道菌由 bilirubin 轉成。"]]},
+{t:"Purine 環原子 → 來源",p:[["N-1","Aspartate(骨架以 fumarate 離開)","p.80–81","與 urea cycle 的 argininosuccinate 同樣邏輯。"],["C-2、C-8","N10-formyl-THF","p.75, 82","第 3 步(C-8)與第 9 步(C-2)。"],["C-4、C-5、N-7","Glycine(整個三原子)","p.74","第 2 步,ATP 活化;小考考過。"],["N-3、N-9","Glutamine 的 amide N","p.73, 76","N-9 在第一步 committed step 接上 PRPP。"],["C-6","HCO3−(人類不用 biotin)","p.78","AIR carboxylase。"],["IMP","第一個完整的 purine","p.83","之後分支成 AMP 與 GMP。"]]},
+{t:"核苷酸合成酵素 → 調控",p:[["Gln-PRPP amidotransferase","purine committed step;被 IMP、AMP、GMP 抑制","p.73, 87","AMP + GMP 協同抑制。"],["Adenylosuccinate synthetase","IMP → AMP,用 GTP","p.85","被 AMP 抑制;小考考過。"],["IMP dehydrogenase","IMP → XMP(NAD+),被 GMP 抑制","p.86, 88","XMP 再用 Gln 的 N 與 ATP 變 GMP。"],["CPS II","細胞質,屬於 CAD","p.92, 95","CPS I 在粒線體做 urea;小考考過。"],["Aspartate transcarbamoylase","pyrimidine committed;CTP 抑制、ATP 活化","p.99–100","6 個 catalytic + 6 個 regulatory 次單元。"],["PRPP synthetase","被 ADP、GDP 抑制","p.90","Ribose phosphate pyrophosphokinase。"]]},
+{t:"Ribonucleotide reductase 與 dTMP",p:[["Ribonucleotide reductase","NDP → dNDP,tyrosyl radical","p.102, 104","α2β2;β2 的自由基由 Fe3+ 穩定。"],["Thioredoxin","把 NADPH 的還原力交給 RNR","p.103","另一路是 GSH → glutaredoxin;最終來源都是 NADPH(小考考過)。"],["dATP 結合 activity site","RNR 全關","p.106, 108","形成 α4β4 環,自由基路徑斷;ADA 缺乏就是這樣傷淋巴球。"],["dTTP 結合 specificity site","改為還原 GDP","p.107","ATP/dATP → UDP、CDP;dGTP → ADP。"],["Thymidylate synthase","dUMP → dTMP,THF 變 DHF","p.110","5-FU(FdUMP)的標靶;小考考過。"],["Dihydrofolate reductase","DHF → THF(NADPH)","p.110","Methotrexate 的標靶。"]]},
+{t:"藥物 → 標靶",p:[["5-Fluorouracil","thymidylate synthase(經 FdUMP)","p.112","化療。"],["Methotrexate","dihydrofolate reductase(競爭)","p.112","化療。"],["Trimethoprim","細菌 DHFR(親和力約人類 10^5 倍)","p.112","抗生素。"],["Azaserine","glutamine amidotransferase","p.6","抑制所有用 Gln 給氮的酵素。"],["Allopurinol","xanthine oxidase","p.116","hypoxanthine 類似物,治痛風。"],["L-Asparaginase","分解血中 Asn","p.28","治療兒童 ALL,緩解率約 95%。"]]},
+{t:"核苷酸分解與疾病",p:[["ADA deficiency","dATP ↑ 100 倍 → 抑制 RNR → SCID","p.115","T、B 細胞都受影響;小考考過。"],["Lesch-Nyhan syndrome","HGPRT 缺乏,PRPP 堆積 → de novo ↑","p.119","X-linked,尿酸高、自殘;小考考過。"],["Gout","sodium urate 結晶沉積在關節","p.116","用 allopurinol。"],["Xanthine oxidase","hypoxanthine → xanthine → uric acid","p.113","AMP 與 GMP 的分解都會經過它。"],["APRT","adenine + PRPP → AMP","p.118","HGPRT 則處理 hypoxanthine、guanine。"],["Thymine 分解","→ β-aminoisobutyrate → succinyl-CoA","p.117","C、U 則 → β-alanine → acetyl-CoA。"]]}
+];
+const KEY="biochem-ch22-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>

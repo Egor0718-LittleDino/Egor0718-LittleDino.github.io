@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch8 Nucleotides and Nucleic Acids</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, sticky score bar on top, questions as a plain numbered run. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --ink:#18242b; --muted:#5b6b74; --line:#d5dde1;
+  --accent:#1f6f8b; --accent-soft:#e3f0f4;
+  --good:#1d7a4f; --good-soft:#e2f3ea; --bad:#b3402f; --bad-soft:#f9e7e3;
+  --font-body:"IBM Plex Sans","Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+    --accent:#6fc0da; --accent-soft:#1d3640;
+    --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11181c; --surface:#1a2328; --ink:#e6edf0; --muted:#9aaab3; --line:#2f3c43;
+  --accent:#6fc0da; --accent-soft:#1d3640;
+  --good:#6fd3a0; --good-soft:#173527; --bad:#f09a8a; --bad-soft:#3d201b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+header.top{padding:28px 0 12px}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:.95rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn:hover,.tab:hover{border-color:var(--accent)}
+.score{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;flex-basis:100%}
+.meter i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin-top:16px}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:6px}
+.num{font-family:var(--font-mono);font-size:.85rem;color:var(--accent)}
+.chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.verdict{margin-left:auto;font-size:.8rem;font-weight:600;border-radius:4px;padding:1px 8px}
+.verdict.ok{color:var(--good);background:var(--good-soft)}
+.verdict.no{color:var(--bad);background:var(--bad-soft)}
+.stem{margin:0 0 12px;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:28px 1fr;gap:4px 8px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible,.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.letter{font-family:var(--font-mono);font-size:.9rem;color:var(--muted);padding-top:1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:var(--surface);border-color:var(--line)}
+.q.done .opt.right,.q.done .opt.right:hover{border-color:var(--good);background:var(--good-soft)}
+.q.done .opt.wrong,.q.done .opt.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.why{grid-column:2;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.opt.right .why,.opt.wrong .why{color:var(--ink)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;margin-right:6px}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)}
+.views{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.view{font-size:.95rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px}
+.view[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.view:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.notes h2{font-size:1.15rem;font-weight:600;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-wrap:balance}
+.notes .hint{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pts li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.pts li.mem{background:var(--accent-soft);border-radius:6px;padding:7px 10px;border-bottom:0;margin:4px 0}
+.pts i,.tbl i,.src{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.src{margin:2px 0 8px}
+.hit{display:inline-block;font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;margin:0 2px;white-space:nowrap}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.tbl th{background:var(--accent-soft);font-weight:600}
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mtitle{font-size:1.05rem;text-align:center;flex:1;min-width:180px}
+.mtitle span{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px 56px;margin-top:12px}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.col{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.mi{font:inherit;font-size:.92rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:48px}
+.mi:hover{border-color:var(--accent)}
+.mi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.mi.done{cursor:default}
+.mi.bad{border-color:var(--bad);background:var(--bad-soft);animation:shake .3s}
+.mi .pg{display:block;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion: reduce){.mi.bad{animation:none}}
+@media (max-width:480px){.board{gap:10px 28px}.mi{font-size:.85rem;padding:8px 9px}}
+.done-msg{grid-column:1/-1;text-align:center;color:var(--good);font-weight:600;margin-top:4px}
+.explain{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.exp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.exp b{font-weight:600}
+.exp .arrow{color:var(--muted);margin:0 4px}
+.exp p{margin:4px 0 0;color:var(--ink)}
+.exp .pg{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.foot{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+@media (max-width:420px){.q{padding:14px 12px 12px}.score{gap:10px}}
+.site .grp{color:var(--muted);font-size:.78rem;padding:0 2px 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  
+<nav class="site" aria-label="章節"><a class="home" href="index.html">← 總覽</a><span class="grp">生化</span><a href="ch10.html">Ch10</a><a href="ch11.html">Ch11</a><a href="ch12.html">Ch12</a><a href="ch17-18.html">Ch17–18</a><a href="ch21.html">Ch21</a><a href="ch22.html">Ch22</a><a href="ch23.html">Ch23</a><span class="grp">分生</span><a href="ch08.html" aria-current="page">Ch8</a><a href="ch09.html">Ch9</a><a href="ch24.html">Ch24</a></nav>
+<h1>Ch8 Nucleotides and Nucleic Acids</h1>
+  <p class="lede">核苷酸命名與慣例、DNA/RNA 結構、變性與損傷、PCR 與定序、核苷酸的其他功能。附整章流程圖、大綱與考法分析。</p>
+  <nav class="views" aria-label="檢視">
+    <a class="view" id="v-notes" href="#notes">考點速記</a>
+    <a class="view" id="v-match" href="#match">連連看</a>
+    <a class="view" id="v-quiz" href="#quiz">題目練習(63 題)</a>
+  </nav>
+</header>
+<section id="view-notes" class="notes">
+<style>
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0}
+.flow .ft{font-weight:600;font-size:.95rem;margin-bottom:8px}
+.flow .ft i{margin-left:6px}
+.fl{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.nd{flex:1 1 130px;background:var(--accent-soft);border-radius:8px;padding:7px 9px;font-size:.86rem;line-height:1.45}
+.nd b{display:block;font-size:.9rem}
+.nd.key{background:var(--bad-soft)}
+.nd.ok{background:var(--good-soft)}
+.ar{align-self:center;color:var(--muted);font-weight:700;flex:0 0 auto}
+.br{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.br>div{border:1px dashed var(--line);border-radius:8px;padding:8px}
+.br .lab{font-size:.8rem;color:var(--muted);margin-bottom:4px}
+@media (max-width:640px){.fl{flex-direction:column}.nd{flex:0 0 auto}.ar{transform:rotate(90deg)}.br{grid-template-columns:1fr}}
+.exam td:first-child{white-space:nowrap;font-weight:600}
+p.src{white-space:normal}
+@media (max-width:640px){.exam td:first-child{white-space:normal}}
+</style>
+<p class="hint">一行一考點。灰色是講義 PDF 頁碼;紅底方塊是必考核心。Ch8 講義沒有附國考題,下方「怎麼考」依講義的 KEY CONVENTION 頁、Worked Example 與章末習題清單(p.62)推測。看完切到「連連看」背配對,再用「題目練習」驗收。</p>
+
+<div class="cmap"><style>
+.cmap{--acc:var(--accent);--acc-soft:var(--accent-soft);--key:var(--bad-soft);--keyline:var(--bad);--side:var(--good-soft);--link:#8a5cc2}
+.cmap .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin-top:10px;width:min(1260px,calc(100vw - 24px));position:relative;left:50%;transform:translateX(-50%)}
+.cmap svg{display:block;width:100%;height:auto;font-family:inherit}
+.cmap .rt{fill:#2f6f8f}.cmap .rtt{fill:#fff;font-weight:700;font-size:17px}.cmap .rt+text+text{fill:#fff}
+.cmap .hd{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.5}.cmap .ht{fill:var(--ink);font-weight:700;font-size:16px}
+.cmap .b{fill:var(--surface);stroke:var(--line);stroke-width:1.2}.cmap .b.k{fill:var(--key);stroke:var(--keyline);stroke-width:1.6}.cmap .b.s{fill:var(--side);stroke-dasharray:4 3}
+.cmap .t1{fill:var(--ink);font-weight:700;font-size:14.5px}.cmap .t2{fill:var(--ink);font-size:13px}.cmap svg .pg{fill:var(--muted);font-size:11.5px;font-family:var(--font-mono)}
+.cmap svg .ar{fill:none;stroke:var(--muted);stroke-width:1.4}.cmap .ah{fill:var(--muted)}
+.cmap .cx{fill:none;stroke:var(--link);stroke-width:1.6;stroke-dasharray:6 4}.cmap .ah2{fill:var(--link)}.cmap .bg{fill:var(--link)}.cmap .bt{fill:#fff;font-size:12px;font-weight:700}
+.cmap .note{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+.cmap .ol{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 38px;margin:10px 0 0}
+.cmap .ol>li{margin:6px 0 12px}.cmap .ol>li>b{font-size:1.02rem}
+.cmap .ol ol{padding-left:22px;list-style:lower-alpha}.cmap .ol ol li{margin:4px 0;font-size:.93rem}.cmap .ol ul{padding-left:20px;list-style:disc}
+.cmap .ol i{font-style:normal;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.cmap .x{font-size:.7rem;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:4px;padding:0 6px;white-space:nowrap}
+.cmap details>summary{cursor:pointer;color:var(--muted);font-size:.9rem;margin-top:8px}
+</style>
+<h2>整章流程圖</h2>
+<div class="card" style="--mw:900px"><div style="min-width:900px"><svg viewBox="0 0 1248 912" role="img" aria-label="Ch8 核苷酸與核酸總流程圖" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+<marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah2"/></marker></defs>
+<rect class="rt" x="462" y="16" width="340" height="58" rx="12"/><text class="rtt" x="632" y="41" text-anchor="middle">核酸:資訊的儲存、讀取與操作</text><text class="t2" x="632" y="62" text-anchor="middle">從積木 → 結構 → 化學與技術 → 其他功能</text><rect class="hd" x="16" y="114" width="280" height="40" rx="10"/><text class="ht" x="156.0" y="140" text-anchor="middle">8.1 積木與慣例</text><path class="ar" d="M632 74 C632 100,156.0 80,156.0 112" marker-end="url(#a)"/><line class="ar" x1="156.0" y1="154" x2="156.0" y2="185" marker-end="url(#a)"/><rect class="b k" x="16" y="188" width="280" height="98" rx="9"/><text class="t1" x="28" y="215">鹼基 + 糖 = nucleoside</text><text class="t2" x="28" y="235">+ 5′ 磷酸 = nucleotide</text><text class="t2" x="28" y="255">Pyr N-1 / Pur N-9 接 C-1′</text><text class="pg" x="284" y="278" text-anchor="end">p.6</text><line class="ar" x1="156.0" y1="286" x2="156.0" y2="317" marker-end="url(#a)"/><rect class="b n" x="16" y="320" width="280" height="78" rx="9"/><text class="t1" x="28" y="347">五碳糖決定 DNA / RNA</text><text class="t2" x="28" y="367">2′-deoxy → DNA(含 U 也是)</text><text class="pg" x="284" y="390" text-anchor="end">p.9</text><line class="ar" x1="156.0" y1="398" x2="156.0" y2="429" marker-end="url(#a)"/><rect class="b k" x="16" y="432" width="280" height="78" rx="9"/><text class="t1" x="28" y="459">5′-P 接 3′-OH:phosphodiester</text><text class="t2" x="28" y="479">序列永遠寫 5′→3′</text><text class="pg" x="284" y="502" text-anchor="end">p.13–14</text><line class="ar" x1="156.0" y1="510" x2="156.0" y2="541" marker-end="url(#a)"/><rect class="b n" x="16" y="544" width="280" height="78" rx="9"/><text class="t1" x="28" y="571">RNA 有 2′-OH → 被鹼水解</text><text class="t2" x="28" y="591">DNA 沒有 → 耐鹼</text><text class="pg" x="284" y="614" text-anchor="end">p.15</text><line class="ar" x1="156.0" y1="622" x2="156.0" y2="653" marker-end="url(#a)"/><rect class="b s" x="16" y="656" width="280" height="78" rx="9"/><text class="t1" x="28" y="683">鹼基平面、260 nm 吸收</text><text class="t2" x="28" y="703">G≡C 三個氫鍵、A=T 兩個</text><text class="pg" x="284" y="726" text-anchor="end">p.16–18</text><rect class="hd" x="328" y="114" width="280" height="40" rx="10"/><text class="ht" x="468.0" y="140" text-anchor="middle">8.2 結構</text><path class="ar" d="M632 74 C632 100,468.0 80,468.0 112" marker-end="url(#a)"/><line class="ar" x1="468.0" y1="154" x2="468.0" y2="185" marker-end="url(#a)"/><rect class="b n" x="328" y="188" width="280" height="78" rx="9"/><text class="t1" x="340" y="215">證據:Avery → Hershey–Chase</text><text class="t2" x="340" y="235">Chargaff:A=T、G=C</text><text class="pg" x="596" y="258" text-anchor="end">p.20–21</text><line class="ar" x1="468.0" y1="266" x2="468.0" y2="297" marker-end="url(#a)"/><rect class="b k" x="328" y="300" width="280" height="98" rx="9"/><text class="t1" x="340" y="327">B-DNA:右旋、反平行、20 Å</text><text class="t2" x="340" y="347">3.4 Å/bp、10.5 bp/圈</text><text class="t2" x="340" y="367">穩定靠 stacking,不是氫鍵</text><text class="pg" x="596" y="390" text-anchor="end">p.23–24</text><line class="ar" x1="468.0" y1="398" x2="468.0" y2="429" marker-end="url(#a)"/><rect class="b n" x="328" y="432" width="280" height="78" rx="9"/><text class="t1" x="340" y="459">A:缺水、11 bp/圈</text><text class="t2" x="340" y="479">Z:左旋、12 bp/圈、CG 交替</text><text class="pg" x="596" y="502" text-anchor="end">p.27–28</text><line class="ar" x1="468.0" y1="510" x2="468.0" y2="541" marker-end="url(#a)"/><rect class="b n" x="328" y="544" width="280" height="78" rx="9"/><text class="t1" x="340" y="571">Palindrome → hairpin、cruciform</text><text class="t2" x="340" y="591">Hoogsteen → triplex;富 G → tetraplex</text><text class="pg" x="596" y="614" text-anchor="end">p.29–31</text><line class="ar" x1="468.0" y1="622" x2="468.0" y2="653" marker-end="url(#a)"/><rect class="b s" x="328" y="656" width="280" height="78" rx="9"/><text class="t1" x="340" y="683">RNA:單股 stacking、A-form 雙股</text><text class="t2" x="340" y="703">可配 G–U;ribozyme 靠 3D 結構</text><text class="pg" x="596" y="726" text-anchor="end">p.33–36</text><rect class="hd" x="640" y="114" width="280" height="40" rx="10"/><text class="ht" x="780.0" y="140" text-anchor="middle">8.3 化學與技術</text><path class="ar" d="M632 74 C632 100,780.0 80,780.0 112" marker-end="url(#a)"/><line class="ar" x1="780.0" y1="154" x2="780.0" y2="185" marker-end="url(#a)"/><rect class="b k" x="640" y="188" width="280" height="98" rx="9"/><text class="t1" x="652" y="215">變性:不斷共價鍵</text><text class="t2" x="652" y="235">A260 上升(hyperchromic)</text><text class="t2" x="652" y="255">G+C 越多 tm 越高</text><text class="pg" x="908" y="278" text-anchor="end">p.38–40</text><line class="ar" x1="780.0" y1="286" x2="780.0" y2="317" marker-end="url(#a)"/><rect class="b n" x="640" y="320" width="280" height="98" rx="9"/><text class="t1" x="652" y="347">C 脫胺 → U(所以 DNA 用 T)</text><text class="t2" x="652" y="367">Depurination → AP site</text><text class="t2" x="652" y="387">UV → 嘧啶二聚體;氧化最重要</text><text class="pg" x="908" y="410" text-anchor="end">p.41–43</text><line class="ar" x1="780.0" y1="418" x2="780.0" y2="449" marker-end="url(#a)"/><rect class="b n" x="640" y="452" width="280" height="78" rx="9"/><text class="t1" x="652" y="479">甲基化:供體 SAM</text><text class="t2" x="652" y="499">Dam 甲基化 GATC 的 A</text><text class="pg" x="908" y="522" text-anchor="end">p.44</text><line class="ar" x1="780.0" y1="530" x2="780.0" y2="561" marker-end="url(#a)"/><rect class="b k" x="640" y="564" width="280" height="78" rx="9"/><text class="t1" x="652" y="591">PCR:加熱 → 黏引子 → Taq 延伸</text><text class="t2" x="652" y="611">引子寫 5′→3′,右引子反向互補</text><text class="pg" x="908" y="634" text-anchor="end">p.46–48</text><line class="ar" x1="780.0" y1="642" x2="780.0" y2="673" marker-end="url(#a)"/><rect class="b n" x="640" y="676" width="280" height="78" rx="9"/><text class="t1" x="652" y="703">Sanger:ddNTP 缺 3′-OH</text><text class="t2" x="652" y="723">由下往上讀 = 互補股</text><text class="pg" x="908" y="746" text-anchor="end">p.50</text><line class="ar" x1="780.0" y1="754" x2="780.0" y2="785" marker-end="url(#a)"/><rect class="b s" x="640" y="788" width="280" height="78" rx="9"/><text class="t1" x="652" y="815">Illumina:短讀、高通量</text><text class="t2" x="652" y="835">SMRT:長讀、可跨重複序列</text><text class="pg" x="908" y="858" text-anchor="end">p.52–55</text><rect class="hd" x="952" y="114" width="280" height="40" rx="10"/><text class="ht" x="1092.0" y="140" text-anchor="middle">8.4 其他功能</text><path class="ar" d="M632 74 C632 100,1092.0 80,1092.0 112" marker-end="url(#a)"/><line class="ar" x1="1092.0" y1="154" x2="1092.0" y2="185" marker-end="url(#a)"/><rect class="b n" x="952" y="188" width="280" height="78" rx="9"/><text class="t1" x="964" y="215">NTP、dNTP</text><text class="t2" x="964" y="235">合成 RNA、DNA 的活化前驅物</text><text class="pg" x="1220" y="258" text-anchor="end">p.57</text><line class="ar" x1="1092.0" y1="266" x2="1092.0" y2="297" marker-end="url(#a)"/><rect class="b k" x="952" y="300" width="280" height="78" rx="9"/><text class="t1" x="964" y="327">ATP:ribose–α 酯鍵 ~14</text><text class="t2" x="964" y="347">α–β、β–γ 酸酐鍵 ~30 kJ/mol</text><text class="pg" x="1220" y="370" text-anchor="end">p.58</text><line class="ar" x1="1092.0" y1="378" x2="1092.0" y2="409" marker-end="url(#a)"/><rect class="b n" x="952" y="412" width="280" height="78" rx="9"/><text class="t1" x="964" y="439">含 adenosine 的輔酶</text><text class="t2" x="964" y="459">CoA、NAD、FAD、B₁₂</text><text class="pg" x="1220" y="482" text-anchor="end">p.59</text><line class="ar" x1="1092.0" y1="490" x2="1092.0" y2="521" marker-end="url(#a)"/><rect class="b n" x="952" y="524" width="280" height="78" rx="9"/><text class="t1" x="964" y="551">Second messenger</text><text class="t2" x="964" y="571">cAMP(adenylyl cyclase)、cGMP</text><text class="pg" x="1220" y="594" text-anchor="end">p.60</text><line class="ar" x1="1092.0" y1="602" x2="1092.0" y2="633" marker-end="url(#a)"/><rect class="b s" x="952" y="636" width="280" height="78" rx="9"/><text class="t1" x="964" y="663">ppGpp:細菌胺基酸飢餓</text><text class="t2" x="964" y="683">胞外 ATP → P2X;ADP → P2Y</text><text class="pg" x="1220" y="706" text-anchor="end">p.60</text><path class="cx" d="M608 349.0 C648 349.0,600 237.0,638 237.0" marker-end="url(#b)"/><circle class="bg" cx="624.0" cy="293.0" r="11"/><text class="bt" x="624.0" y="297.5" text-anchor="middle">A</text><path class="cx" d="M920 603.0 C960 603.0,912 227.0,950 227.0" marker-end="url(#b)"/><circle class="bg" cx="936.0" cy="415.0" r="11"/><text class="bt" x="936.0" y="419.5" text-anchor="middle">B</text><g transform="translate(20,886)"><rect class="b k" width="16" height="12" rx="3"/><text class="pg" x="22" y="11">必考核心</text><rect class="b s" x="100" width="16" height="12" rx="3"/><text class="pg" x="122" y="11">對照/補充</text><path class="cx" d="M210 6 h34" marker-end="url(#b)"/><text class="pg" x="252" y="11">跨節關聯</text></g></svg></div></div>
+<p class="note">手機可左右滑動看圖。紅框是必考核心,虛線框是對照補充。紫色虛線是跨節關聯:<b>A</b> 穩定靠 stacking,G≡C 的 stacking 較強,所以 G+C 越多 tm 越高(p.24、39);<b>B</b> PCR 與 Sanger 用的 dNTP 就是 8.4 的活化前驅物(p.46、57)。另一條要記的線:8.1 的 N-β-glycosyl bond 被水解,就是 8.3 的 depurination(p.6、41)。</p>
+<h2>整章大綱</h2>
+<ol class="ol">
+<li><b>8.1 基本定義與慣例</b>
+ <ol>
+ <li>DNA 唯一已知功能:儲存與傳遞遺傳資訊;RNA:rRNA、mRNA、tRNA(adapter)、ncRNA <i>p.5</i></li>
+ <li>Nucleotide = 鹼基 + 五碳糖 + 磷酸;nucleoside 沒有磷酸 <i>p.6</i>
+  <ul><li>N-β-glycosyl bond:pyrimidine N-1、purine N-9 接 C-1′;磷酸在 5′ <i>p.6</i></li>
+  <li>Purine:A、G;pyrimidine:C、T(DNA)、U(RNA)<i>p.7</i></li></ul></li>
+ <li>DNA / RNA 由五碳糖決定;只有 β-furanose 環 <i>p.9</i></li>
+ <li>命名:purine -osine、pyrimidine -idine;縮寫預設 5′ 磷酸;inosine(hypoxanthine)、pseudouridine(C-5 接糖)<i>p.8–11</i></li>
+ <li>Phosphodiester:5′-P 接 3′-OH;序列寫 5′→3′;≤50 nt 為 oligonucleotide <i>p.13–14</i></li>
+ <li>RNA 2′-OH → 鹼水解(2′,3′-cyclic 中間物);DNA 耐鹼 <i>p.15</i></li>
+ <li>鹼基性質:平面、tautomer(pH 7 為 lactam)、260 nm 吸收、stacking 與氫鍵;G≡C 三個、A=T 兩個氫鍵 <i>p.16–18</i></li>
+ </ol></li>
+<li><b>8.2 核酸結構</b>
+ <ol>
+ <li>證據:Miescher → Avery、MacLeod、McCarty → Hershey–Chase;Chargaff(A=T、G=C);Franklin、Wilkins 的 X 光 <i>p.20–22</i></li>
+ <li>Watson–Crick:反平行右旋、20 Å、3.4 Å/bp、10.5 bp/圈;兩股互補不相同 <i>p.23–24</i></li>
+ <li>穩定性:stacking 與陽離子為主,氫鍵給專一性;GC 多較穩 <i>p.24</i></li>
+ <li>Pyrimidine 只能 anti;purine 可 syn <i>p.26</i></li>
+ <li>A(右、11、缺水)/ B(右、10.5、生理)/ Z(左、12、CG 交替、Pur syn)<i>p.27–28</i></li>
+ <li>特殊結構:palindrome → hairpin、cruciform(mirror repeat 不行);Hoogsteen → triplex(低 pH);G tetraplex <i>p.29–31</i></li>
+ <li>mRNA:Jacob &amp; Monod 1961;細菌 polycistronic、真核 monocistronic <i>p.32</i></li>
+ <li>RNA:右旋 stacking、G–U 可配、雙股為 A-form;hairpin 最常見;RNase P、hammerhead、自我剪接 intron <i>p.33–36</i></li>
+ </ol></li>
+<li><b>8.3 核酸化學</b>
+ <ol>
+ <li>變性:&gt;80 °C 或極端 pH,不斷共價鍵;A260 上升;tm 隨 G+C 升高;A=T 區先開;復性先慢後快 <i>p.38–40</i></li>
+ <li>RNA 雙股比 DNA 難變性 ≥20 °C <i>p.40</i></li>
+ <li>損傷:C 脫胺 → U(DNA 用 T 的原因)、depurination → AP site、UV 嘧啶二聚體、O⁶-methylG、氧化(最重要)<i>p.41–43</i></li>
+ <li>甲基化:SAM;真核 CpG 的 C;E. coli Dam 甲基化 GATC 的 A <i>p.44</i></li>
+ <li>化學合成:phosphoramidite 固相,DMT、碘氧化,70–80 nt <i>p.45</i></li>
+ <li>PCR:四成分、三步驟、指數放大;引子設計四規則;STR 鑑識 <i>p.46–49</i></li>
+ <li>定序:Sanger(ddNTP 缺 3′-OH,由下往上讀互補股)、Illumina(短讀)、SMRT(長讀);coverage 與 contig <i>p.50–55</i></li>
+ </ol></li>
+<li><b>8.4 核苷酸的其他功能</b>
+ <ol>
+ <li>NTP 的 α、β、γ 磷酸;NTP、dNTP 是核酸合成前驅物 <i>p.57</i></li>
+ <li>ATP:酯鍵 ~14、酸酐鍵 ~30 kJ/mol <i>p.58</i></li>
+ <li>含 adenosine 的輔酶:CoA、NAD、FAD、B₁₂;adenosine 是結合把手 <i>p.59</i></li>
+ <li>訊號:cAMP(adenylyl cyclase)、cGMP、ppGpp(抑制 rRNA、tRNA 合成)、胞外 ATP(P2X)與 ADP(P2Y,clopidogrel)<i>p.60</i></li>
+ </ol></li>
+</ol>
+</div>
+
+<h2>怎麼考:考法分析</h2>
+<p class="hint" style="margin-top:4px">依據:講義標為 KEY CONVENTION 的頁(p.6、13、14)、Worked Example 8-2(p.47–48)、章末習題 1–23 的主題分布(p.62)。全部是<b>推測</b>,不是考古紀錄。</p>
+<div class="tbl exam"><table>
+<thead><tr><th>題型</th><th>出處</th><th>陷阱與解法</th></tr></thead>
+<tbody>
+<tr><td>命名與結構</td><td>KEY CONVENTION p.6;Table 8-1;習題 1、4、10</td><td>Nucleoside 沒有磷酸、nucleotide 有;purine 接 <b>N-9</b>、pyrimidine 接 <b>N-1</b>;<b>是 DNA 還是 RNA 看五碳糖,不看鹼基</b>(含 U 的 deoxyribose 聚合物仍是 DNA)。</td></tr>
+<tr><td>寫法與方向</td><td>KEY CONVENTION p.13–14;習題 2</td><td>序列一律 <b>5'→3' 由左寫到右</b>;互補股要反過來寫。最常見錯誤:直接寫互補鹼基卻沒有倒序。</td></tr>
+<tr><td>穩定性來源</td><td>p.24、28、39–40</td><td>氫鍵給<b>專一性</b>,穩定性主要來自 <b>base stacking</b> 與陽離子遮蔽;G≡C 多 → tm 高;A=T 區先解開。</td></tr>
+<tr><td>A / B / Z 比較</td><td>Fig. 8-17(p.27);習題 9</td><td>只有 <b>Z 是左旋</b>;每圈 bp:A 11、B 10.5、Z 12;Z-DNA 由交替 purine–pyrimidine(CG)促成,purine 轉成 <b>syn</b>。</td></tr>
+<tr><td>Chargaff 計算</td><td>p.21;Data Analysis 習題 23</td><td>雙股 DNA:A=T、G=C、A+G=T+C。給 A% 求其他:T 同 A,G=C=(100−2A)/2。<b>單股或 RNA 不適用</b>。</td></tr>
+<tr><td>化學性質</td><td>p.15、17、38–43;習題 6–8、11</td><td>鹼水解 RNA 靠 <b>2'-OH</b>;260 nm 吸收;變性 → <b>hyperchromic</b>;C 脫胺成 U → 所以 DNA 用 T。</td></tr>
+<tr><td>PCR 引子設計</td><td>Worked Example 8-2;習題 13</td><td>四規則:兩股反向、只能 5'→3' 合成、合成要跨過目標、<b>引子也要寫 5'→3'</b>。右側引子=給定股的反向互補。</td></tr>
+<tr><td>定序判讀</td><td>p.50–55;習題 14–18</td><td>Sanger 膠由<b>下往上讀 = 5'→3'</b>,讀到的是<b>模板的互補股</b>;ddNTP 缺 <b>3'-OH</b>。三種技術比較表要會。</td></tr>
+<tr><td>8.4 名詞</td><td>p.57–60</td><td>ATP:酯鍵 ~14、酸酐鍵 ~30 kJ/mol;CoA、NAD、FAD、B₁₂ 都含 adenosine;cAMP 由 adenylyl cyclase、ppGpp 在胺基酸飢餓時產生。</td></tr>
+</tbody></table></div>
+<ul class="pts"><li class="mem">準備順序建議:① 命名、方向、互補股寫法 → ② DNA 結構與穩定性、A/B/Z → ③ 變性與 tm、DNA 損傷 → ④ PCR 引子與 Sanger 判讀 → ⑤ 8.4 能量與訊號分子</li></ul>
+
+<h2>8.1 基本定義與慣例</h2>
+<ul class="pts">
+<li>Gene:做出功能性產物(蛋白或 RNA)所需資訊的 DNA 片段;DNA 的已知功能<b>只有儲存與傳遞遺傳資訊</b> <i>p.5</i></li>
+<li>RNA 種類:<b>rRNA</b>(核糖體成分)、<b>mRNA</b>(帶資訊到核糖體)、<b>tRNA</b>(adapter,翻成胺基酸)、ncRNA(其他功能)<i>p.5</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:從鹼基一路組成核酸 <i>p.6, 13–14</i></div><div class="fl">
+<div class="nd"><b>Base</b>purine:A、G<br>pyrimidine:C、T(DNA)、U(RNA)</div><span class="ar">→</span>
+<div class="nd"><b>+ pentose = nucleoside</b>N-β-glycosyl bond:pyrimidine <b>N-1</b> / purine <b>N-9</b> 接 C-1'(脫水)</div><span class="ar">→</span>
+<div class="nd"><b>+ phosphate = nucleotide</b>磷酸酯化在 <b>5'</b> 碳</div><span class="ar">→</span>
+<div class="nd key"><b>Phosphodiester</b>5'-磷酸接下一個的 3'-OH;骨架 = 糖–磷酸交替,鹼基是側鏈</div><span class="ar">→</span>
+<div class="nd ok"><b>寫法</b>有方向:5' 端在左、3' 端在右;≤50 nt = oligonucleotide</div>
+</div></div>
+<ul class="pts">
+<li>五碳糖編號加 '(1'–5');鹼基原子不加 <i>p.6</i></li>
+<li>Deoxyribonucleotide:<b>2'-OH 換成 –H</b> <i>p.6</i></li>
+<li class="mem"><b>DNA/RNA 由五碳糖決定</b>:含 2'-deoxy-D-ribose 就是 DNA,即使含 U;含 D-ribose 就是 RNA <i>p.9</i></li>
+<li>核酸中五碳糖只以封閉的 <b>β-furanose</b> 環存在;環皺摺(C-2' 或 C-3' endo/exo)<i>p.9</i></li>
+<li>命名:purine → <b>-osine</b>(adenosine、guanosine);pyrimidine → <b>-idine</b>(cytidine、uridine、thymidine);nucleotide → -ylate <i>p.8</i></li>
+<li>縮寫預設磷酸在 <b>5'</b>:dAMP、dGMP、dTMP、dCMP;AMP、GMP、UMP、CMP <i>p.10</i></li>
+<li>Minor bases:多為甲基化(5-methylcytosine、N⁶-methyladenosine);<b>inosine 帶 hypoxanthine</b>;<b>pseudouridine 以 C-5 接糖</b>(不是 N-1);修飾在合成後由酵素加上 <i>p.11</i></li>
+<li>命名規則:環上原子用數字(5-methyl…);環外原子加上標(N⁶、O⁶、N²)<i>p.11</i></li>
+<li>RNA 鹼水解產物:2',3'-cyclic monophosphate → 2'- 與 3'-monophosphate;<b>cAMP、cGMP</b> 是 3',5'-環狀訊號分子 <i>p.12</i></li>
+<li>骨架磷酸 pK ≈ 0,完全解離;負電由蛋白、金屬離子、polyamines 中和 <i>p.13</i></li>
+<li>簡寫:pA-C-G-T-A(OH) = pApCpGpTpA = pACGTA <i>p.14</i></li>
+<li class="mem"><b>鹼水解 RNA 不水解 DNA</b>:RNA 的 <b>2'-OH</b> 當親核基攻擊磷,形成 2',3'-環狀中間物;DNA 沒有 2'-OH <i>p.15</i></li>
+<li>鹼基:芳香、平面(purine 近平面)、有 tautomer;pH 7 以 <b>lactam</b> 為主 <i>p.16</i></li>
+<li>鹼基疏水、弱鹼性;兩種作用:<b>stacking</b>(疏水、van der Waals、偶極)與<b>氫鍵</b> <i>p.16</i></li>
+<li>所有鹼基在 <b>260 nm</b> 附近強吸收 <i>p.17</i></li>
+<li>Watson–Crick 配對:<b>G≡C 三個氫鍵、A=T 兩個</b> <i>p.18</i></li>
+</ul>
+
+<h2>8.2 核酸結構</h2>
+<ul class="pts">
+<li>結構層級:一級 = 共價結構與序列;二級 = 規則穩定構形(雙螺旋等);三級 = 染色體/大型 RNA 的複雜摺疊 <i>p.20</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:怎麼證明 DNA 是遺傳物質,又怎麼解出結構 <i>p.20–23</i></div><div class="fl">
+<div class="nd"><b>1869 Miescher</b>分離出含磷的「nuclein」</div><span class="ar">→</span>
+<div class="nd"><b>1940s Avery、MacLeod、McCarty</b>S. pneumoniae 的 DNA 讓無毒株變有毒(不是蛋白、多醣、RNA)</div><span class="ar">→</span>
+<div class="nd"><b>1952 Hershey–Chase</b>噬菌體:進入細菌的是 DNA,不是蛋白殼</div><span class="ar">→</span>
+<div class="nd"><b>Chargaff</b>A=T、G=C;同物種各組織相同</div><span class="ar">→</span>
+<div class="nd"><b>Franklin、Wilkins</b>X 光:3.4 Å 與 34 Å 週期,螺旋</div><span class="ar">→</span>
+<div class="nd key"><b>Watson–Crick</b>右旋反平行雙螺旋</div>
+</div></div>
+<ul class="pts">
+<li><b>Chargaff's rules</b>:鹼基組成因物種而異;同物種不同組織相同、不隨年齡營養環境改變;<b>A=T、G=C → purine = pyrimidine</b> <i>p.21</i></li>
+<li>雙螺旋:兩條<b>反平行</b>右旋鏈,直徑約 <b>20 Å</b>;親水骨架朝外、鹼基疊在內;有 major / minor groove <i>p.23</i></li>
+<li>每 bp <b>3.4 Å</b>;模型 10 bp(34 Å)/圈,溶液中 <b>10.5 bp(36 Å)/圈</b>;deoxyribose 為 C-2' endo <i>p.23</i></li>
+<li>兩股<b>互補但不相同</b>(序列與組成都不同)<i>p.24</i></li>
+<li class="mem"><b>氫鍵給互補性但對穩定貢獻小;穩定主要靠 base stacking 與陽離子遮蔽磷酸</b>;G≡C 間 stacking 較強 → GC 多較穩 <i>p.24</i></li>
+<li>互補性暗示複製方式:分開兩股 → 各自當模板(Ch25 證實)<i>p.25</i></li>
+<li>骨架 7 個鍵中 6 個可自由轉;purine 可 syn 或 anti,<b>pyrimidine 通常 anti</b>(C-2 羰基與糖相撞)<i>p.26</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th></th><th>A form</th><th>B form</th><th>Z form</th></tr></thead>
+<tbody>
+<tr><td>旋向</td><td>右</td><td>右</td><td><b>左</b></td></tr>
+<tr><td>直徑</td><td>~26 Å</td><td>~20 Å</td><td>~18 Å</td></tr>
+<tr><td>bp/圈</td><td>11</td><td>10.5</td><td>12</td></tr>
+<tr><td>每 bp 上升</td><td>2.6 Å</td><td>3.4 Å</td><td>3.7 Å</td></tr>
+<tr><td>鹼基傾斜</td><td>20°</td><td>6°</td><td>7°</td></tr>
+<tr><td>糖皺摺</td><td>C-3' endo</td><td>C-2' endo</td><td>Pyr C-2' endo;Pur C-3' endo</td></tr>
+<tr><td>Glycosyl bond</td><td>anti</td><td>anti</td><td>Pyr anti;<b>Pur syn</b></td></tr>
+<tr><td>何時出現</td><td>缺水溶液、結晶;細胞內是否存在不確定</td><td>生理條件下最穩定</td><td>交替 pyrimidine–purine(C、G 或 5-methyl-C、G)</td></tr>
+</tbody></table></div>
+<p class="src">Fig. 8-17、p.27–28。A 型 major groove 深、minor 淺;Z 型 major groove 幾乎看不見、minor 窄深。</p>
+<ul class="pts">
+<li>同股 4 個以上 A 連續 → 螺旋彎曲;6 個約彎 18° <i>p.28</i></li>
+<li><b>Palindrome</b>(inverted repeat):自我互補,可形成 <b>hairpin(單股)、cruciform(雙股)</b>;<b>mirror repeat 不行</b>(同股內沒有互補)<i>p.29–30</i></li>
+<li>很多 DNA 結合蛋白的位點是 palindrome <i>p.29</i></li>
+<li><b>Hoogsteen pairing</b>:第三股從 major groove 結合(purine 的 N-7、O⁶、N⁶)→ <b>triplex</b>;C·G·C 需<b>質子化 C</b> → 低 pH 最穩;<b>G tetraplex</b> 只在富含 G 的 DNA <i>p.31</i></li>
+<li>mRNA:1961 Jacob &amp; Monod 提出;細菌可 <b>polycistronic</b>,真核多為 monocistronic;100 個胺基酸至少需 300 nt 編碼序列 <i>p.32</i></li>
+<li>RNA 是單股,靠 stacking 形成右旋螺旋(purine–purine 最強);可配 <b>G–U</b>;完全配對的 RNA 雙股為 <b>A-form</b>;<b>B-form RNA 未見過</b> <i>p.33</i></li>
+<li>RNA 二級結構:bulge、internal loop、<b>hairpin 最常見</b>;UUCG 等短序列形成緊密穩定 loop <i>p.34–35</i></li>
+<li>RNase P RNA:處理 tRNA,有 C(catalytic)與 S(specificity)domain <i>p.35</i></li>
+<li>Ribozyme:hammerhead ribozyme(植物病毒)、Tetrahymena 自我剪接 intron;功能靠 3D 結構 <i>p.36</i></li>
+</ul>
+
+<h2>8.3 核酸化學</h2>
+<div class="flow"><div class="ft">流程:變性與復性 <i>p.38–40</i></div><div class="fl">
+<div class="nd"><b>加熱 &gt; 80 °C 或極端 pH</b>氫鍵與 stacking 被破壞,<b>不斷共價鍵</b></div><span class="ar">→</span>
+<div class="nd key"><b>A260 上升</b>hyperchromic effect(stacked 鹼基吸收較少 = hypochromic)</div><span class="ar">→</span>
+<div class="nd"><b>tm</b>一半變單股的溫度;<b>G+C 越多越高</b>;A=T 區先開</div><span class="ar">→</span>
+<div class="nd ok"><b>復性 annealing</b>① 隨機碰撞形成短雙股(慢)② 拉鍊式接完(快)</div>
+</div></div>
+<ul class="pts">
+<li>固定 pH 與離子強度下,tm 可估計鹼基組成 <i>p.39</i></li>
+<li>體內複製、轉錄常從 <b>A=T 富集區</b>開始分開 <i>p.40</i></li>
+<li>RNA 雙股比 DNA 難變性,中性 pH 下常需高 ≥20 °C;RNA–DNA hybrid 介於中間 <i>p.40</i></li>
+</ul>
+<div class="tbl"><table>
+<thead><tr><th>損傷</th><th>重點</th><th>頁</th></tr></thead>
+<tbody>
+<tr><td><b>Deamination</b></td><td>C → U,每天每哺乳類細胞約 100 次;A、G 慢 100 倍</td><td><i>p.41</i></td></tr>
+<tr><td><b>Depurination</b></td><td>N-β-glycosyl 鍵水解 → <b>AP site</b>;每細胞每天約 10,000 個 purine</td><td><i>p.41</i></td></tr>
+<tr><td><b>UV</b></td><td>相鄰 pyrimidine(多為 T–T)形成 <b>cyclobutane dimer</b>;另有 6-4 photoproduct</td><td><i>p.42</i></td></tr>
+<tr><td>Ionizing radiation</td><td>X 光、γ 射線使鹼基開環、骨架斷裂;UV + 游離輻射約佔環境損傷 10%</td><td><i>p.42</i></td></tr>
+<tr><td>Deaminating agent</td><td>HNO₂(來自 nitrosamine、亞硝酸/硝酸鹽)、bisulfite</td><td><i>p.43</i></td></tr>
+<tr><td>Alkylating agent</td><td>Dimethylsulfate → <b>O⁶-methylguanine</b>,不能和 C 配對</td><td><i>p.43</i></td></tr>
+<tr><td><b>Oxidative</b></td><td><b>最重要的突變來源</b>;H₂O₂、·OH(傷害最大)、superoxide;防禦 catalase、SOD</td><td><i>p.43</i></td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li class="mem"><b>為什麼 DNA 用 T 不用 U</b>:C 脫胺產生的 U 會被認成外來而修復;若 DNA 本來就含 U,就分不出來,G≡C 會慢慢流失 <i>p.41</i></li>
+<li>甲基化:供體都是 <b>S-adenosylmethionine</b>;真核約 5% C 成 5-methylcytidine,多在 <b>CpG</b> <i>p.44</i></li>
+<li>E. coli:restriction-modification 系統用甲基標記自己的 DNA;<b>Dam methylase 甲基化 GATC 的 A</b> → 分辨新舊股 <i>p.44</i></li>
+<li>化學合成:<b>phosphoramidite</b> 固相法(Khorana);DMT 保護 5'-OH → 酸去 DMT → 加 3'-phosphoramidite → <b>碘氧化</b>;常規 70–80 nt;RNA 較難(要保護 2'-OH)<i>p.45</i></li>
+</ul>
+<div class="flow"><div class="ft">流程:PCR 一個循環 <i>p.46</i></div><div class="fl">
+<div class="nd"><b>材料</b>模板、兩條 primer、dNTP、DNA polymerase</div><span class="ar">→</span>
+<div class="nd"><b>① 加熱</b>分開兩股</div><span class="ar">→</span>
+<div class="nd"><b>② 降溫</b>過量 primer 黏上</div><span class="ar">→</span>
+<div class="nd"><b>③ Taq 延伸</b>耐熱聚合酶 5'→3'</div><span class="ar">→</span>
+<div class="nd key"><b>指數放大</b>每圈加倍;20 圈 &gt;10⁶ 倍,30 圈 &gt;10⁹ 倍</div>
+</div>
+<div class="br"><div><div class="lab">引子設計四規則(Worked Example 8-2,p.48)</div>① 兩股反平行 ② 只能 5'→3' 合成 ③ 合成要跨過目標區 ④ 引子寫 5'→3'。左引子 = 與給定股相同;右引子 = 給定股的<b>反向互補</b>。最佳長度 18–22 nt。</div>
+<div><div class="lab">鑑識 Box 8-1(p.49)</div>STR:約 4 bp 重複 4–50 次;螢光引子 + 毛細管電泳;CODIS 13 → 2017 起 20 個 locus;amelogenin 判性別;誤認率 &lt;10⁻¹⁸</div></div></div>
+
+<div class="flow"><div class="ft">流程:Sanger 定序 <i>p.50–51</i></div><div class="fl">
+<div class="nd"><b>反應</b>模板 + primer + DNA polymerase + dNTP + 少量 ddNTP</div><span class="ar">→</span>
+<div class="nd key"><b>ddNTP 缺 3'-OH</b>接上後無法再延伸 → 在每個對應位置停住</div><span class="ar">→</span>
+<div class="nd"><b>電泳</b>差 1 nt 的片段分得開;短的跑最快</div><span class="ar">→</span>
+<div class="nd ok"><b>判讀</b>由下往上 = 5'→3';讀到的是<b>模板的互補股</b></div>
+</div>
+<div class="br"><div><div class="lab">例</div>ddCTP + 大量 dCTP → 在模板每個 <b>G</b> 對面停</div>
+<div><div class="lab">自動化</div>四種 ddNTP 各帶不同螢光 → 一管一道毛細管 + 雷射;人類基因體計畫用此法</div></div></div>
+<div class="tbl"><table>
+<thead><tr><th></th><th>自動 Sanger</th><th>Reversible terminator(Illumina)</th><th>SMRT(PacBio)</th></tr></thead>
+<tbody>
+<tr><td>讀法</td><td>螢光 ddNTP 終止,依大小排序</td><td>每圈加一個被阻斷的螢光鹼基,拍照後移除</td><td>單一聚合酶即時看螢光 dNTP 閃光</td></tr>
+<tr><td>模板</td><td>一條 DNA + primer</td><td>數百萬個 PCR cluster</td><td>單分子環狀(hairpin adapter)</td></tr>
+<tr><td>讀長</td><td>數千 nt / 數小時</td><td><b>100–300 nt</b></td><td><b>平均 30,000–40,000 bp</b></td></tr>
+<tr><td>準確度</td><td>高</td><td>錯誤率可低至 0.1%</td><td>每次 10–15%,重複讀取取共識</td></tr>
+<tr><td>適合</td><td>短片段常規分析</td><td>高通量、低成本</td><td>重複序列、重排、完整基因體</td></tr>
+</tbody></table></div>
+<ul class="pts">
+<li><b>Coverage(sequencing depth)</b>:每個 nt 平均被定序次數,常 100×–1,000×;重疊 reads 組成 <b>contig</b> <i>p.54</i></li>
+</ul>
+
+<h2>8.4 核苷酸的其他功能</h2>
+<ul class="pts">
+<li>磷酸由糖往外標 <b>α、β、γ</b>;NTP、dNTP 是 RNA、DNA 合成的活化前驅物 <i>p.57</i></li>
+<li class="mem">ATP:<b>ribose–α 為酯鍵,水解 ~14 kJ/mol;α–β、β–γ 為酸酐鍵,各 ~30 kJ/mol</b>;與正 ΔG 反應偶合推動反應 <i>p.58</i></li>
+<li>含 adenosine 的輔酶:<b>CoA</b>(醯基轉移,thioester)、<b>NAD</b>(hydride)、<b>FAD</b>(電子,B₂)、<b>5'-deoxyadenosylcobalamin</b>(B₁₂)<i>p.59</i></li>
+<li>Adenosine 不參與反應,是結合把手;拿掉後受質效率差 10⁶ 倍;nucleotide-binding fold <i>p.59</i></li>
+<li>Second messenger:<b>adenylyl cyclase</b>(膜內面)由 ATP 做 <b>cAMP</b>;cGMP 也調控許多細胞 <i>p.60</i></li>
+<li><b>ppGpp</b>:細菌胺基酸飢餓時產生,<b>抑制 rRNA、tRNA 合成</b> <i>p.60</i></li>
+<li>胞外:神經突觸釋放 ATP → <b>P2X</b> 受體;ADP → 血小板 <b>P2Y</b>,clopidogrel(Plavix)阻斷以抗凝 <i>p.60</i></li>
+</ul>
+</section>
+
+<section id="view-match" hidden>
+<div class="mbar">
+  <button class="btn" id="m-prev" type="button">上一組</button>
+  <div class="mtitle"><span id="m-step"></span> <b id="m-title"></b></div>
+  <button class="btn" id="m-next" type="button">下一組</button>
+</div>
+<p class="hint">先點左邊,再點右邊對應的項目;配對正確會連線,並在下方出現這一對的解釋與講義頁碼(最新的在最上面);錯了會閃紅。<span id="m-stat"></span></p>
+<div class="board" id="board">
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+  <div class="col" id="col-l"></div>
+  <div class="col" id="col-r"></div>
+</div>
+<div class="explain" id="m-explain" aria-live="polite"></div>
+<div class="foot">
+  <button class="btn" id="m-shuffle" type="button">重新洗牌這一組</button>
+  <button class="btn" id="m-all" type="button">9 組全部重來</button>
+</div>
+</section>
+<section id="view-quiz">
+<div class="bar">
+  <div class="tabs" role="group" aria-label="章節">
+    <button class="tab" id="tab-all" data-f="" aria-pressed="true">全部 63 題</button>
+    <button class="tab" id="tab-1" data-f="8.1" aria-pressed="false">8.1 定義慣例</button>
+    <button class="tab" id="tab-2" data-f="8.2" aria-pressed="false">8.2 結構</button>
+    <button class="tab" id="tab-3" data-f="8.3" aria-pressed="false">8.3 化學與技術</button>
+    <button class="tab" id="tab-4" data-f="8.4" aria-pressed="false">8.4 其他功能</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <span>已答 <b id="s-done">0</b>/<b id="s-total">63</b></span>
+    <span>答對 <b id="s-right">0</b></span>
+    <span>正確率 <b id="s-pct">–</b></span>
+  </div>
+  <div class="meter"><i id="meter"></i></div>
+</div>
+<main id="list"></main>
+<div class="foot">
+  <button class="btn" id="btn-wrong">只重做答錯的題目</button>
+  <button class="btn" id="btn-reset">全部重新作答</button>
+</div>
+</section>
+</div>
+<script>
+const QUIZ=[
+{c:"8.1",s:"p.5 · Functions of DNA",q:"According to the slides, what are the only known functions of DNA?",a:1,o:[
+["Catalysis and storage of chemical energy","催化與能量是 RNA(ribozyme)或 ATP 的角色,不是 DNA 的已知功能。"],
+["Storage of biological information and its transmission to the next generation","正確。講義說這是 DNA 唯一已知的功能。"],
+["Carrying amino acids to the ribosome","這是 tRNA 的功能。"],
+["Acting as a second messenger inside cells","這是 cAMP、cGMP 等核苷酸的功能。"]]},
+{c:"8.1",s:"p.5 · Classes of RNA",q:"Which RNA acts as the adapter that translates the information in mRNA into a specific amino acid sequence?",a:3,o:[
+["rRNA","rRNA 是核糖體的成分。"],
+["mRNA","mRNA 是把資訊帶到核糖體的中間者。"],
+["ncRNA","ncRNA 泛指其他特殊功能的 RNA。"],
+["tRNA","正確。tRNA 是 adapter。"]]},
+{c:"8.1",s:"p.6 · Nucleoside vs nucleotide",q:"What distinguishes a nucleotide from a nucleoside?",a:0,o:[
+["A nucleotide has one or more phosphate groups; a nucleoside has only a base and a pentose.","正確。Nucleoside = 鹼基 + 五碳糖;加上磷酸才是 nucleotide。"],
+["A nucleotide contains ribose; a nucleoside contains deoxyribose.","兩者都可以是 ribo 或 deoxy 形式。"],
+["A nucleotide contains a purine; a nucleoside contains a pyrimidine.","兩者都可含任何鹼基。"],
+["A nucleoside is a short polymer of nucleotides.","短聚合物叫 oligonucleotide。"]]},
+{c:"8.1",s:"p.6 · N-β-glycosyl bond",q:"Through which atoms is the base joined to the pentose in a nucleotide?",a:2,o:[
+["N-9 of pyrimidines and N-1 of purines to C-5′","號碼對調了,而且接的是 C-1′。"],
+["The phosphate group links the base to C-3′","磷酸接在 5′ 碳,不連接鹼基。"],
+["N-1 of pyrimidines or N-9 of purines to C-1′ of the pentose, with loss of water","正確。這是 N-β-glycosyl bond。"],
+["C-5 of every base to C-1′","只有 pseudouridine 這種 minor base 以 C-5 相接。"]]},
+{c:"8.1",s:"p.7 · Purines and pyrimidines",q:"Which bases are purines?",a:1,o:[
+["Cytosine and thymine","這兩個是 pyrimidine。"],
+["Adenine and guanine","正確。DNA 和 RNA 都有。"],
+["Uracil and adenine","Uracil 是 pyrimidine。"],
+["Thymine and guanine","Thymine 是 pyrimidine。"]]},
+{c:"8.1",s:"p.9 · DNA vs RNA",q:"A nucleic acid contains uracil but its sugar is 2′-deoxy-D-ribose. How is it classified?",a:3,o:[
+["RNA, because it contains uracil","鹼基不決定類別。"],
+["A hybrid that is neither DNA nor RNA","講義有明確規則。"],
+["RNA, because uracil is never found in DNA","DNA 中偶爾會有 U,只是少見。"],
+["DNA, because the pentose defines DNA versus RNA","正確。含 2′-deoxyribose 就是 DNA,即使含 U。"]]},
+{c:"8.1",s:"p.8 · Nomenclature",q:"Which name is the nucleoside of cytosine?",a:0,o:[
+["Cytidine","正確。Pyrimidine 的 nucleoside 字尾是 -idine。"],
+["Cytosinosine","不是正確的命名。"],
+["Cytidylate","這是 nucleotide(cytidine monophosphate)。"],
+["Cytosine","這是鹼基本身。"]]},
+{c:"8.1",s:"p.11 · Minor bases",q:"Which statement about minor bases is correct?",a:2,o:[
+["Inosine contains xanthine.","Inosine 帶的是 hypoxanthine。"],
+["Pseudouridine is attached to ribose through N-1, like uridine.","Pseudouridine 的特點正是以 C-5 相接。"],
+["Pseudouridine is attached to ribose through C-5 instead of N-1, and minor bases are mostly enzymatically modified major bases.","正確。修飾在合成之後由酵素加上。"],
+["Minor bases are incorporated from special triphosphates during replication.","修飾是合成後才加上的。"]]},
+{c:"8.1",s:"p.13–14 · Phosphodiester backbone",q:"Which statement about the polynucleotide backbone is correct?",a:1,o:[
+["It links the 3′-phosphate of one nucleotide to the 5′-OH of the next, and sequences are written 3′→5′.","方向寫反了;序列慣例是 5′→3′。"],
+["The 5′-phosphate of one nucleotide joins the 3′-OH of the next; sequences are written 5′→3′ from left to right.","正確。所有連結方向相同,所以每股有 5′ 端與 3′ 端。"],
+["The bases form the backbone and the sugars are side groups.","骨架是糖–磷酸交替,鹼基是側鏈。"],
+["The phosphates are uncharged at pH 7.","磷酸 pK ≈ 0,完全解離帶負電。"]]},
+{c:"8.1",s:"p.14 · Writing sequences",q:"One DNA strand is 5′-ATGC-3′. How is its complementary strand written by convention?",a:0,o:[
+["5′-GCAT-3′","正確。互補股是 3′-TACG-5′,要倒過來寫成 5′→3′。"],
+["5′-TACG-3′","只寫了互補鹼基,沒有倒序;方向錯了。"],
+["5′-ATGC-3′","這是原本那股。"],
+["5′-CGTA-3′","這只是把原股倒序,沒有取互補。"]]},
+{c:"8.1",s:"p.15 · Alkaline hydrolysis",q:"Why is RNA, but not DNA, rapidly hydrolyzed under alkaline conditions?",a:3,o:[
+["Because RNA contains uracil","U 與鹼水解無關。"],
+["Because RNA is single-stranded","單股不是原因;機制涉及糖上的羥基。"],
+["Because DNA has no phosphodiester bonds","DNA 也有磷酸雙酯鍵。"],
+["Because the 2′-OH of RNA attacks the adjacent phosphorus, forming a 2′,3′-cyclic intermediate; DNA lacks a 2′-OH","正確。產物最後是 2′- 與 3′-monophosphate 混合物。"]]},
+{c:"8.1",s:"p.16 · Properties of bases",q:"At pH 7.0, which tautomeric form of uracil predominates?",a:2,o:[
+["The double lactim","不是 pH 7 的主要形式。"],
+["The lactim","不是主要形式。"],
+["The lactam","正確。Fig. 8-2 畫的就是 pH 7 的 tautomer,配對方式也由此決定。"],
+["All three are present in equal amounts","以 lactam 為主。"]]},
+{c:"8.1",s:"p.17 · UV absorption",q:"At what wavelength do nucleic acids absorb strongly, and why?",a:1,o:[
+["280 nm, because of aromatic amino acids","280 nm 是蛋白質(Trp、Tyr)的吸收。"],
+["About 260 nm, because of the aromatic bases","正確。核苷酸混合物以 260 nm 測量。"],
+["340 nm, because of NADH","340 nm 是 NADH 的吸收,與核酸無關。"],
+["260 nm, because of the phosphate groups","吸收來自鹼基,不是磷酸。"]]},
+{c:"8.1",s:"p.18 · Base pairs",q:"How many hydrogen bonds form in Watson–Crick G≡C and A=T pairs?",a:0,o:[
+["G≡C: three; A=T: two","正確。"],
+["G≡C: two; A=T: three","相反了。"],
+["Both form two","G≡C 是三個。"],
+["Both form three","A=T 是兩個。"]]},
+
+{c:"8.2",s:"p.20 · Evidence for DNA",q:"What did the Hershey–Chase experiment (1952) show?",a:2,o:[
+["DNA from a virulent strain of Streptococcus pneumoniae transforms a nonvirulent strain.","這是 Avery、MacLeod、McCarty(1940s)。"],
+["DNA has a 3.4 Å periodicity.","這是 X 光繞射的結果。"],
+["When bacteriophages infect bacteria, the DNA, not the protein coat, carries the genetic message.","正確。"],
+["Adenine equals thymine in all cellular DNA.","這是 Chargaff's rules。"]]},
+{c:"8.2",s:"p.21 · Chargaff's rules",q:"Which statement is one of Chargaff's rules?",a:3,o:[
+["DNA base composition is identical in all species.","鹼基組成因物種而異。"],
+["Base composition of DNA changes with age and nutrition.","同物種 DNA 組成不隨年齡、營養、環境改變。"],
+["In all DNAs, A = G and T = C.","配對規則是 A=T、G=C。"],
+["In all cellular DNAs, A = T and G = C, so purines equal pyrimidines.","正確。"]]},
+{c:"8.2",s:"p.21 · Chargaff calculation(Data Analysis 23)",q:"A double-stranded DNA contains 20% adenine. What percentage is guanine?",a:1,o:[
+["20%","這是 thymine 的比例。"],
+["30%","正確。A = T = 20%,剩 60% 由 G 與 C 平分,各 30%。"],
+["60%","60% 是 G + C 總和。"],
+["40%","40% 是 A + T 總和。"]]},
+{c:"8.2",s:"p.22 · X-ray diffraction",q:"What periodicities did Franklin and Wilkins observe in DNA x-ray diffraction patterns?",a:0,o:[
+["A primary repeat of 3.4 Å and a secondary repeat of 34 Å","正確。中央十字花紋代表螺旋。"],
+["A primary repeat of 20 Å and a secondary repeat of 2.6 Å","20 Å 是直徑;2.6 Å 是 A-form 的每 bp 上升。"],
+["A single repeat of 10.5 Å","10.5 是每圈 bp 數,不是長度。"],
+["No periodicity, showing DNA is random","繞射有明確週期,顯示為螺旋。"]]},
+{c:"8.2",s:"p.23 · The double helix",q:"Which describes the Watson–Crick double helix?",a:2,o:[
+["Two parallel left-handed chains with the bases outside","鏈是反平行、右旋,鹼基在內。"],
+["Three chains wound around one axis","那是 triplex,不是 Watson–Crick 模型。"],
+["Two antiparallel chains forming a right-handed helix about 20 Å wide, with bases stacked inside and backbones outside","正確。兩股錯開配對形成 major 與 minor groove。"],
+["One chain folded back on itself","那是 hairpin。"]]},
+{c:"8.2",s:"p.23 · Helix dimensions",q:"In solution, how many base pairs are there per turn of B-DNA?",a:3,o:[
+["10.0, exactly as in the original model","原始模型是 10 bp/圈,溶液中測得 10.5。"],
+["11","這是 A-form。"],
+["12","這是 Z-form。"],
+["10.5 (about 36 Å per turn)","正確。每 bp 3.4 Å。"]]},
+{c:"8.2",s:"p.24 · Helix stability",q:"What contributes most to the stability of the DNA double helix?",a:1,o:[
+["Hydrogen bonds between base pairs","氫鍵提供互補專一性,但對穩定貢獻小。"],
+["Base stacking, plus metal cations that shield the phosphate charges","正確。G≡C 之間 stacking 較強,所以 GC 多較穩定。"],
+["Covalent bonds between the two strands","兩股之間沒有共價鍵。"],
+["Disulfide bridges in the backbone","DNA 沒有雙硫鍵。"]]},
+{c:"8.2",s:"p.24 · Complementary strands",q:"Which statement about the two strands of a DNA duplex is correct?",a:0,o:[
+["They are complementary but generally not identical in sequence or base composition.","正確。例:一股 A₃T₂G₁C₃,另一股 A₂T₃G₃C₁。"],
+["They have identical sequences.","互補不等於相同。"],
+["They run in the same direction.","兩股反平行。"],
+["Each strand individually obeys A = T.","A=T 是對整個雙股而言;單股不一定。"]]},
+{c:"8.2",s:"p.26 · Syn and anti",q:"Why are pyrimidines generally restricted to the anti conformation?",a:2,o:[
+["Because pyrimidines lack a glycosyl bond","Pyrimidine 也有 N-β-glycosyl bond。"],
+["Because pyrimidines are larger than purines","Purine 比較大。"],
+["Because the C-2 carbonyl oxygen of the pyrimidine would clash with the sugar in the syn conformation","正確。Purine 則可 syn 或 anti。"],
+["Because the phosphate is attached to the base","磷酸接在糖的 5′ 碳。"]]},
+{c:"8.2",s:"p.27–28 · A, B, Z forms",q:"Which property is unique to Z-DNA among the A, B and Z forms?",a:1,o:[
+["It has the widest diameter.","最寬的是 A-form(~26 Å)。"],
+["It is left-handed.","正確。Z-DNA 也是唯一 purine 為 syn 的形式。"],
+["It has 10.5 bp per turn.","這是 B-form。"],
+["It is favored by dehydration and crystallization.","這是 A-form。"]]},
+{c:"8.2",s:"p.28 · Z-DNA sequence",q:"Which sequence most favors formation of Z-DNA?",a:3,o:[
+["A run of six adenosines in one strand","連續 A 造成螺旋彎曲(約 18°),不是 Z-DNA。"],
+["A long all-purine tract","這較利於 triplex。"],
+["A G-rich sequence with four G tracts","這利於 G tetraplex。"],
+["Alternating pyrimidine–purine, especially C and G or 5-methyl-C and G","正確。Purine 轉成 syn,骨架呈鋸齒狀。"]]},
+{c:"8.2",s:"p.28 · A-form DNA",q:"Which statement about A-form DNA is correct?",a:0,o:[
+["It is favored in solutions relatively devoid of water, so many short DNAs crystallize in this form; whether it exists in cells is uncertain.","正確。A-form 每圈 11 bp,鹼基傾斜約 20°。"],
+["It is left-handed with a zigzag backbone.","這是 Z-form。"],
+["It is the most stable form of random-sequence DNA under physiological conditions.","這是 B-form。"],
+["It has a rise of 3.7 Å per base pair.","3.7 Å 是 Z-form;A-form 是 2.6 Å。"]]},
+{c:"8.2",s:"p.29–30 · Palindromes",q:"Which structure can a palindrome (inverted repeat) form that a mirror repeat cannot?",a:2,o:[
+["A triplex","Triplex 需要 polypurine/polypyrimidine 片段。"],
+["A G tetraplex","Tetraplex 需要富含 G 的序列。"],
+["A hairpin in a single strand or a cruciform in a duplex","正確。Mirror repeat 同股內沒有互補序列,所以不能。"],
+["Z-DNA","Z-DNA 取決於交替 purine–pyrimidine。"]]},
+{c:"8.2",s:"p.31 · Triplex DNA",q:"Why is triplex DNA containing C·G·C triplets most stable at low pH?",a:1,o:[
+["Because low pH breaks Watson–Crick pairs","低 pH 不是用來破壞配對。"],
+["Because the third-strand cytosine must be protonated to form a Hoogsteen pair","正確。該 C 的 pK 由 4.2 升到 7.5 以上。"],
+["Because low pH converts DNA to Z-form","與 Z-form 無關。"],
+["Because low pH removes the 2′-OH","DNA 本來就沒有 2′-OH。"]]},
+{c:"8.2",s:"p.31 · Hoogsteen pairing",q:"Through which groove and atoms does a third strand bind in Hoogsteen pairing?",a:0,o:[
+["The major groove, through purine N-7, O⁶ and N⁶","正確。這些是 Hoogsteen positions。"],
+["The minor groove, through the sugar 2′-OH","不是。"],
+["The phosphate backbone through covalent bonds","Hoogsteen 是氫鍵。"],
+["Only the 3′ end of the duplex","第三股沿 major groove 結合。"]]},
+{c:"8.2",s:"p.32 · mRNA",q:"Which statement about mRNA is correct?",a:3,o:[
+["Most eukaryotic mRNAs are polycistronic.","多數真核 mRNA 是 monocistronic。"],
+["A 100-amino-acid protein needs at least 100 nucleotides of coding sequence.","三聯體密碼:至少 300 nt。"],
+["mRNA was proposed by Watson and Crick in 1953.","是 1961 年 Jacob 與 Monod 提出。"],
+["In bacteria and archaea, one mRNA may encode several polypeptides (polycistronic).","正確。"]]},
+{c:"8.2",s:"p.33 · RNA structure",q:"Which statement about RNA secondary structure is correct?",a:2,o:[
+["Perfectly paired RNA duplexes adopt the B form.","B-form RNA 從未觀察到;RNA 雙股是 A-form。"],
+["G–U pairs are forbidden in RNA.","RNA 允許 G–U 配對。"],
+["Single-stranded RNA forms a right-handed helix stabilized mainly by base stacking, and G–U pairs are allowed.","正確。Purine–purine stacking 最強。"],
+["RNA strands pair in a parallel orientation.","配對的股是反平行。"]]},
+{c:"8.2",s:"p.34–36 · RNA folding and ribozymes",q:"Which example is an RNA that catalyzes its own excision?",a:1,o:[
+["Yeast phenylalanine tRNA","tRNA 是 adapter,不是自我剪接。"],
+["The self-splicing intron of Tetrahymena thermophila","正確。Ribozyme 的功能靠 3D 結構。"],
+["The UUCG tetraloop","UUCG 是穩定的 hairpin loop 序列。"],
+["mRNA of most bacteria","mRNA 不自我剪接。"]]},
+
+{c:"8.3",s:"p.38 · Denaturation",q:"What happens when duplex DNA is heated above about 80 °C?",a:3,o:[
+["Phosphodiester bonds break and the DNA fragments.","變性不斷任何共價鍵。"],
+["The DNA becomes more viscous.","黏度會急劇下降。"],
+["The change is irreversible.","回到生理溫度後可以 annealing。"],
+["Hydrogen bonds and base stacking are disrupted and the strands separate, without breaking covalent bonds.","正確。"]]},
+{c:"8.3",s:"p.38 · Annealing",q:"When fully separated complementary strands reanneal, which step is slow?",a:0,o:[
+["Finding each other by random collision to form a short duplex","正確。之後拉鍊式接完的步驟很快。"],
+["Zippering the rest of the duplex into register","這一步快。"],
+["Re-forming phosphodiester bonds","變性沒有斷共價鍵,不需重接。"],
+["Methylating the new duplex","與甲基化無關。"]]},
+{c:"8.3",s:"p.39 · Hyperchromic effect",q:"How is DNA melting usually followed experimentally?",a:2,o:[
+["By the decrease in absorbance at 280 nm","核酸看 260 nm;變性時吸收是上升。"],
+["By an increase in viscosity","黏度下降。"],
+["By the increase in absorbance at 260 nm (hyperchromic effect)","正確。Stacked 鹼基吸收較少(hypochromic),變性後上升。"],
+["By the release of inorganic phosphate","變性不釋放磷酸。"]]},
+{c:"8.3",s:"p.39 · Melting point",q:"Which DNA would have the highest melting point under the same pH and ionic strength?",a:1,o:[
+["30% G+C","G+C 越少 tm 越低。"],
+["70% G+C","正確。G≡C 多,stacking 強,tm 高;因此 tm 可估計鹼基組成。"],
+["50% G+C","不是最高。"],
+["All have the same melting point","tm 取決於鹼基組成。"]]},
+{c:"8.3",s:"p.40 · Partial denaturation",q:"Which regions of DNA denature first under carefully controlled conditions?",a:3,o:[
+["G≡C-rich regions","G≡C 富集區最穩定。"],
+["Regions bound to histones","講義未這樣說明;重點在鹼基組成。"],
+["Telomeres","不是講義所述。"],
+["A=T-rich regions, and replication and transcription often begin there","正確。形成可重現的 bubble。"]]},
+{c:"8.3",s:"p.40 · RNA duplex stability",q:"How does the stability of double-helical RNA compare with that of a comparable DNA at neutral pH?",a:0,o:[
+["RNA often needs at least 20 °C more to denature; RNA–DNA hybrids are intermediate.","正確。物理原因仍不清楚。"],
+["RNA melts about 20 °C lower than DNA.","相反。"],
+["They melt at identical temperatures.","RNA 雙股較穩定。"],
+["RNA cannot form duplexes.","RNA 可以形成 A-form 雙股。"]]},
+{c:"8.3",s:"p.41 · Deamination",q:"Why does DNA contain thymine rather than uracil?",a:2,o:[
+["Thymine absorbs more UV light.","與 UV 吸收無關。"],
+["Uracil cannot base-pair with adenine.","U 可以和 A 配對。"],
+["Spontaneous deamination of cytosine produces uracil; with T as the normal base, any U can be recognized as damage and repaired.","正確。若 DNA 本來就用 U,G≡C 對會慢慢流失。"],
+["Uracil makes DNA susceptible to alkaline hydrolysis.","鹼水解靠的是 2′-OH,與 U 無關。"]]},
+{c:"8.3",s:"p.41 · Depurination",q:"What is produced by hydrolysis of the N-β-glycosyl bond of a purine in DNA?",a:1,o:[
+["A cyclobutane dimer","這是 UV 造成的。"],
+["An AP (abasic) site","正確。每個哺乳類細胞每天約失去 10,000 個 purine。"],
+["O⁶-methylguanine","這是 alkylation。"],
+["A 2′,3′-cyclic phosphate","這是 RNA 鹼水解的中間物。"]]},
+{c:"8.3",s:"p.41 · Damage rates",q:"Which is the approximate rate of cytosine deamination in a mammalian cell?",a:0,o:[
+["About 100 events per cell per day","正確。約每 10⁷ 個 cytidine 每 24 小時一次。"],
+["About 10,000 events per cell per day","這是 depurination 的量級。"],
+["About one event per cell per year","低估太多。"],
+["About 10⁷ events per cell per day","10⁷ 是分母,不是事件數。"]]},
+{c:"8.3",s:"p.42 · UV damage",q:"What is the main DNA lesion caused by UV light?",a:3,o:[
+["Breaks in both strands of the backbone","這比較像游離輻射。"],
+["Methylation of guanine at O⁶","這是 alkylating agent。"],
+["Deamination of adenine","不是 UV 的主要產物。"],
+["Cyclobutane dimers between adjacent pyrimidines, usually thymines, on the same strand","正確。另有 6-4 photoproduct;會使 DNA 彎折。"]]},
+{c:"8.3",s:"p.43 · Chemical damage",q:"Dimethylsulfate methylates guanine to O⁶-methylguanine. Why is this mutagenic?",a:2,o:[
+["It breaks the phosphodiester backbone.","不是這個機制。"],
+["It converts guanine to uracil.","Deamination 才會產生 U(由 C)。"],
+["O⁶-methylguanine cannot base-pair with cytosine.","正確。很多致癌物就是靠修飾鹼基作用。"],
+["It forms a thymine dimer.","Dimer 是 UV 造成的。"]]},
+{c:"8.3",s:"p.43 · Oxidative damage",q:"According to the slides, what is the most important source of mutagenic change in DNA?",a:1,o:[
+["UV light","UV 加游離輻射約只佔環境因子損傷的 10%。"],
+["Oxidative damage by reactive oxygen species","正確。主要來自有氧代謝;hydroxyl radical 傷害最大。"],
+["Nitrous acid in food","是 deaminating agent,但不是最重要的來源。"],
+["X-rays","屬於游離輻射。"]]},
+{c:"8.3",s:"p.44 · DNA methylation",q:"Which statement about enzymatic DNA methylation is correct?",a:0,o:[
+["All known DNA methylases use S-adenosylmethionine, and E. coli Dam methylase methylates the A in GATC.","正確。Dam 讓細胞分辨新舊股;真核約 5% C 在 CpG 被甲基化。"],
+["Methylation in eukaryotes occurs mainly at GATC adenines.","真核主要是 CpG 的 C。"],
+["DNA methylases use ATP as the methyl donor.","供體是 SAM。"],
+["Methylation always destroys the cell's own DNA.","Restriction-modification 系統用甲基保護自己的 DNA。"]]},
+{c:"8.3",s:"p.45 · Chemical synthesis",q:"In automated phosphoramidite DNA synthesis, which step follows coupling of the 3′-phosphoramidite?",a:3,o:[
+["Removal of the DMT group with base","DMT 用酸移除,而且是在耦合之前。"],
+["Ligation with DNA ligase","化學合成不用酶。"],
+["Addition of a primer","不需要 primer。"],
+["Oxidation with iodine to a phosphotriester","正確。之後重複去 DMT、耦合、氧化。"]]},
+{c:"8.3",s:"p.45 · Synthesis limits",q:"Why is chemical synthesis of RNA more difficult than that of DNA?",a:2,o:[
+["RNA contains uracil.","U 不是困難的原因。"],
+["RNA cannot be attached to silica.","不是原因。"],
+["The 2′-OH of ribose must be protected.","正確。DNA 常規可合成 70–80 nt。"],
+["RNA is synthesized 5′→3′ on the support.","化學合成時 3′ 端固定在載體,鏈往 5′ 方向延伸;這不是困難的原因。"]]},
+{c:"8.3",s:"p.46 · PCR",q:"Which is NOT one of the four ingredients of a PCR?",a:1,o:[
+["Template DNA","這是必需成分。"],
+["DNA ligase","正確(此敘述錯誤)。PCR 需要模板、兩條 primer、dNTP 與 DNA polymerase,不需要 ligase。"],
+["Two synthetic oligonucleotide primers","這是必需成分。"],
+["A thermostable DNA polymerase and dNTPs","這是必需成分。"]]},
+{c:"8.3",s:"p.46 · PCR amplification",q:"Approximately how much is a target sequence amplified after 30 PCR cycles?",a:0,o:[
+["More than 10⁹-fold","正確。每圈加倍,2³⁰ ≈ 10⁹;20 圈 >10⁶ 倍。"],
+["30-fold","PCR 是指數放大。"],
+["About 10⁶-fold","這是 20 圈。"],
+["900-fold","這是 30²,不是 2³⁰。"]]},
+{c:"8.3",s:"p.47–48 · Primer design",q:"In Worked Example 8-2, why must the right-hand primer be the reverse complement of the given strand?",a:2,o:[
+["Because primers are always identical to the given strand","只有左引子與給定股相同。"],
+["Because DNA polymerase synthesizes 3′→5′","聚合酶只能 5′→3′。"],
+["Because it pairs with the given strand and must direct synthesis right to left, and every primer is written 5′→3′","正確。訂反方向的引子是常見又昂貴的錯誤。"],
+["Because it must be longer than the left primer","長度與此無關;最佳 18–22 nt。"]]},
+{c:"8.3",s:"p.49 · Box 8-1 forensic genotyping",q:"What does forensic DNA genotyping measure?",a:3,o:[
+["The full genome sequence of each suspect","一般只分析少數 locus。"],
+["Single base changes in mitochondrial DNA","不是講義所述的方法。"],
+["The melting temperature of hair DNA","不是。"],
+["The lengths of short tandem repeats (STRs) at several loci, amplified by PCR with dye-labeled primers","正確。CODIS 自 2017 起用 20 個核心 locus;amelogenin 判性別。"]]},
+{c:"8.3",s:"p.50 · Sanger sequencing",q:"Why does incorporation of a ddNTP stop chain extension?",a:1,o:[
+["It lacks a base.","ddNTP 有鹼基。"],
+["It has –H instead of –OH at the 3′ position.","正確。沒有 3′-OH,下一個核苷酸無法接上。"],
+["It lacks a 5′ triphosphate.","有三磷酸才能被併入。"],
+["It is fluorescent.","自動化版本才加螢光,螢光不是終止原因。"]]},
+{c:"8.3",s:"p.50 · Reading a Sanger gel",q:"How is a Sanger sequencing gel read?",a:0,o:[
+["From bottom to top, giving the 5′→3′ sequence of the strand complementary to the template","正確。短片段跑最快。"],
+["From top to bottom, giving the template sequence","方向與讀到的股都錯了。"],
+["From bottom to top, giving the template sequence 5′→3′","讀到的是互補股,不是模板。"],
+["In any order, because fragments are sorted by charge","片段依大小分開,順序有意義。"]]},
+{c:"8.3",s:"p.50 · Termination sites",q:"A Sanger reaction contains a small amount of ddCTP with excess dCTP. Where do the strands terminate?",a:2,o:[
+["Opposite every C in the template","ddCTP 被放在模板 G 的對面。"],
+["At random positions","終止位置有專一性。"],
+["Opposite every G in the template","正確。"],
+["Only at the end of the template","會在每個對應位置都有部分股停止。"]]},
+{c:"8.3",s:"p.52, 55 · Next-generation sequencing",q:"Which describes reversible terminator (Illumina) sequencing?",a:3,o:[
+["Reads average 30,000–40,000 bp from single molecules.","這是 SMRT。"],
+["Each ddNTP permanently terminates a chain, and fragments are separated by size.","這是 Sanger。"],
+["One polymerase in a tiny pore is watched in real time.","這是 SMRT。"],
+["Millions of PCR-amplified clusters are imaged one blocked, dye-labeled base per cycle, giving 100–300-nt reads.","正確。錯誤率可低至 0.1%。"]]},
+{c:"8.3",s:"p.53, 55 · SMRT sequencing",q:"What is the main advantage of SMRT sequencing despite its high error per pass?",a:1,o:[
+["It is the cheapest per base.","SMRT 成本較高、通量較低。"],
+["Its long reads span repeats and reveal deletions, duplications and rearrangements.","正確。每次 10–15% 錯誤率,但環狀模板可重複讀取取共識。"],
+["It needs no polymerase.","每個孔中固定一個聚合酶。"],
+["It reads only 100 nucleotides.","平均讀長 30,000–40,000 bp。"]]},
+{c:"8.3",s:"p.54 · Assembly",q:"What are contigs?",a:0,o:[
+["Long contiguous sequences assembled from overlapping reads","正確。"],
+["The average number of times each nucleotide is sequenced","這是 coverage(sequencing depth)。"],
+["The primers used in PCR","不是。"],
+["Clusters on an Illumina flow cell","Cluster 是定序時放大的模板。"]]},
+
+{c:"8.4",s:"p.57 · NTPs",q:"How are the phosphates of a nucleoside triphosphate labeled?",a:2,o:[
+["1, 2, 3 starting from the outermost phosphate","不是用數字。"],
+["γ, β, α starting from the ribose","順序反了。"],
+["α, β, γ starting from the one attached to the ribose","正確。"],
+["They are not distinguished.","三個磷酸化學性質不同。"]]},
+{c:"8.4",s:"p.58 · ATP bonds",q:"Which statement about the bonds of ATP is correct?",a:1,o:[
+["All three phosphate linkages are phosphoanhydrides releasing about 30 kJ/mol.","Ribose–α 是酯鍵。"],
+["The ribose–α phosphate bond is an ester (~14 kJ/mol); the α–β and β–γ linkages are phosphoanhydrides (~30 kJ/mol each).","正確。"],
+["The ester bond yields more energy than the anhydride bonds.","酸酐鍵水解能量較大。"],
+["ATP hydrolysis shifts equilibria only toward reactants.","與正 ΔG 反應偶合,把平衡推向產物。"]]},
+{c:"8.4",s:"p.59 · Adenosine in coenzymes",q:"Which coenzyme is correctly matched with its function?",a:3,o:[
+["NAD – acyl group transfer through a thioester","那是 CoA;NAD 負責 hydride transfer。"],
+["CoA – electron transfer","FAD 負責電子傳遞。"],
+["FAD – intramolecular group transfer","那是 coenzyme B₁₂。"],
+["5′-Deoxyadenosylcobalamin (vitamin B₁₂) – intramolecular group transfer","正確。CoA、NAD、FAD、B₁₂ 都含 adenosine。"]]},
+{c:"8.4",s:"p.59 · Role of adenosine",q:"Why is the adenosine part of coenzymes important even though it does not take part in the chemistry?",a:0,o:[
+["It is a binding handle; removing it can make a substrate about 10⁶-fold poorer.","正確。很多酵素有 nucleotide-binding fold。"],
+["It donates electrons in every reaction.","Adenosine 不參與化學反應。"],
+["It is the site of the thioester.","Thioester 在 CoA 的另一端。"],
+["It provides the methyl group.","不是。"]]},
+{c:"8.4",s:"p.60 · Signaling nucleotides",q:"Which statement about regulatory nucleotides is correct?",a:2,o:[
+["cAMP is made from GTP by guanylyl cyclase.","cAMP 由 adenylyl cyclase 從 ATP 製造。"],
+["ppGpp stimulates rRNA synthesis in well-fed bacteria.","ppGpp 在胺基酸飢餓時產生,抑制 rRNA、tRNA 合成。"],
+["Adenylyl cyclase on the inner face of the plasma membrane makes cAMP from ATP.","正確。cAMP 在植物以外幾乎所有細胞都有作用。"],
+["cGMP is found only in plants.","cGMP 調控許多動物細胞。"]]},
+{c:"8.4",s:"p.60 · Extracellular nucleotides",q:"Clopidogrel (Plavix) prevents blood clotting by blocking which receptor?",a:1,o:[
+["P2X receptors activated by ATP at synapses","P2X 與味覺、發炎、平滑肌、疼痛有關。"],
+["P2Y receptors on platelets activated by ADP","正確。"],
+["cAMP receptors inside platelets","Clopidogrel 作用在細胞表面受體。"],
+["Adenylyl cyclase","不是 clopidogrel 的標的。"]]}
+];
+const MATCH=[
+{t:"結構名詞 → 定義",p:[["Nucleoside","鹼基 + 五碳糖,沒有磷酸","p.6","加上磷酸才是 nucleotide。"],["Nucleotide","鹼基 + 五碳糖 + 磷酸","p.6","磷酸酯化在 5′ 碳。"],["N-β-glycosyl bond","鹼基 N-1(Pyr)/ N-9(Pur)接 C-1′","p.6","脫水形成;depurination 就是它被水解。"],["Phosphodiester linkage","5′-磷酸接下一個的 3′-OH","p.13","骨架方向一致,所以有 5′ 端和 3′ 端。"],["Oligonucleotide","短核酸,一般 ≤50 nt","p.14","更長的叫 polynucleotide。"],["2′-Deoxyribose","決定這是 DNA,即使含 U","p.9","含 D-ribose 就是 RNA。"]]},
+{t:"命名與 minor bases",p:[["Adenosine","A 的 nucleoside(purine → -osine)","p.8","Nucleotide 叫 adenylate。"],["Cytidine","C 的 nucleoside(pyrimidine → -idine)","p.8","Nucleotide 叫 cytidylate。"],["Inosine","帶 hypoxanthine 的 minor base","p.11","常見於 tRNA。"],["Pseudouridine","Uracil 以 C-5 接糖","p.11","一般 nucleoside 以 N-1 相接。"],["5-Methylcytosine","真核 CpG 上的甲基化 C","p.11, 44","約 5% 的 C 被甲基化。"],["N⁶-Methyladenosine","細菌常見,Dam 甲基化 GATC 的 A","p.11, 44","讓細胞分辨新舊股。"]]},
+{t:"DNA 雙螺旋數字",p:[["3.4 Å","B-DNA 每 bp 上升","p.23","X 光的主要週期。"],["34 Å","X 光的次要週期(模型每圈)","p.22–23","模型 10 bp/圈。"],["10.5 bp","溶液中 B-DNA 每圈","p.23","約 36 Å。"],["20 Å","B-DNA 直徑","p.23","A 約 26 Å、Z 約 18 Å。"],["G≡C","三個氫鍵,stacking 也較強","p.18, 24","GC 多 → tm 高。"],["A=T","兩個氫鍵,區段最先解開","p.18, 40","複製轉錄常從此處開始。"]]},
+{t:"A / B / Z 與特殊結構",p:[["B-DNA","生理條件最穩定,右旋 10.5 bp/圈","p.27–28","Watson–Crick 結構。"],["A-DNA","缺水時出現,右旋 11 bp/圈,傾斜 20°","p.27–28","細胞內是否存在不確定。"],["Z-DNA","左旋 12 bp/圈,purine 為 syn","p.27–28","交替 CG 序列促成。"],["Palindrome","可形成 hairpin 與 cruciform","p.29–30","Mirror repeat 不行。"],["Triplex","Hoogsteen 配對,C·G·C 需低 pH","p.31","第三股走 major groove。"],["G tetraplex","四股,只在富含 G 的 DNA","p.31","穩定,可平行或反平行。"]]},
+{t:"DNA 是遺傳物質的證據",p:[["Miescher(1869)","首次分離含磷的 nuclein","p.20","最早分離 DNA。"],["Avery、MacLeod、McCarty","S. pneumoniae 的 DNA 造成轉形","p.20","不是蛋白、多醣或 RNA。"],["Hershey–Chase(1952)","進入細菌的是噬菌體 DNA","p.20","蛋白殼不帶遺傳訊息。"],["Chargaff","A=T、G=C;purine = pyrimidine","p.21","同物種不同組織組成相同。"],["Franklin、Wilkins","X 光繞射:3.4 Å 與 34 Å","p.22","中央十字代表螺旋。"],["Jacob、Monod(1961)","提出 messenger RNA","p.32","DNA 在核內,蛋白在細胞質合成。"]]},
+{t:"變性與損傷",p:[["Hyperchromic effect","變性後 A260 上升","p.39","Stacked 鹼基吸收較少(hypochromic)。"],["tm","一半 DNA 變單股的溫度","p.39","G+C 越多越高。"],["Deamination","C → U,每細胞每天約 100 次","p.41","所以 DNA 用 T 不用 U。"],["Depurination","Glycosyl 鍵水解,留下 AP site","p.41","每細胞每天約 10,000 個 purine。"],["UV light","相鄰 pyrimidine 形成 cyclobutane dimer","p.42","多為 T–T;另有 6-4 photoproduct。"],["Dimethylsulfate","造成 O⁶-methylguanine,不能配 C","p.43","Alkylating agent。"]]},
+{t:"技術 → 關鍵",p:[["Phosphoramidite 合成","DMT 保護 → 耦合 → 碘氧化,常規 70–80 nt","p.45","RNA 要多保護 2′-OH。"],["PCR","模板、兩引子、dNTP、Taq;30 圈 >10⁹ 倍","p.46","每圈加倍。"],["Sanger","ddNTP 缺 3′-OH 終止;由下往上讀","p.50","讀到模板的互補股。"],["Illumina","Reversible terminator,讀長 100–300 nt","p.52","錯誤率可低至 0.1%。"],["SMRT","單分子即時,平均 30–40 kb","p.53","可跨越重複序列與重排。"],["STR genotyping","約 4 bp 重複的長度差異","p.49","CODIS 2017 起 20 個 locus。"]]},
+{t:"RNA 結構",p:[["RNA 雙股","A-form 右旋;B-form 從未觀察到","p.33","Z-form 只在實驗室高鹽或高溫。"],["G–U pair","RNA 允許的非 Watson–Crick 配對","p.33, 35","RNase P RNA 中可見。"],["Hairpin loop","最常見的 RNA 二級結構","p.34–35","UUCG 形成緊密穩定 loop。"],["RNase P RNA","處理 tRNA,有 C 與 S domain","p.35","C = catalytic,S = specificity。"],["Hammerhead ribozyme","來自植物病毒,依活性區形狀命名","p.36","Ribozyme 功能靠 3D 結構。"],["2′-OH","讓 RNA 被鹼水解","p.15","產生 2′,3′-cyclic 中間物。"]]},
+{t:"核苷酸的其他功能",p:[["Phosphoanhydride bond","ATP 的 α–β、β–γ,各 ~30 kJ/mol","p.58","酯鍵(ribose–α)約 14 kJ/mol。"],["CoA","以 thioester 轉移醯基","p.59","含 3′-phosphoadenosine diphosphate。"],["NAD","Hydride transfer","p.59","Nicotinamide adenine dinucleotide。"],["cAMP","Adenylyl cyclase 由 ATP 製造的 second messenger","p.60","植物以外幾乎所有細胞。"],["ppGpp","細菌胺基酸飢餓時抑制 rRNA、tRNA 合成","p.60","講義指向 Fig. 28-22。"],["Clopidogrel","阻斷血小板 ADP 的 P2Y 受體","p.60","ATP 則作用在 P2X。"]]}
+];
+const KEY="molbio-ch08-quiz-v1";
+let picks={}; let filter="";
+try{const s=localStorage.getItem(KEY); if(s) picks=JSON.parse(s)||{};}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(picks));}catch(e){}}
+const list=document.getElementById("list");
+function el(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n;}
+function render(){
+  list.textContent="";
+  QUIZ.forEach((item,i)=>{
+    if(filter && item.c!==filter) return;
+    const picked=picks[i]; const done=picked!==undefined;
+    const card=el("section","q"+(done?" done":""));
+    const head=el("div","qhead");
+    head.append(el("span","num","Q"+(i+1)), el("span","chip","講義 "+item.s));
+    if(done) head.append(el("span","verdict "+(picked===item.a?"ok":"no"), picked===item.a?"答對":"答錯,正解 "+"ABCD"[item.a]));
+    card.append(head, el("p","stem",item.q));
+    const opts=el("div","opts");
+    item.o.forEach((o,j)=>{
+      const b=el("button","opt"); b.type="button";
+      b.append(el("span","letter","ABCD"[j]+")"), el("span","",o[0]));
+      if(done){
+        b.setAttribute("aria-disabled","true");
+        if(j===item.a) b.classList.add("right"); else if(j===picked) b.classList.add("wrong");
+        const why=el("span","why");
+        if(j===item.a) why.append(el("span","tag ok", j===picked?"你的選擇 · 正確答案":"正確答案"));
+        else if(j===picked) why.append(el("span","tag no","你的選擇"));
+        why.append(document.createTextNode(o[1].replace(/^正確。/,"")));
+        b.append(why);
+      } else {
+        b.addEventListener("click",()=>{picks[i]=j; save(); render();});
+      }
+      opts.append(b);
+    });
+    card.append(opts); list.append(card);
+  });
+  score();
+}
+function score(){
+  let total=0,done=0,right=0;
+  QUIZ.forEach((item,i)=>{ if(filter && item.c!==filter) return; total++; if(picks[i]!==undefined){done++; if(picks[i]===item.a) right++;}});
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-right").textContent=right;
+  document.getElementById("s-pct").textContent=done?Math.round(right/done*100)+"%":"–";
+  document.getElementById("meter").style.width=(total?done/total*100:0)+"%";
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  filter=t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===t?"true":"false"));
+  render();
+}));
+document.getElementById("btn-reset").addEventListener("click",()=>{picks={}; save(); render(); window.scrollTo(0,0);});
+document.getElementById("btn-wrong").addEventListener("click",()=>{
+  QUIZ.forEach((item,i)=>{ if(picks[i]!==undefined && picks[i]!==item.a) delete picks[i]; });
+  save(); render(); window.scrollTo(0,0);
+});
+const MCOL=["#1f77b4","#d1495b","#2a9d8f","#e9a03b","#7b5ea7","#3d7c3a"];
+let mRound=0, mSel=null, mMatched={}, mWrong=0, mOrder=[];
+function mShuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mStart(r){mRound=r;mSel=null;mMatched={};mWrong=0;mOrder=mShuffle(MATCH[r].p.length);mRender();}
+function mRender(){
+  const R=MATCH[mRound];
+  document.getElementById("m-step").textContent=(mRound+1)+" / "+MATCH.length;
+  document.getElementById("m-title").textContent=R.t;
+  const L=document.getElementById("col-l"), Rc=document.getElementById("col-r");
+  L.textContent=""; Rc.textContent="";
+  const old=document.querySelector(".done-msg"); if(old) old.remove();
+  R.p.forEach((p,i)=>{
+    const b=el("button","mi"); b.type="button"; b.dataset.side="l"; b.dataset.i=i; b.id="ml-"+i;
+    b.append(el("span","",p[0]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];b.append(el("span","pg",p[2]));}
+    b.addEventListener("click",()=>mPick(b)); L.append(b);
+  });
+  mOrder.forEach(i=>{
+    const p=R.p[i];
+    const b=el("button","mi"); b.type="button"; b.dataset.side="r"; b.dataset.i=i; b.id="mr-"+i;
+    b.append(el("span","",p[1]));
+    if(mMatched[i]!==undefined){b.classList.add("done");b.style.borderColor=MCOL[mMatched[i]%MCOL.length];}
+    b.addEventListener("click",()=>mPick(b)); Rc.append(b);
+  });
+  const X=document.getElementById("m-explain"); X.textContent="";
+  Object.keys(mMatched).map(Number).sort((x,y)=>mMatched[y]-mMatched[x]).forEach(i=>{
+    const p=R.p[i]; const c=el("div","exp"); c.style.borderLeftColor=MCOL[mMatched[i]%MCOL.length];
+    const head=el("div"); head.append(el("b","",p[0]),el("span","arrow","→"),el("b","",p[1]),el("span","pg",p[2]));
+    c.append(head,el("p","",p[3])); X.append(c);
+  });
+  const n=Object.keys(mMatched).length;
+  document.getElementById("m-stat").textContent=" 已配對 "+n+"/"+R.p.length+",錯誤 "+mWrong+" 次。";
+  if(n===R.p.length){const d=el("p","done-msg",mWrong===0?"全對!按「下一組」繼續。":"完成,錯了 "+mWrong+" 次。可以重新洗牌再練一次。");document.getElementById("board").append(d);}
+  document.getElementById("m-prev").disabled=mRound===0;
+  document.getElementById("m-next").disabled=mRound===MATCH.length-1;
+  requestAnimationFrame(mLines);
+}
+function mPick(b){
+  if(b.classList.contains("done")) return;
+  if(!mSel){mSel=b;b.classList.add("sel");return;}
+  if(mSel===b){b.classList.remove("sel");mSel=null;return;}
+  if(mSel.dataset.side===b.dataset.side){mSel.classList.remove("sel");mSel=b;b.classList.add("sel");return;}
+  const a=mSel; a.classList.remove("sel"); mSel=null;
+  if(a.dataset.i===b.dataset.i){mMatched[a.dataset.i]=Object.keys(mMatched).length;mRender();}
+  else{mWrong++;[a,b].forEach(x=>{x.classList.add("bad");setTimeout(()=>x.classList.remove("bad"),450);});
+    document.getElementById("m-stat").textContent=" 已配對 "+Object.keys(mMatched).length+"/"+MATCH[mRound].p.length+",錯誤 "+mWrong+" 次。";}
+}
+function mLines(){
+  const svg=document.getElementById("lines"), box=document.getElementById("board").getBoundingClientRect();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  Object.keys(mMatched).forEach(i=>{
+    const l=document.getElementById("ml-"+i), r=document.getElementById("mr-"+i); if(!l||!r) return;
+    const a=l.getBoundingClientRect(), c=r.getBoundingClientRect();
+    const x1=a.right-box.left, y1=a.top+a.height/2-box.top, x2=c.left-box.left, y2=c.top+c.height/2-box.top;
+    const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+    ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+    ln.setAttribute("stroke",MCOL[mMatched[i]%MCOL.length]);ln.setAttribute("stroke-width","2.5");ln.setAttribute("stroke-linecap","round");
+    svg.append(ln);
+  });
+}
+window.addEventListener("resize",()=>requestAnimationFrame(mLines));
+document.getElementById("m-prev").addEventListener("click",()=>{if(mRound>0)mStart(mRound-1);});
+document.getElementById("m-next").addEventListener("click",()=>{if(mRound<MATCH.length-1)mStart(mRound+1);});
+document.getElementById("m-shuffle").addEventListener("click",()=>mStart(mRound));
+document.getElementById("m-all").addEventListener("click",()=>mStart(0));
+function route(){
+  const v=location.hash==="#quiz"?"quiz":location.hash==="#match"?"match":"notes";
+  ["notes","match","quiz"].forEach(k=>{document.getElementById("view-"+k).hidden=k!==v;document.getElementById("v-"+k).setAttribute("aria-current",k===v?"page":"false");});
+  if(v==="match") requestAnimationFrame(mLines);
+}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0);});
+mStart(0);
+route();
+render();
+</script>
+</body>
+</html>
